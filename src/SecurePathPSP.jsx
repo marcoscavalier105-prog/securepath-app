@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
-const SUPABASE_ANON_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4"; // ← pega tu anon public key
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI"; // ← pega tu anon public key
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -96,7 +96,7 @@ export default function SecurePathPSP() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [authMode, setAuthMode] = useState("login"); // "login" | "register"
+  const [authMode, setAuthMode] = useState("login"); // solo login — registro deshabilitado
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
 
@@ -125,6 +125,7 @@ export default function SecurePathPSP() {
   const [modoRevision, setModoRevision] = useState(false);
   const [idxRevision, setIdxRevision] = useState(0);
   const [simulacroPantalla, setSimulacroPantalla] = useState("inicio"); // "inicio" | "simulacro" | "resultado"
+  const [modoExamen, setModoExamen] = useState(false); // true = sin ver respuestas hasta el final
   const tiemposPorPregunta = useRef([]);
   const tiempoInicioP = useRef(Date.now());
 
@@ -243,13 +244,14 @@ export default function SecurePathPSP() {
   };
 
   // ── SIMULACRO LOGIC ───────────────────────────────────────────────────────
-  const iniciarSimulacro = (cantidad) => {
+  const iniciarSimulacro = (cantidad, examen = false) => {
     const pool = filtroDominio === 0 ? banco : banco.filter((p) => p.dominio === filtroDominio);
     const mezcladas = mezclarConOpciones(pool).slice(0, Math.min(cantidad, pool.length));
     setPreguntas(mezcladas);
     setIdx(0); setSeleccion(null); setMostrarExp(false);
     setRespuestas([]); setSegundos(0); setPausado(false);
     setRachaActual(0); setRachaMax(0);
+    setModoExamen(examen);
     tiemposPorPregunta.current = [];
     tiempoInicioP.current = Date.now();
     setSimulacroPantalla("simulacro");
@@ -301,12 +303,31 @@ export default function SecurePathPSP() {
 
   // ── PROGRESO CALCULADO ────────────────────────────────────────────────────
   const calcProgreso = () => {
-    if (!historialUsuario.length) return { global: 0, sesiones: 0, mejor: 0, ultimo: null };
+    if (!historialUsuario.length) return { global: 0, sesiones: 0, mejor: 0, ultimo: null, racha: 0, porDominio: {} };
     const sesiones = historialUsuario.length;
     const mejor = Math.max(...historialUsuario.map((s) => s.porcentaje || 0));
     const ultimo = historialUsuario[0];
     const global = Math.round(historialUsuario.reduce((a, s) => a + (s.porcentaje || 0), 0) / sesiones);
-    return { global, sesiones, mejor, ultimo };
+    // Racha de dias consecutivos
+    const diasUnicos = [...new Set(historialUsuario.map((s) => s.created_at?.slice(0, 10)))].sort().reverse();
+    let racha = 0;
+    const hoy = new Date().toISOString().slice(0, 10);
+    let fechaCheck = hoy;
+    for (const dia of diasUnicos) {
+      if (dia === fechaCheck) {
+        racha++;
+        const d = new Date(fechaCheck);
+        d.setDate(d.getDate() - 1);
+        fechaCheck = d.toISOString().slice(0, 10);
+      } else break;
+    }
+    // Promedio por dominio
+    const porDominio = {};
+    [1, 2, 3].forEach((d) => {
+      const sesD = historialUsuario.filter((s) => s.dominio_filtro === d).slice(0, 10);
+      if (sesD.length) porDominio[d] = Math.round(sesD.reduce((a, s) => a + (s.porcentaje || 0), 0) / sesD.length);
+    });
+    return { global, sesiones, mejor, ultimo, racha, porDominio };
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -329,7 +350,7 @@ export default function SecurePathPSP() {
 
           {/* Tabs */}
           <div style={{ display: "flex", marginBottom: 28, borderBottom: `1px solid ${C.border}` }}>
-            {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([m, l]) => (
+            {[["login", "Iniciar sesión"]].map(([m, l]) => (
               <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); }}
                 style={{ flex: 1, padding: "12px 0", background: "none", border: "none", borderBottom: `2px solid ${authMode === m ? C.gold : "transparent"}`, color: authMode === m ? C.gold : C.muted, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
                 {l}
@@ -366,7 +387,7 @@ export default function SecurePathPSP() {
 
             <button onClick={handleAuth} disabled={authLoading || !authEmail || !authPassword}
               style={{ padding: "14px", background: authLoading ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: (!authEmail || !authPassword) ? 0.5 : 1, transition: "all 0.2s" }}>
-              {authLoading ? "Cargando..." : authMode === "login" ? "Entrar →" : "Crear cuenta →"}
+              {authLoading ? "Cargando..." : "Entrar →"}
             </button>
           </div>
 
@@ -431,7 +452,7 @@ export default function SecurePathPSP() {
             {[
               [cargandoBanco ? "..." : totalPorDominio[0], "Preguntas"],
               [prog.sesiones, "Simulacros"],
-              [diasEstudio, "Días estudio"],
+              [prog.racha > 0 ? `${prog.racha}🔥` : diasEstudio, prog.racha > 0 ? "Racha días" : "Días estudio"],
               [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
             ].map(([n, l]) => (
               <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
@@ -440,6 +461,34 @@ export default function SecurePathPSP() {
               </div>
             ))}
           </div>
+
+          {/* Progreso por dominio */}
+          {Object.keys(prog.porDominio).length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TU NIVEL POR DOMINIO</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[1,2,3].map((d) => {
+                  const pct = prog.porDominio[d];
+                  if (!pct) return null;
+                  const color = d === 1 ? C.gold : d === 2 ? C.blue : C.purple;
+                  const nombre = d === 1 ? "Assessment" : d === 2 ? "Design" : "Implementation";
+                  const colorPct = pct >= 75 ? C.green : pct >= 55 ? C.gold : C.red;
+                  return (
+                    <div key={d} style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "12px 16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ fontFamily: "monospace", fontSize: 10, color }}> D{d} · {nombre}</div>
+                        <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 18, fontWeight: 800, color: colorPct }}>{pct}%</div>
+                      </div>
+                      <div style={{ height: 4, background: C.border }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: colorPct, transition: "width 0.6s" }} />
+                      </div>
+                      {pct < 60 && <div style={{ marginTop: 6, fontSize: 10, color: C.red, fontFamily: "monospace" }}>⚠ Dominio débil — refuerza antes del examen</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Progreso por dominio */}
           {prog.sesiones > 0 && (
@@ -451,6 +500,29 @@ export default function SecurePathPSP() {
               </div>
             </div>
           )}
+
+          {/* Recomendacion automatica */}
+          {Object.keys(prog.porDominio).length > 0 && (() => {
+            const debil = [1,2,3].reduce((min, d) => {
+              if (!prog.porDominio[d]) return min;
+              return (!min || prog.porDominio[d] < prog.porDominio[min]) ? d : min;
+            }, null);
+            if (!debil || prog.porDominio[debil] >= 70) return null;
+            const nombres = { 1: "Assessment", 2: "Design", 3: "Implementation" };
+            const colores = { 1: C.gold, 2: C.blue, 3: C.purple };
+            return (
+              <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderLeft: `3px solid ${C.red}` }}>
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.red, letterSpacing: "0.15em", marginBottom: 6 }}>RECOMENDACIÓN</div>
+                <div style={{ fontSize: 13, color: C.white, lineHeight: 1.6 }}>
+                  Tu dominio más débil es <span style={{ color: colores[debil], fontWeight: 700 }}>D{debil} · {nombres[debil]}</span> con {prog.porDominio[debil]}%.{" "}
+                  <button onClick={() => { setFiltroDominio(debil); setVista("simulacro"); setSimulacroPantalla("inicio"); }}
+                    style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontFamily: "monospace", fontSize: 11, textDecoration: "underline" }}>
+                    Practicar D{debil} ahora →
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Accesos rápidos */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
@@ -536,6 +608,18 @@ export default function SecurePathPSP() {
                   </button>
                 );
               })}
+              {/* Modo examen Prometric */}
+              {(() => {
+                const disponible = totalPorDominio[0] || 0;
+                const disabled = cargandoBanco || disponible < 50;
+                return (
+                  <button onClick={() => !disabled && iniciarSimulacro(50, true)} disabled={disabled}
+                    style={{ padding: "16px 20px", background: disabled ? "transparent" : "rgba(168,85,247,0.12)", border: `1px solid ${disabled ? C.border : "rgba(168,85,247,0.4)"}`, color: disabled ? C.muted : "#a855f7", textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
+                    <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700 }}>🎯 Modo Examen Prometric</div>
+                    <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>50 preguntas · sin ver respuestas hasta el final · igual al examen real</div>
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Historial reciente */}
@@ -608,12 +692,17 @@ export default function SecurePathPSP() {
                 );
               })}
             </div>
-            {mostrarExp && (
+            {mostrarExp && !modoExamen && (
               <div style={{ marginTop: 20, padding: "16px 18px", background: seleccion === p.correcta ? C.greenD : C.redD, border: `1px solid ${seleccion === p.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${seleccion === p.correcta ? C.green : C.red}` }}>
                 <div style={{ fontFamily: "monospace", fontSize: 9, color: seleccion === p.correcta ? C.green : C.red, letterSpacing: "0.1em", marginBottom: 8 }}>
-                  {seleccion === p.correcta ? "✓ CORRECTO" : `✗ INCORRECTO — LA CORRECTA ERA ${p.correcta}`}
+                  {seleccion === p.correcta ? "\u2713 CORRECTO" : `\u2717 INCORRECTO \u2014 LA CORRECTA ERA ${p.correcta}`}
                 </div>
                 <p style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
+              </div>
+            )}
+            {mostrarExp && modoExamen && (
+              <div style={{ marginTop: 20, padding: "12px 16px", background: C.goldD, border: `1px solid ${C.goldB}`, fontFamily: "monospace", fontSize: 11, color: C.gold }}>
+                Respuesta registrada. Modo examen activo — verás las explicaciones al finalizar.
               </div>
             )}
             {seleccion && (
