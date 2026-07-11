@@ -148,6 +148,10 @@ export default function SecurePathPSP() {
         setSession(stored);
         cargarBanco(stored.access_token);
         cargarHistorial(stored.user.id, stored.access_token);
+        // Cargar historial del tutor
+        const tutorK = `sp_tutor_${stored.user.id}`;
+        const tutorStored = localStorage.getItem(tutorK);
+        if (tutorStored) setTutorMensajes(JSON.parse(tutorStored));
       }
     } catch {}
   }, []);
@@ -192,6 +196,39 @@ export default function SecurePathPSP() {
     setSession(null);
     setBanco([]);
     setHistorialUsuario([]);
+  };
+
+  // ── TUTOR IA ──────────────────────────────────────────────────────────────
+  const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+
+  const handleEnviarTutor = async (texto) => {
+    if (!texto.trim() || tutorCargando) return;
+    const tutorKey = "sp_tutor_" + (session?.user?.id || "guest");
+    const nuevos = [...tutorMensajes, { rol: "user", texto }];
+    setTutorMensajes(nuevos);
+    setTutorInput("");
+    setTutorCargando(true);
+    const systemPrompt = "Eres un tutor experto en la certificacion PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en espanol." +
+      " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas fisicas y electronicas), D3 Implementation (gestion, auditoria, cumplimiento)." +
+      " Cuando el usuario pida una pregunta: genera una pregunta de opcion multiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por que las otras son incorrectas." +
+      " Cuando el usuario haga una pregunta libre, responde con ejemplos practicos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en espanol.";
+    try {
+      const historial = nuevos.map((m) => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto }));
+      const res = await fetch(CLAUDE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system: systemPrompt, messages: historial }),
+      });
+      const data = await res.json();
+      const respuesta = data.content?.[0]?.text || "Error al obtener respuesta.";
+      const finales = [...nuevos, { rol: "tutor", texto: respuesta }];
+      setTutorMensajes(finales);
+      try { localStorage.setItem(tutorKey, JSON.stringify(finales)); } catch {}
+    } catch {
+      setTutorMensajes([...nuevos, { rol: "tutor", texto: "Error de conexion. Intenta nuevamente." }]);
+    } finally {
+      setTutorCargando(false);
+    }
   };
 
   // ── BANCO SUPABASE ────────────────────────────────────────────────────────
@@ -1036,98 +1073,59 @@ export default function SecurePathPSP() {
   // VISTA: TUTOR IA
   // ─────────────────────────────────────────────────────────────────────────
   if (vista === "tutor") {
-    const CLAUDE_API = "https://api.anthropic.com/v1/messages";
-    const dominiosNombre = { 0: "Todos los dominios", 1: "D1 · Assessment", 2: "D2 · Design", 3: "D3 · Implementation" };
+    const tutorKey = `sp_tutor_${session?.user?.id || "guest"}`;
     const dominiosColor = { 0: C.gold, 1: C.gold, 2: C.blue, 3: C.purple };
 
-    const SYSTEM_PROMPT = `Eres un tutor experto en la certificación PSP (Physical Security Professional) de ASIS International. Tu función es ayudar a candidatos a prepararse para el examen PSP.
+    const systemPrompt = "Eres un tutor experto en la certificación PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en español." +
+      " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas físicas y electrónicas), D3 Implementation (gestión, auditoría, cumplimiento)." +
+      " Cuando el usuario pida una pregunta: genera una pregunta de opción múltiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por qué las otras son incorrectas." +
+      " Cuando el usuario haga pregunta libre, responde de forma clara con ejemplos prácticos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en español." +
+      (tutorDominio > 0 ? " Enfocate en el Dominio " + tutorDominio + " del examen PSP." : "");
 
-El examen PSP tiene 3 dominios:
-- D1 Assessment (45%): análisis de amenazas, vulnerabilidades, consecuencias, riesgo
-- D2 Design (35%): contramedidas físicas, electrónicas e integradas
-- D3 Implementation (20%): gestión de proyectos, auditoría, cumplimiento
 
-Cuando el usuario pida una pregunta:
-1. Genera una pregunta de opción múltiple (A, B, C, D) realista estilo Prometric
-2. Espera su respuesta
-3. Explica por qué la opción correcta es correcta y por qué las otras son incorrectas
-4. Cita la referencia ASIS correspondiente cuando sea posible
-
-Cuando el usuario haga una pregunta libre, responde de forma clara y concisa con ejemplos prácticos.
-
-Responde SIEMPRE en español. Sé directo, preciso y usa la terminología exacta de ASIS.${tutorDominio > 0 ? ` Enfócate en el Dominio ${tutorDominio} del examen PSP.` : ""}`;
-
-    const enviarMensaje = async (texto) => {
-      if (!texto.trim() || tutorCargando) return;
-      const nuevosMensajes = [...tutorMensajes, { rol: "user", texto }];
-      setTutorMensajes(nuevosMensajes);
-      setTutorInput("");
-      setTutorCargando(true);
-      try {
-        const historial = nuevosMensajes.map((m) => ({
-          role: m.rol === "user" ? "user" : "assistant",
-          content: m.texto,
-        }));
-        const res = await fetch(CLAUDE_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-6",
-            max_tokens: 1000,
-            system: SYSTEM_PROMPT,
-            messages: historial,
-          }),
-        });
-        const data = await res.json();
-        const respuesta = data.content?.[0]?.text || "Error al obtener respuesta.";
-        setTutorMensajes([...nuevosMensajes, { rol: "tutor", texto: respuesta }]);
-        setTimeout(() => tutorEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      } catch (err) {
-        setTutorMensajes([...nuevosMensajes, { rol: "tutor", texto: "Error de conexión. Intenta nuevamente." }]);
-      } finally {
-        setTutorCargando(false);
-      }
-    };
 
     const acciones = [
-      { label: "Generar pregunta", prompt: "Genera una pregunta de práctica PSP" + (tutorDominio > 0 ? ` del Dominio ${tutorDominio}` : " de cualquier dominio") },
-      { label: "Pregunta difícil", prompt: "Genera una pregunta difícil de nivel avanzado PSP" + (tutorDominio > 0 ? ` del Dominio ${tutorDominio}` : "") },
-      { label: "Pregunta trampa", prompt: "Genera una pregunta trampa típica del examen PSP" + (tutorDominio > 0 ? ` del Dominio ${tutorDominio}` : "") },
-      { label: "Explica un concepto clave", prompt: "Explícame un concepto clave que debo dominar para el PSP" + (tutorDominio > 0 ? ` del Dominio ${tutorDominio}` : "") },
+      { label: "Generar pregunta", prompt: "Genera una pregunta de practica PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : " de cualquier dominio") },
+      { label: "Pregunta dificil", prompt: "Genera una pregunta dificil nivel avanzado PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
+      { label: "Pregunta trampa", prompt: "Genera una pregunta trampa tipica del examen PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
+      { label: "Explica un concepto", prompt: "Explicame un concepto clave para el PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
     ];
 
     return (
       <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
         <NavHeader />
-
-        {/* Header tutor */}
-        <div style={{ background: C.dark, borderBottom: `1px solid ${C.border}`, padding: "12px 20px" }}>
+        <div style={{ background: C.dark, borderBottom: "1px solid " + C.border, padding: "12px 20px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 8 }}>TUTOR IA — BETA FUNDADORES</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[0, 1, 2, 3].map((d) => (
+              {[0,1,2,3].map((d) => (
                 <button key={d} onClick={() => setTutorDominio(d)}
-                  style={{ padding: "5px 12px", background: tutorDominio === d ? `${dominiosColor[d]}20` : "transparent", border: `1px solid ${tutorDominio === d ? dominiosColor[d] : C.border}`, color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>
-                  {d === 0 ? "Todos" : `D${d}`}
+                  style={{ padding: "5px 12px", background: tutorDominio === d ? dominiosColor[d] + "20" : "transparent", border: "1px solid " + (tutorDominio === d ? dominiosColor[d] : C.border), color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>
+                  {d === 0 ? "Todos" : "D" + d}
                 </button>
               ))}
+              {tutorMensajes.length > 0 && (
+                <button onClick={() => { setTutorMensajes([]); try { localStorage.removeItem(tutorKey); } catch {} }}
+                  style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
+                  Limpiar
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Área de chat */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             {tutorMensajes.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
                 <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
-                  Genera preguntas infinitas, practica por dominio o pregunta cualquier concepto del examen PSP.
+                  Practica con preguntas infinitas generadas por IA o consulta cualquier concepto del examen PSP.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {acciones.map((a) => (
-                    <button key={a.label} onClick={() => enviarMensaje(a.prompt)}
-                      style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, color: C.gold, fontFamily: "monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
+                    <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
+                      style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, color: C.gold, fontFamily: "monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
                       {a.label} →
                     </button>
                   ))}
@@ -1137,51 +1135,48 @@ Responde SIEMPRE en español. Sé directo, preciso y usa la terminología exacta
 
             {tutorMensajes.map((m, i) => (
               <div key={i} style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: m.rol === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.muted, marginBottom: 4, letterSpacing: "0.1em" }}>
-                  {m.rol === "user" ? "TÚ" : "TUTOR PSP"}
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
+                  {m.rol === "user" ? "TU" : "TUTOR PSP"}
                 </div>
-                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: `1px solid ${m.rol === "user" ? C.goldB : C.border}`, borderLeft: m.rol === "tutor" ? `3px solid ${C.gold}` : undefined, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
                   {m.texto}
                 </div>
               </div>
             ))}
 
             {tutorCargando && (
-              <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 16 }}>
-                <div style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.gold}`, fontFamily: "monospace", fontSize: 11, color: C.gold }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, borderLeft: "3px solid " + C.gold, fontFamily: "monospace", fontSize: 11, color: C.gold }}>
                   Pensando...
                 </div>
               </div>
             )}
+
+            {tutorMensajes.length > 0 && !tutorCargando && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                {acciones.slice(0,2).map((a) => (
+                  <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
+                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.goldB, color: C.gold, fontFamily: "monospace", fontSize: 9, cursor: "pointer" }}>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div ref={tutorEndRef} />
           </div>
         </div>
 
-        {/* Acciones rápidas si hay conversación */}
-        {tutorMensajes.length > 0 && (
-          <div style={{ borderTop: `1px solid ${C.border}`, padding: "8px 20px", background: C.dark }}>
-            <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {acciones.slice(0, 2).map((a) => (
-                <button key={a.label} onClick={() => enviarMensaje(a.prompt)} disabled={tutorCargando}
-                  style={{ padding: "5px 12px", background: "transparent", border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "monospace", fontSize: 9, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: tutorCargando ? 0.5 : 1 }}>
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Input */}
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: "12px 20px", background: C.dark }}>
+        <div style={{ borderTop: "1px solid " + C.border, padding: "12px 20px", background: C.dark }}>
           <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}>
             <input
               value={tutorInput}
               onChange={(e) => setTutorInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && enviarMensaje(tutorInput)}
-              placeholder="Escribe tu respuesta o pregunta algo sobre el PSP..."
-              style={{ flex: 1, padding: "12px 14px", background: C.black, border: `1px solid ${C.border}`, color: C.white, fontFamily: "Inter, sans-serif", fontSize: 13, outline: "none" }}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)}
+              placeholder="Escribe tu respuesta o pregunta sobre el PSP..."
+              style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "Inter, sans-serif", fontSize: 13, outline: "none" }}
             />
-            <button onClick={() => enviarMensaje(tutorInput)} disabled={tutorCargando || !tutorInput.trim()}
+            <button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()}
               style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>
               →
             </button>
