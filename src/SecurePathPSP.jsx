@@ -1036,16 +1036,6 @@ export default function SecurePathPSP() {
   // VISTA: TUTOR IA
   // ─────────────────────────────────────────────────────────────────────────
   if (vista === "tutor") {
-    const tutorKey = `sp_tutor_${session?.user?.id || "guest"}`;
-
-    // Cargar historial al entrar a la vista
-    useEffect(() => {
-      try {
-        const stored = localStorage.getItem(tutorKey);
-        if (stored) setTutorMensajes(JSON.parse(stored));
-      } catch {}
-    }, [tutorKey]);
-
     const CLAUDE_API = "https://api.anthropic.com/v1/messages";
     const dominiosNombre = { 0: "Todos los dominios", 1: "D1 · Assessment", 2: "D2 · Design", 3: "D3 · Implementation" };
     const dominiosColor = { 0: C.gold, 1: C.gold, 2: C.blue, 3: C.purple };
@@ -1090,9 +1080,7 @@ Responde SIEMPRE en español. Sé directo, preciso y usa la terminología exacta
         });
         const data = await res.json();
         const respuesta = data.content?.[0]?.text || "Error al obtener respuesta.";
-        const mensajesFinales = [...nuevosMensajes, { rol: "tutor", texto: respuesta }];
-        setTutorMensajes(mensajesFinales);
-        try { localStorage.setItem(tutorKey, JSON.stringify(mensajesFinales)); } catch {}
+        setTutorMensajes([...nuevosMensajes, { rol: "tutor", texto: respuesta }]);
         setTimeout(() => tutorEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       } catch (err) {
         setTutorMensajes([...nuevosMensajes, { rol: "tutor", texto: "Error de conexión. Intenta nuevamente." }]);
@@ -1130,15 +1118,6 @@ Responde SIEMPRE en español. Sé directo, preciso y usa la terminología exacta
         {/* Área de chat */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            {tutorMensajes.length > 0 && (
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                <button onClick={() => { setTutorMensajes([]); try { localStorage.removeItem(tutorKey); } catch {} }}
-                  style={{ padding: "4px 12px", background: "transparent", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "monospace", fontSize: 9, cursor: "pointer" }}>
-                  Limpiar historial
-                </button>
-              </div>
-            )}
-
             {tutorMensajes.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
                 <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
