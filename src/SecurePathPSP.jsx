@@ -272,16 +272,19 @@ export default function SecurePathPSP() {
     try {
       const correctas = todasRespuestas.filter((r) => r.correcta).length;
       const pct = Math.round((correctas / todasRespuestas.length) * 100);
-      const sesion = {
-        usuario_id: session.user.id,
-        modo: "simulacro",
-        dominio_filtro: filtroDominio,
-        total_preguntas: todasRespuestas.length,
-        correctas,
-        porcentaje: pct,
-        tiempo_segundos: segundos,
-        completada: true,
-      };
+const sesion = {
+  usuario_id: session.user.id,
+  modo: filtroDominio !== 0 ? "dominio" 
+        : todasRespuestas.length <= 10 ? "rapido" 
+        : todasRespuestas.length <= 25 ? "medio" 
+        : "completo",
+  dominio_filtro: filtroDominio,
+  total_preguntas: todasRespuestas.length,
+  correctas,
+  porcentaje: pct,
+  tiempo_segundos: segundos,
+  completada: true,
+};
       await dbPost("sesiones_simulacro", sesion, session.access_token);
       await cargarHistorial(session.user.id, session.access_token);
       // Forzar re-render del dashboard
