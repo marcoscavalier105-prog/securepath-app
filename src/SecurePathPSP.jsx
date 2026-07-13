@@ -274,6 +274,7 @@ export default function SecurePathPSP() {
       const pct = Math.round((correctas / todasRespuestas.length) * 100);
       const sesion = {
         usuario_id: session.user.id,
+        modo: "simulacro",
         dominio_filtro: filtroDominio,
         total_preguntas: todasRespuestas.length,
         correctas,
