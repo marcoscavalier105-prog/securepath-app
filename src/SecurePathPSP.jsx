@@ -199,8 +199,6 @@ export default function SecurePathPSP() {
   };
 
   // ── TUTOR IA ──────────────────────────────────────────────────────────────
-  const CLAUDE_API = "https://api.anthropic.com/v1/messages";
-
   const handleEnviarTutor = async (texto) => {
     if (!texto.trim() || tutorCargando) return;
     const tutorKey = "sp_tutor_" + (session?.user?.id || "guest");
@@ -214,13 +212,13 @@ export default function SecurePathPSP() {
       " Cuando el usuario haga una pregunta libre, responde con ejemplos practicos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en espanol.";
     try {
       const historial = nuevos.map((m) => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto }));
-      const res = await fetch(CLAUDE_API, {
+      const res = await fetch("/.netlify/functions/tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 1000, system: systemPrompt, messages: historial }),
+        body: JSON.stringify({ messages: historial, dominio: tutorDominio }),
       });
       const data = await res.json();
-      const respuesta = data.content?.[0]?.text || "Error al obtener respuesta.";
+      const respuesta = data.text || "Error al obtener respuesta.";
       const finales = [...nuevos, { rol: "tutor", texto: respuesta }];
       setTutorMensajes(finales);
       try { localStorage.setItem(tutorKey, JSON.stringify(finales)); } catch {}
