@@ -217,7 +217,7 @@ export default function SecurePathPSP() {
       const res = await fetch(CLAUDE_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system: systemPrompt, messages: historial }),
+        body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 1000, system: systemPrompt, messages: historial }),
       });
       const data = await res.json();
       const respuesta = data.content?.[0]?.text || "Error al obtener respuesta.";
@@ -260,11 +260,13 @@ export default function SecurePathPSP() {
     try {
       const data = await dbGet(
         "sesiones_simulacro",
-        `select=*&usuario_id=eq.${userId}&order=created_at.desc&limit=20`,
+        `select=*&usuario_id=eq.${userId}&order=created_at.desc&limit=50`,
         token
       );
       setHistorialUsuario(data || []);
-    } catch {}
+    } catch (err) {
+      console.error("Error cargando historial:", err);
+    }
   };
 
   const guardarSesion = async (todasRespuestas) => {
@@ -283,6 +285,8 @@ export default function SecurePathPSP() {
       };
       await dbPost("sesiones_simulacro", sesion, session.access_token);
       await cargarHistorial(session.user.id, session.access_token);
+      // Forzar re-render del dashboard
+      setVista((v) => v);
     } catch (err) {
       console.error("Error guardando sesión:", err);
     }
@@ -366,11 +370,16 @@ export default function SecurePathPSP() {
         fechaCheck = d.toISOString().slice(0, 10);
       } else break;
     }
-    // Promedio por dominio
+    // Promedio por dominio — incluye sesiones mixtas (filtro 0 = Todos)
     const porDominio = {};
     [1, 2, 3].forEach((d) => {
-      const sesD = historialUsuario.filter((s) => s.dominio_filtro === d).slice(0, 10);
-      if (sesD.length) porDominio[d] = Math.round(sesD.reduce((a, s) => a + (s.porcentaje || 0), 0) / sesD.length);
+      // Sesiones especificas de ese dominio + sesiones mixtas
+      const sesEspecificas = historialUsuario.filter((s) => s.dominio_filtro === d);
+      const sesMixtas = historialUsuario.filter((s) => s.dominio_filtro === 0);
+      const todasSes = [...sesEspecificas, ...sesMixtas].slice(0, 10);
+      if (todasSes.length) {
+        porDominio[d] = Math.round(todasSes.reduce((a, s) => a + (s.porcentaje || 0), 0) / todasSes.length);
+      }
     });
     return { global, sesiones, mejor, ultimo, racha, porDominio };
   };
@@ -635,6 +644,12 @@ export default function SecurePathPSP() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Tip longest answer */}
+            <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.2)", borderLeft: "3px solid " + C.gold }}>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.15em", marginBottom: 4 }}>TIP EXAMEN</div>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>La respuesta más larga no siempre es la correcta. Analiza el concepto, no la extensión de la opción.</div>
             </div>
 
             {/* Botones de sesión */}
