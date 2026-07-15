@@ -39,14 +39,14 @@ const dbPost = (table, body, token) =>
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
-  black: "#0a0a0a", dark: "#111318", card: "#16191f",
-  border: "rgba(255,255,255,0.07)", gold: "#d4a843", gold2: "#f0c96a",
-  goldD: "rgba(212,168,67,0.12)", goldB: "rgba(212,168,67,0.25)",
-  white: "#f2f0eb", muted: "#6b7280", green: "#22c55e",
-  greenD: "rgba(34,197,94,0.10)", greenB: "rgba(34,197,94,0.25)",
-  red: "#ef4444", redD: "rgba(239,68,68,0.08)", redB: "rgba(239,68,68,0.30)",
-  blue: "#3b82f6", blueD: "rgba(59,130,246,0.08)", blueB: "rgba(59,130,246,0.25)",
-  purple: "#a855f7",
+  black: "#0f2c45", dark: "#1a3f60", card: "#204a70",
+  border: "rgba(216,232,240,0.10)", gold: "#ff5a1f", gold2: "#ff7d47",
+  goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
+  white: "#e3edf2", muted: "#6f8797", green: "#3ddc84",
+  greenD: "rgba(61,220,132,0.10)", greenB: "rgba(61,220,132,0.28)",
+  red: "#ff5c5c", redD: "rgba(255,92,92,0.08)", redB: "rgba(255,92,92,0.32)",
+  blue: "#5fb8e0", blueD: "rgba(95,184,224,0.08)", blueB: "rgba(95,184,224,0.25)",
+  purple: "#9d7aff",
 };
 
 // ─── UTILIDADES ───────────────────────────────────────────────────────────────
@@ -272,19 +272,24 @@ export default function SecurePathPSP() {
     try {
       const correctas = todasRespuestas.filter((r) => r.correcta).length;
       const pct = Math.round((correctas / todasRespuestas.length) * 100);
-const sesion = {
-  usuario_id: session.user.id,
-  modo: filtroDominio !== 0 ? "dominio" 
-        : todasRespuestas.length <= 10 ? "rapido" 
-        : todasRespuestas.length <= 25 ? "medio" 
-        : "completo",
-  dominio_filtro: filtroDominio,
-  total_preguntas: todasRespuestas.length,
-  correctas,
-  porcentaje: pct,
-  tiempo_segundos: segundos,
-  completada: true,
-};
+      const modo =
+        filtroDominio !== 0
+          ? "dominio"
+          : todasRespuestas.length <= 10
+          ? "rapido"
+          : todasRespuestas.length <= 25
+          ? "medio"
+          : "completo";
+      const sesion = {
+        usuario_id: session.user.id,
+        dominio_filtro: filtroDominio,
+        modo,
+        total_preguntas: todasRespuestas.length,
+        correctas,
+        porcentaje: pct,
+        tiempo_segundos: segundos,
+        completada: true,
+      };
       await dbPost("sesiones_simulacro", sesion, session.access_token);
       await cargarHistorial(session.user.id, session.access_token);
       // Forzar re-render del dashboard
@@ -391,15 +396,15 @@ const sesion = {
   // ─────────────────────────────────────────────────────────────────────────
   if (!session) {
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Inter, sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'IBM Plex Sans', sans-serif" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           {/* Logo */}
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, color: C.gold }}>
+            <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: C.gold }}>
               Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
               <span style={{ color: C.muted, fontSize: 14, fontWeight: 400, marginLeft: 8 }}>PSP</span>
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.25em", marginTop: 6 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.25em", marginTop: 6 }}>
               PLATAFORMA DE PREPARACIÓN PSP®
             </div>
           </div>
@@ -408,7 +413,7 @@ const sesion = {
           <div style={{ display: "flex", marginBottom: 28, borderBottom: `1px solid ${C.border}` }}>
             {[["login", "Iniciar sesión"]].map(([m, l]) => (
               <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); }}
-                style={{ flex: 1, padding: "12px 0", background: "none", border: "none", borderBottom: `2px solid ${authMode === m ? C.gold : "transparent"}`, color: authMode === m ? C.gold : C.muted, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                style={{ flex: 1, padding: "12px 0", background: "none", border: "none", borderBottom: `2px solid ${authMode === m ? C.gold : "transparent"}`, color: authMode === m ? C.gold : C.muted, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
                 {l}
               </button>
             ))}
@@ -417,37 +422,37 @@ const sesion = {
           {/* Form */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CORREO ELECTRÓNICO</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CORREO ELECTRÓNICO</div>
               <input
                 type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAuth()}
                 placeholder="tu@correo.com"
-                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "Inter, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
               />
             </div>
             <div>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CONTRASEÑA</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CONTRASEÑA</div>
               <input
                 type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAuth()}
                 placeholder="••••••••"
-                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "Inter, sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
               />
             </div>
 
             {authError && (
-              <div style={{ padding: "10px 14px", background: C.redD, border: `1px solid ${C.redB}`, fontSize: 12, color: "#fca5a5", fontFamily: "monospace" }}>
+              <div style={{ padding: "10px 14px", background: C.redD, border: `1px solid ${C.redB}`, fontSize: 12, color: "#ff9494", fontFamily: "'IBM Plex Mono', monospace" }}>
                 {authError}
               </div>
             )}
 
             <button onClick={handleAuth} disabled={authLoading || !authEmail || !authPassword}
-              style={{ padding: "14px", background: authLoading ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: (!authEmail || !authPassword) ? 0.5 : 1, transition: "all 0.2s" }}>
+              style={{ padding: "14px", background: authLoading ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: (!authEmail || !authPassword) ? 0.5 : 1, transition: "all 0.2s" }}>
               {authLoading ? "Cargando..." : "Entrar →"}
             </button>
           </div>
 
-          <div style={{ marginTop: 28, padding: "14px", background: C.goldD, borderLeft: `3px solid ${C.gold}`, fontSize: 11, color: "#d1d5db", lineHeight: 1.7 }}>
+          <div style={{ marginTop: 28, padding: "14px", background: C.goldD, borderLeft: `3px solid ${C.gold}`, fontSize: 11, color: "#b8ccd6", lineHeight: 1.7 }}>
             <strong style={{ color: C.gold }}>400 preguntas</strong> cubren los 3 dominios del examen PSP® con explicaciones completas y referencias ASIS.
           </div>
         </div>
@@ -461,18 +466,18 @@ const sesion = {
   const NavHeader = () => (
     <div style={{ background: C.dark, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20 }}>
       <button onClick={() => { setVista("dashboard"); setSimulacroPantalla("inicio"); }}
-        style={{ background: "none", border: "none", fontFamily: "Syne, Inter, sans-serif", fontSize: 16, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
+        style={{ background: "none", border: "none", fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 16, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
         Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
       </button>
       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
         {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["guia", "Guía"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
           <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
-            style={{ padding: "6px 12px", background: vista === v ? C.goldD : "none", border: `1px solid ${vista === v ? C.goldB : "transparent"}`, color: vista === v ? C.gold : C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer", letterSpacing: "0.08em" }}>
+            style={{ padding: "6px 12px", background: vista === v ? C.goldD : "none", border: `1px solid ${vista === v ? C.goldB : "transparent"}`, color: vista === v ? C.gold : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", letterSpacing: "0.08em" }}>
             {l}
           </button>
         ))}
         <button onClick={handleLogout}
-          style={{ padding: "6px 12px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer", marginLeft: 8 }}>
+          style={{ padding: "6px 12px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", marginLeft: 8 }}>
           Salir
         </button>
       </div>
@@ -489,13 +494,13 @@ const sesion = {
     const diasEstudio = new Set(historialUsuario.map((s) => s.created_at?.slice(0, 10))).size;
 
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
         <NavHeader />
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 20px 80px" }}>
           {/* Saludo */}
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 8 }}>BIENVENIDO</div>
-            <h1 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, marginBottom: 10, lineHeight: 1.15 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 8 }}>BIENVENIDO</div>
+            <h1 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, marginBottom: 10, lineHeight: 1.15 }}>
               {email.split("@")[0]}
             </h1>
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 500, padding: "12px 16px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>
@@ -512,8 +517,8 @@ const sesion = {
               [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
             ].map(([n, l]) => (
               <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
-                <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 24, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "monospace" }}>{l}</div>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 24, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{l}</div>
               </div>
             ))}
           </div>
@@ -521,7 +526,7 @@ const sesion = {
           {/* Progreso por dominio */}
           {Object.keys(prog.porDominio).length > 0 && (
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TU NIVEL POR DOMINIO</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TU NIVEL POR DOMINIO</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[1,2,3].map((d) => {
                   const pct = prog.porDominio[d];
@@ -532,13 +537,13 @@ const sesion = {
                   return (
                     <div key={d} style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "12px 16px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontFamily: "monospace", fontSize: 10, color }}> D{d} · {nombre}</div>
-                        <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 18, fontWeight: 800, color: colorPct }}>{pct}%</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color }}> D{d} · {nombre}</div>
+                        <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 18, fontWeight: 800, color: colorPct }}>{pct}%</div>
                       </div>
                       <div style={{ height: 4, background: C.border }}>
                         <div style={{ height: "100%", width: `${pct}%`, background: colorPct, transition: "width 0.6s" }} />
                       </div>
-                      {pct < 60 && <div style={{ marginTop: 6, fontSize: 10, color: C.red, fontFamily: "monospace" }}>⚠ Dominio débil — refuerza antes del examen</div>}
+                      {pct < 60 && <div style={{ marginTop: 6, fontSize: 10, color: C.red, fontFamily: "'IBM Plex Mono', monospace" }}>⚠ Dominio débil — refuerza antes del examen</div>}
                     </div>
                   );
                 })}
@@ -549,10 +554,10 @@ const sesion = {
           {/* Progreso por dominio */}
           {prog.sesiones > 0 && (
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>PROMEDIO GLOBAL</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>PROMEDIO GLOBAL</div>
               <div style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "20px", textAlign: "center" }}>
-                <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 52, fontWeight: 800, color: prog.global >= 75 ? C.green : prog.global >= 55 ? C.gold : C.red, lineHeight: 1 }}>{prog.global}%</div>
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, marginTop: 6 }}>sobre {prog.sesiones} simulacros completados</div>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 52, fontWeight: 800, color: prog.global >= 75 ? C.green : prog.global >= 55 ? C.gold : C.red, lineHeight: 1 }}>{prog.global}%</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, marginTop: 6 }}>sobre {prog.sesiones} simulacros completados</div>
               </div>
             </div>
           )}
@@ -568,11 +573,11 @@ const sesion = {
             const colores = { 1: C.gold, 2: C.blue, 3: C.purple };
             return (
               <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderLeft: `3px solid ${C.red}` }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.red, letterSpacing: "0.15em", marginBottom: 6 }}>RECOMENDACIÓN</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.red, letterSpacing: "0.15em", marginBottom: 6 }}>RECOMENDACIÓN</div>
                 <div style={{ fontSize: 13, color: C.white, lineHeight: 1.6 }}>
                   Tu dominio más débil es <span style={{ color: colores[debil], fontWeight: 700 }}>D{debil} · {nombres[debil]}</span> con {prog.porDominio[debil]}%.{" "}
                   <button onClick={() => { setFiltroDominio(debil); setVista("simulacro"); setSimulacroPantalla("inicio"); }}
-                    style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontFamily: "monospace", fontSize: 11, textDecoration: "underline" }}>
+                    style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline" }}>
                     Practicar D{debil} ahora →
                   </button>
                 </div>
@@ -589,7 +594,7 @@ const sesion = {
             ].map(([titulo, desc, v, color]) => (
               <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
                 style={{ padding: "20px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", transition: "border-color 0.2s", gridColumn: titulo === "Mi Progreso" ? "1 / -1" : "auto" }}>
-                <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 15, fontWeight: 700, color, marginBottom: 4 }}>{titulo}</div>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 15, fontWeight: 700, color, marginBottom: 4 }}>{titulo}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{desc}</div>
               </button>
             ))}
@@ -599,10 +604,10 @@ const sesion = {
           {prog.ultimo && (
             <div style={{ padding: "14px 18px", background: C.card, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted }}>ÚLTIMO SIMULACRO</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>ÚLTIMO SIMULACRO</div>
                 <div style={{ fontSize: 12, color: C.white, marginTop: 2 }}>{prog.ultimo.total_preguntas} preguntas · {fmtTiempo(prog.ultimo.tiempo_segundos || 0)}</div>
               </div>
-              <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, color: (prog.ultimo.porcentaje || 0) >= 75 ? C.green : (prog.ultimo.porcentaje || 0) >= 55 ? C.gold : C.red }}>
+              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: (prog.ultimo.porcentaje || 0) >= 75 ? C.green : (prog.ultimo.porcentaje || 0) >= 55 ? C.gold : C.red }}>
                 {prog.ultimo.porcentaje}%
               </div>
             </div>
@@ -620,27 +625,27 @@ const sesion = {
     // ── PANTALLA INICIO SIMULACRO ─────────────────────────────────────────
     if (simulacroPantalla === "inicio") {
       return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
           <NavHeader />
           <div style={{ maxWidth: 560, margin: "0 auto", padding: "32px 20px 80px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>SIMULACRO PSP®</div>
-            <h2 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24, lineHeight: 1.1 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>SIMULACRO PSP®</div>
+            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24, lineHeight: 1.1 }}>
               Elige tu sesión de hoy
             </h2>
 
             {cargandoBanco && (
-              <div style={{ padding: "10px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, fontSize: 11, color: C.gold, fontFamily: "monospace", marginBottom: 16 }}>
+              <div style={{ padding: "10px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, fontSize: 11, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 16 }}>
                 ⟳ Cargando banco de preguntas...
               </div>
             )}
 
             {/* Filtro dominio */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>FILTRAR POR DOMINIO</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>FILTRAR POR DOMINIO</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {[[0, "Todos", C.gold], [1, "D1 · Assessment", C.gold], [2, "D2 · Design", C.blue], [3, "D3 · Implementation", C.purple]].map(([d, label, color]) => (
                   <button key={d} onClick={() => setFiltroDominio(d)}
-                    style={{ padding: "6px 14px", background: filtroDominio === d ? `${color}20` : "transparent", border: `1px solid ${filtroDominio === d ? color : C.border}`, color: filtroDominio === d ? color : C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>
+                    style={{ padding: "6px 14px", background: filtroDominio === d ? `${color}20` : "transparent", border: `1px solid ${filtroDominio === d ? color : C.border}`, color: filtroDominio === d ? color : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
                     {label}
                     {!cargandoBanco && <span style={{ marginLeft: 6, opacity: 0.5 }}>({totalPorDominio[d]})</span>}
                   </button>
@@ -650,7 +655,7 @@ const sesion = {
 
             {/* Tip longest answer */}
             <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.2)", borderLeft: "3px solid " + C.gold }}>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.15em", marginBottom: 4 }}>TIP EXAMEN</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.gold, letterSpacing: "0.15em", marginBottom: 4 }}>TIP EXAMEN</div>
               <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>La respuesta más larga no siempre es la correcta. Analiza el concepto, no la extensión de la opción.</div>
             </div>
 
@@ -665,7 +670,7 @@ const sesion = {
                 return (
                   <button key={n} onClick={() => !disabled && iniciarSimulacro(n)} disabled={disabled}
                     style={{ padding: "16px 20px", background: disabled ? "transparent" : principal ? C.gold : C.goldD, border: `1px solid ${disabled ? C.border : principal ? C.gold : C.goldB}`, color: disabled ? C.muted : principal ? C.black : C.gold, textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
-                    <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700 }}>{titulo}</div>
+                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700 }}>{titulo}</div>
                     <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{desc}</div>
                   </button>
                 );
@@ -676,8 +681,8 @@ const sesion = {
                 const disabled = cargandoBanco || disponible < 50;
                 return (
                   <button onClick={() => !disabled && iniciarSimulacro(50, true)} disabled={disabled}
-                    style={{ padding: "16px 20px", background: disabled ? "transparent" : "rgba(168,85,247,0.12)", border: `1px solid ${disabled ? C.border : "rgba(168,85,247,0.4)"}`, color: disabled ? C.muted : "#a855f7", textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
-                    <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700 }}>🎯 Modo Examen Prometric</div>
+                    style={{ padding: "16px 20px", background: disabled ? "transparent" : "rgba(157,122,255,0.12)", border: `1px solid ${disabled ? C.border : "rgba(157,122,255,0.4)"}`, color: disabled ? C.muted : "#9d7aff", textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
+                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700 }}>🎯 Modo Examen Prometric</div>
                     <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>50 preguntas · sin ver respuestas hasta el final · igual al examen real</div>
                   </button>
                 );
@@ -687,13 +692,13 @@ const sesion = {
             {/* Historial reciente */}
             {historialUsuario.length > 0 && (
               <div>
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>SESIONES RECIENTES</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>SESIONES RECIENTES</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {historialUsuario.slice(0, 5).map((h, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 12 }}>
-                      <span style={{ color: C.muted, fontFamily: "monospace", fontSize: 10 }}>{h.created_at?.slice(0, 10)}</span>
+                      <span style={{ color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}>{h.created_at?.slice(0, 10)}</span>
                       <span style={{ color: C.muted }}>{h.total_preguntas}q · {fmtTiempo(h.tiempo_segundos || 0)}</span>
-                      <span style={{ fontFamily: "Syne, Inter, sans-serif", fontWeight: 700, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
+                      <span style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontWeight: 700, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
                         {h.porcentaje}%
                       </span>
                     </div>
@@ -711,13 +716,13 @@ const sesion = {
       const p = preguntas[idx];
       const progreso = Math.round((idx / preguntas.length) * 100);
       return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
           <div style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, padding: "10px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 15, fontWeight: 800, color: C.gold, flexShrink: 0 }}>
+            <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 15, fontWeight: 800, color: C.gold, flexShrink: 0 }}>
               Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 9, color: C.muted, marginBottom: 3 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 3 }}>
                 <span style={{ color: C.white }}>{idx + 1}/{preguntas.length}</span>
                 <span style={{ color: colorDominio(p.dominio) }}>D{p.dominio} · {nombreDominio(p.dominio)}</span>
               </div>
@@ -726,14 +731,14 @@ const sesion = {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-              {rachaActual >= 3 && <span style={{ fontFamily: "monospace", fontSize: 11, color: C.gold }}>{rachaActual} 🔥</span>}
-              <span style={{ fontFamily: "monospace", fontSize: 13, color: C.muted }}>{fmtTiempo(segundos)}</span>
+              {rachaActual >= 3 && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>{rachaActual} 🔥</span>}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: C.muted }}>{fmtTiempo(segundos)}</span>
             </div>
           </div>
 
           <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: colorDominio(p.dominio), letterSpacing: "0.2em", marginBottom: 16 }}>PREGUNTA {idx + 1}</div>
-            <h2 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: "clamp(15px,2.5vw,19px)", fontWeight: 700, lineHeight: 1.45, marginBottom: 28, color: C.white }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(p.dominio), letterSpacing: "0.2em", marginBottom: 16 }}>PREGUNTA {idx + 1}</div>
+            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(15px,2.5vw,19px)", fontWeight: 700, lineHeight: 1.45, marginBottom: 28, color: C.white }}>
               {p.texto}
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -748,7 +753,7 @@ const sesion = {
                 return (
                   <button key={op.key} onClick={() => responder(op.key)} disabled={!!seleccion}
                     style={{ padding: "14px 18px", background: bg, border: `1px solid ${border}`, borderLeft: mostrar && (esCorrecta || esElegida) ? `3px solid ${border}` : `1px solid ${border}`, color, textAlign: "left", cursor: seleccion ? "default" : "pointer", display: "flex", gap: 12, alignItems: "flex-start", transition: "all 0.15s" }}>
-                    <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.6, flexShrink: 0, marginTop: 1 }}>{op.key}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, opacity: 0.6, flexShrink: 0, marginTop: 1 }}>{op.key}</span>
                     <span style={{ fontSize: 13, lineHeight: 1.55 }}>{op.texto}</span>
                   </button>
                 );
@@ -756,20 +761,20 @@ const sesion = {
             </div>
             {mostrarExp && !modoExamen && (
               <div style={{ marginTop: 20, padding: "16px 18px", background: seleccion === p.correcta ? C.greenD : C.redD, border: `1px solid ${seleccion === p.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${seleccion === p.correcta ? C.green : C.red}` }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: seleccion === p.correcta ? C.green : C.red, letterSpacing: "0.1em", marginBottom: 8 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: seleccion === p.correcta ? C.green : C.red, letterSpacing: "0.1em", marginBottom: 8 }}>
                   {seleccion === p.correcta ? "\u2713 CORRECTO" : `\u2717 INCORRECTO \u2014 LA CORRECTA ERA ${p.correcta}`}
                 </div>
-                <p style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
+                <p style={{ fontSize: 13, color: "#b8ccd6", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
               </div>
             )}
             {mostrarExp && modoExamen && (
-              <div style={{ marginTop: 20, padding: "12px 16px", background: C.goldD, border: `1px solid ${C.goldB}`, fontFamily: "monospace", fontSize: 11, color: C.gold }}>
+              <div style={{ marginTop: 20, padding: "12px 16px", background: C.goldD, border: `1px solid ${C.goldB}`, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>
                 Respuesta registrada. Modo examen activo — verás las explicaciones al finalizar.
               </div>
             )}
             {seleccion && (
               <button onClick={siguiente}
-                style={{ marginTop: 20, width: "100%", padding: "14px", background: C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                style={{ marginTop: 20, width: "100%", padding: "14px", background: C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                 {idx + 1 < preguntas.length ? "Siguiente pregunta →" : "Ver resultados →"}
               </button>
             )}
@@ -783,18 +788,18 @@ const sesion = {
       if (modoRevision) {
         const resp = respuestas[idxRevision];
         return (
-          <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+          <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
             <NavHeader />
             <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted }}>REVISIÓN {idxRevision + 1}/{respuestas.length}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>REVISIÓN {idxRevision + 1}/{respuestas.length}</div>
                 <button onClick={() => setModoRevision(false)}
-                  style={{ padding: "6px 14px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>
+                  style={{ padding: "6px 14px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
                   ← Resultado
                 </button>
               </div>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: colorDominio(resp.dominio), letterSpacing: "0.2em", marginBottom: 12 }}>D{resp.dominio}</div>
-              <h3 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1.45, marginBottom: 20 }}>{resp.textoP}</h3>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(resp.dominio), letterSpacing: "0.2em", marginBottom: 12 }}>D{resp.dominio}</div>
+              <h3 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1.45, marginBottom: 20 }}>{resp.textoP}</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                 {resp.opciones.map((op) => {
                   const esCorrecta = op.key === resp.opcionCorrecta;
@@ -804,25 +809,25 @@ const sesion = {
                   else if (esElegida) { bg = C.redD; border = C.red; color = C.red; }
                   return (
                     <div key={op.key} style={{ padding: "12px 16px", background: bg, border: `1px solid ${border}`, color, display: "flex", gap: 10 }}>
-                      <span style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7 }}>{op.key}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, opacity: 0.7 }}>{op.key}</span>
                       <span style={{ fontSize: 13, lineHeight: 1.5 }}>{op.texto}</span>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ padding: "14px 18px", background: resp.correcta ? C.greenD : C.redD, border: `1px solid ${resp.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${resp.correcta ? C.green : C.red}`, fontSize: 13, color: "#d1d5db", lineHeight: 1.7 }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: resp.correcta ? C.green : C.red, marginBottom: 8 }}>
+              <div style={{ padding: "14px 18px", background: resp.correcta ? C.greenD : C.redD, border: `1px solid ${resp.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${resp.correcta ? C.green : C.red}`, fontSize: 13, color: "#b8ccd6", lineHeight: 1.7 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: resp.correcta ? C.green : C.red, marginBottom: 8 }}>
                   {resp.correcta ? "✓ CORRECTO" : `✗ RESPONDISTE ${resp.opcionElegida} — CORRECTA ERA ${resp.opcionCorrecta}`}
                 </div>
                 {resp.explicacion}
               </div>
               <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
                 <button onClick={() => setIdxRevision((i) => Math.max(0, i - 1))} disabled={idxRevision === 0}
-                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === 0 ? C.muted : C.gold, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === 0 ? "not-allowed" : "pointer", opacity: idxRevision === 0 ? 0.4 : 1 }}>
+                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === 0 ? C.muted : C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === 0 ? "not-allowed" : "pointer", opacity: idxRevision === 0 ? 0.4 : 1 }}>
                   ← Anterior
                 </button>
                 <button onClick={() => setIdxRevision((i) => Math.min(respuestas.length - 1, i + 1))} disabled={idxRevision === respuestas.length - 1}
-                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === respuestas.length - 1 ? C.muted : C.gold, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === respuestas.length - 1 ? "not-allowed" : "pointer", opacity: idxRevision === respuestas.length - 1 ? 0.4 : 1 }}>
+                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === respuestas.length - 1 ? C.muted : C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === respuestas.length - 1 ? "not-allowed" : "pointer", opacity: idxRevision === respuestas.length - 1 ? 0.4 : 1 }}>
                   Siguiente →
                 </button>
               </div>
@@ -837,28 +842,28 @@ const sesion = {
         : { color: C.red, label: "REFORZAR", msg: "Revisa la guía teórica de los dominios con menor puntaje." };
 
       return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
           <NavHeader />
           <div style={{ maxWidth: 680, margin: "0 auto", padding: "36px 20px 80px" }}>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.25em", marginBottom: 12 }}>RESULTADO</div>
-              <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: "clamp(56px,12vw,88px)", fontWeight: 800, color: nivel.color, lineHeight: 1 }}>{r.pctTotal}%</div>
-              <div style={{ fontFamily: "monospace", fontSize: 11, color: C.muted, marginBottom: 12 }}>{r.totalCorrectas} correctas de {r.total} · Racha máx: {rachaMax} 🔥</div>
-              <div style={{ display: "inline-block", padding: "5px 18px", background: `${nivel.color}15`, border: `1px solid ${nivel.color}40`, fontFamily: "monospace", fontSize: 10, color: nivel.color, letterSpacing: "0.15em", marginBottom: 10 }}>{nivel.label}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.25em", marginBottom: 12 }}>RESULTADO</div>
+              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(56px,12vw,88px)", fontWeight: 800, color: nivel.color, lineHeight: 1 }}>{r.pctTotal}%</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.muted, marginBottom: 12 }}>{r.totalCorrectas} correctas de {r.total} · Racha máx: {rachaMax} 🔥</div>
+              <div style={{ display: "inline-block", padding: "5px 18px", background: `${nivel.color}15`, border: `1px solid ${nivel.color}40`, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: nivel.color, letterSpacing: "0.15em", marginBottom: 10 }}>{nivel.label}</div>
               <p style={{ fontSize: 13, color: C.muted, maxWidth: 380, margin: "0 auto", lineHeight: 1.65 }}>{nivel.msg}</p>
             </div>
 
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>POR DOMINIO</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>POR DOMINIO</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {r.dominios.filter((d) => d.total > 0).map((d) => (
                   <div key={d.dominio} style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "16px 20px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <div>
-                        <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700 }}>D{d.dominio} — {nombreDominio(d.dominio)}</div>
-                        <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, marginTop: 2 }}>{d.correctas}/{d.total} correctas</div>
+                        <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700 }}>D{d.dominio} — {nombreDominio(d.dominio)}</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, marginTop: 2 }}>{d.correctas}/{d.total} correctas</div>
                       </div>
-                      <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 26, fontWeight: 800, color: colorDominio(d.dominio) }}>{d.pct}%</div>
+                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 26, fontWeight: 800, color: colorDominio(d.dominio) }}>{d.pct}%</div>
                     </div>
                     <div style={{ height: 5, background: C.border }}>
                       <div style={{ height: "100%", width: `${d.pct}%`, background: colorDominio(d.dominio), transition: "width 0.6s" }} />
@@ -866,7 +871,7 @@ const sesion = {
                     {d.pct < 60 && (
                       <div style={{ marginTop: 8, fontSize: 11, color: C.muted }}>
                         → Dominio débil.{" "}
-                        <button onClick={() => { setVista("guia"); }} style={{ background: "none", border: "none", color: colorDominio(d.dominio), cursor: "pointer", fontFamily: "monospace", fontSize: 11, textDecoration: "underline" }}>
+                        <button onClick={() => { setVista("guia"); }} style={{ background: "none", border: "none", color: colorDominio(d.dominio), cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline" }}>
                           Ver guía teórica →
                         </button>
                       </div>
@@ -878,11 +883,11 @@ const sesion = {
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button onClick={() => { setModoRevision(false); setSimulacroPantalla("inicio"); }}
-                style={{ padding: "13px 24px", background: C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ padding: "13px 24px", background: C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 Nuevo simulacro →
               </button>
               <button onClick={() => { setIdxRevision(0); setModoRevision(true); }}
-                style={{ padding: "13px 24px", background: C.blueD, border: `1px solid ${C.blueB}`, color: C.blue, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ padding: "13px 24px", background: C.blueD, border: `1px solid ${C.blueB}`, color: C.blue, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 Revisar respuestas
               </button>
             </div>
@@ -904,47 +909,47 @@ const sesion = {
     if (subtemaSeleccionado) {
       const g = subtemaSeleccionado;
       return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
           <NavHeader />
           <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
             <button onClick={() => setSubtemaSeleccionado(null)}
-              style={{ background: "none", border: "none", color: C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer", marginBottom: 20, letterSpacing: "0.1em" }}>
+              style={{ background: "none", border: "none", color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", marginBottom: 20, letterSpacing: "0.1em" }}>
               ← VOLVER A LA GUÍA
             </button>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: colorDominio(g.dominio), letterSpacing: "0.2em", marginBottom: 8 }}>{g.codigo}</div>
-            <h2 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: "clamp(20px,4vw,30px)", fontWeight: 800, marginBottom: 16, lineHeight: 1.15 }}>{g.titulo}</h2>
-            <p style={{ fontSize: 14, color: "#c9c7c0", lineHeight: 1.75, marginBottom: 28, padding: "14px 18px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>{g.resumen}</p>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: colorDominio(g.dominio), letterSpacing: "0.2em", marginBottom: 8 }}>{g.codigo}</div>
+            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(20px,4vw,30px)", fontWeight: 800, marginBottom: 16, lineHeight: 1.15 }}>{g.titulo}</h2>
+            <p style={{ fontSize: 14, color: "#b8ccd6", lineHeight: 1.75, marginBottom: 28, padding: "14px 18px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>{g.resumen}</p>
 
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 16 }}>CONCEPTOS CLAVE</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 16 }}>CONCEPTOS CLAVE</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {g.conceptos.map((c) => (
                   <div key={c.term} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, borderLeft: `3px solid ${colorDominio(g.dominio)}` }}>
-                    <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 4 }}>{c.term}</div>
-                    <div style={{ fontSize: 13, color: "#a0a0a0", lineHeight: 1.6 }}>{c.def}</div>
+                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 4 }}>{c.term}</div>
+                    <div style={{ fontSize: 13, color: "#8aa3b3", lineHeight: 1.6 }}>{c.def}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>REGLAS QUE DEBES DOMINAR</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>REGLAS QUE DEBES DOMINAR</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {g.reglas.map((r, i) => (
                   <div key={i} style={{ padding: "12px 16px", background: C.card, border: `1px solid ${C.border}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, flexShrink: 0, marginTop: 1 }}>→</span>
-                    <span style={{ fontSize: 13, color: "#c9c7c0", lineHeight: 1.6 }}>{r}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, flexShrink: 0, marginTop: 1 }}>→</span>
+                    <span style={{ fontSize: 13, color: "#b8ccd6", lineHeight: 1.6 }}>{r}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, fontFamily: "monospace" }}>
+            <div style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, fontFamily: "'IBM Plex Mono', monospace" }}>
               REF: {g.referencia}
             </div>
 
             <button onClick={() => { setVista("simulacro"); setFiltroDominio(g.dominio); setSimulacroPantalla("inicio"); }}
-              style={{ marginTop: 24, width: "100%", padding: "13px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              style={{ marginTop: 24, width: "100%", padding: "13px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
               Practicar preguntas del D{g.dominio} →
             </button>
           </div>
@@ -953,11 +958,11 @@ const sesion = {
     }
 
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
         <NavHeader />
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>GUÍA TEÓRICA</div>
-          <h2 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 8 }}>20 Subtemas PSP®</h2>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>GUÍA TEÓRICA</div>
+          <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 8 }}>20 Subtemas PSP®</h2>
           <p style={{ fontSize: 13, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>
             Conceptos clave, reglas y referencias ASIS para cada subtema del examen.
           </p>
@@ -967,8 +972,8 @@ const sesion = {
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
                 <div style={{ width: 3, height: 20, background: colorDominio(d) }} />
                 <div>
-                  <div style={{ fontFamily: "monospace", fontSize: 10, color: colorDominio(d), letterSpacing: "0.2em" }}>DOMINIO {d}</div>
-                  <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700, color: C.white }}>{nombreDominio(d)}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: colorDominio(d), letterSpacing: "0.2em" }}>DOMINIO {d}</div>
+                  <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, color: C.white }}>{nombreDominio(d)}</div>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -976,8 +981,8 @@ const sesion = {
                   <button key={g.codigo} onClick={() => setSubtemaSeleccionado(g)}
                     style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s" }}>
                     <div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: colorDominio(d), letterSpacing: "0.15em", marginBottom: 4 }}>{g.codigo}</div>
-                      <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700 }}>{g.titulo}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(d), letterSpacing: "0.15em", marginBottom: 4 }}>{g.codigo}</div>
+                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700 }}>{g.titulo}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{g.conceptos.length} conceptos · {g.reglas.length} reglas</div>
                     </div>
                     <span style={{ color: C.muted, fontSize: 18 }}>›</span>
@@ -997,11 +1002,11 @@ const sesion = {
   if (vista === "progreso") {
     const prog = calcProgreso();
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
         <NavHeader />
         <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>MI PROGRESO</div>
-          <h2 style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Historial de estudio</h2>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>MI PROGRESO</div>
+          <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Historial de estudio</h2>
 
           {/* Resumen */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
@@ -1011,8 +1016,8 @@ const sesion = {
               [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
             ].map(([n, l]) => (
               <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
-                <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 28, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "monospace" }}>{l}</div>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{l}</div>
               </div>
             ))}
           </div>
@@ -1021,28 +1026,28 @@ const sesion = {
           {historialUsuario.length === 0 ? (
             <div style={{ padding: "32px", textAlign: "center", color: C.muted, border: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 24, marginBottom: 10 }}>📊</div>
-              <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Sin simulacros todavía</div>
+              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Sin simulacros todavía</div>
               <div style={{ fontSize: 12, lineHeight: 1.6 }}>Completa tu primer simulacro para ver tu progreso aquí.</div>
               <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }}
-                style={{ marginTop: 16, padding: "10px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "Syne, Inter, sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ marginTop: 16, padding: "10px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Ir al simulacro →
               </button>
             </div>
           ) : (
             <div>
-              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>TODAS LAS SESIONES</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>TODAS LAS SESIONES</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {historialUsuario.map((h, i) => (
                   <div key={i} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{h.dominio_filtro === 0 ? "1+2+3" : h.dominio_filtro}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{h.dominio_filtro === 0 ? "1+2+3" : h.dominio_filtro}</div>
                       <div style={{ fontSize: 12, color: C.white, marginTop: 3 }}>{h.total_preguntas} preguntas · {fmtTiempo(h.tiempo_segundos || 0)}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 22, fontWeight: 800, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
+                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
                         {h.porcentaje}%
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.muted }}>{h.correctas}/{h.total_preguntas}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.correctas}/{h.total_preguntas}</div>
                     </div>
                   </div>
                 ))}
@@ -1051,14 +1056,14 @@ const sesion = {
               {/* Tendencia visual simple */}
               {historialUsuario.length >= 3 && (
                 <div style={{ marginTop: 24, padding: "16px 18px", background: C.dark, border: `1px solid ${C.border}` }}>
-                  <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TENDENCIA (últimas {Math.min(10, historialUsuario.length)} sesiones)</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TENDENCIA (últimas {Math.min(10, historialUsuario.length)} sesiones)</div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
                     {historialUsuario.slice(0, 10).reverse().map((h, i) => {
                       const pct = h.porcentaje || 0;
                       const color = pct >= 75 ? C.green : pct >= 55 ? C.gold : C.red;
                       return (
                         <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                          <div style={{ fontFamily: "monospace", fontSize: 8, color }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color }}>
                             {pct}
                           </div>
                           <div style={{ width: "100%", background: color, height: `${Math.max(4, pct * 0.48)}px`, opacity: 0.8 }} />
@@ -1066,7 +1071,7 @@ const sesion = {
                       );
                     })}
                   </div>
-                  <div style={{ fontFamily: "monospace", fontSize: 9, color: C.muted, marginTop: 8 }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginTop: 8 }}>
                     {(() => {
                       const recent = historialUsuario.slice(0, 5);
                       const older = historialUsuario.slice(5, 10);
@@ -1109,21 +1114,21 @@ const sesion = {
     ];
 
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "Inter, sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", flexDirection: "column" }}>
         <NavHeader />
         <div style={{ background: C.dark, borderBottom: "1px solid " + C.border, padding: "12px 20px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 8 }}>TUTOR IA — BETA FUNDADORES</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 8 }}>TUTOR IA — BETA FUNDADORES</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[0,1,2,3].map((d) => (
                 <button key={d} onClick={() => setTutorDominio(d)}
-                  style={{ padding: "5px 12px", background: tutorDominio === d ? dominiosColor[d] + "20" : "transparent", border: "1px solid " + (tutorDominio === d ? dominiosColor[d] : C.border), color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "monospace", fontSize: 10, cursor: "pointer" }}>
+                  style={{ padding: "5px 12px", background: tutorDominio === d ? dominiosColor[d] + "20" : "transparent", border: "1px solid " + (tutorDominio === d ? dominiosColor[d] : C.border), color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
                   {d === 0 ? "Todos" : "D" + d}
                 </button>
               ))}
               {tutorMensajes.length > 0 && (
                 <button onClick={() => { setTutorMensajes([]); try { localStorage.removeItem(tutorKey); } catch {} }}
-                  style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
+                  style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
                   Limpiar
                 </button>
               )}
@@ -1135,14 +1140,14 @@ const sesion = {
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             {tutorMensajes.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                <div style={{ fontFamily: "Syne, Inter, sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
                   Practica con preguntas infinitas generadas por IA o consulta cualquier concepto del examen PSP.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {acciones.map((a) => (
                     <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
-                      style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, color: C.gold, fontFamily: "monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
+                      style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
                       {a.label} →
                     </button>
                   ))}
@@ -1152,7 +1157,7 @@ const sesion = {
 
             {tutorMensajes.map((m, i) => (
               <div key={i} style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: m.rol === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
                   {m.rol === "user" ? "TU" : "TUTOR PSP"}
                 </div>
                 <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
@@ -1163,7 +1168,7 @@ const sesion = {
 
             {tutorCargando && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, borderLeft: "3px solid " + C.gold, fontFamily: "monospace", fontSize: 11, color: C.gold }}>
+                <div style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, borderLeft: "3px solid " + C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>
                   Pensando...
                 </div>
               </div>
@@ -1173,7 +1178,7 @@ const sesion = {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
                 {acciones.slice(0,2).map((a) => (
                   <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
-                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.goldB, color: C.gold, fontFamily: "monospace", fontSize: 9, cursor: "pointer" }}>
+                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.goldB, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer" }}>
                     {a.label}
                   </button>
                 ))}
@@ -1191,10 +1196,10 @@ const sesion = {
               onChange={(e) => setTutorInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)}
               placeholder="Escribe tu respuesta o pregunta sobre el PSP..."
-              style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "Inter, sans-serif", fontSize: 13, outline: "none" }}
+              style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, outline: "none" }}
             />
             <button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()}
-              style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "Syne, Inter, sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>
+              style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>
               →
             </button>
           </div>
