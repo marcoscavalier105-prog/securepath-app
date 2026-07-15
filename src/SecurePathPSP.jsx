@@ -282,7 +282,7 @@ export default function SecurePathPSP() {
           : "completo";
       const sesion = {
         usuario_id: session.user.id,
-        dominio_filtro: filtroDominio,
+        dominio_filtro: filtroDominio === 0 ? null : filtroDominio,
         modo,
         total_preguntas: todasRespuestas.length,
         correctas,
@@ -382,7 +382,7 @@ export default function SecurePathPSP() {
     [1, 2, 3].forEach((d) => {
       // Sesiones especificas de ese dominio + sesiones mixtas
       const sesEspecificas = historialUsuario.filter((s) => s.dominio_filtro === d);
-      const sesMixtas = historialUsuario.filter((s) => s.dominio_filtro === 0);
+      const sesMixtas = historialUsuario.filter((s) => s.dominio_filtro === null || s.dominio_filtro === 0);
       const todasSes = [...sesEspecificas, ...sesMixtas].slice(0, 10);
       if (todasSes.length) {
         porDominio[d] = Math.round(todasSes.reduce((a, s) => a + (s.porcentaje || 0), 0) / todasSes.length);
@@ -1040,7 +1040,7 @@ export default function SecurePathPSP() {
                 {historialUsuario.map((h, i) => (
                   <div key={i} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{h.dominio_filtro === 0 ? "1+2+3" : h.dominio_filtro}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{(h.dominio_filtro === 0 || h.dominio_filtro === null) ? "1+2+3" : h.dominio_filtro}</div>
                       <div style={{ fontSize: 12, color: C.white, marginTop: 3 }}>{h.total_preguntas} preguntas · {fmtTiempo(h.tiempo_segundos || 0)}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
