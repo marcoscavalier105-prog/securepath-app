@@ -36,6 +36,10 @@ const dbGet = (table, query, token) =>
   sb(`/rest/v1/${table}?${query}`, { token });
 const dbPost = (table, body, token) =>
   sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
+const dbUpsert = (table, body, token, onConflict) =>
+sb(`/rest/v1/${table}?on_conflict=${onConflict}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
+const dbDelete = (table, query, token) =>
+sb(`/rest/v1/${table}?${query}`, { method: "DELETE", token });
 
 // ─── PALETA ───────────────────────────────────────────────────────────────────
 const C = {
@@ -110,6 +114,8 @@ export default function SecurePathPSP() {
 
   // Progreso del usuario
   const [historialUsuario, setHistorialUsuario] = useState([]);
+const [perfil, setPerfil] = useState(null);
+const [subtemasMap, setSubtemasMap] = useState({});
 
   // Simulacro state
   const [filtroDominio, setFiltroDominio] = useState(0);
@@ -140,21 +146,22 @@ export default function SecurePathPSP() {
   const [tutorModo, setTutorModo] = useState("pregunta"); // "pregunta" | "libre"
   const tutorEndRef = useRef(null);
 
-  // Cargar sesión de localStorage al montar
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
-      if (stored?.access_token) {
-        setSession(stored);
-        cargarBanco(stored.access_token);
-        cargarHistorial(stored.user.id, stored.access_token);
-        // Cargar historial del tutor
-        const tutorK = `sp_tutor_${stored.user.id}`;
-        const tutorStored = localStorage.getItem(tutorK);
-        if (tutorStored) setTutorMensajes(JSON.parse(tutorStored));
-      }
-    } catch {}
-  }, []);
+// Cargar sesión de localStorage al montar (la sesión de auth es lo único que
+// sigue viviendo en el dispositivo; el progreso e historial siempre se leen
+// de Supabase para que sigan al usuario entre dispositivos — ver B1).
+useEffect(() => {
+try {
+const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
+if (stored?.access_token) {
+setSession(stored);
+cargarBanco(stored.access_token);
+cargarHistorial(stored.user.id, stored.access_token);
+cargarPerfil(stored.user.id, stored.access_token);
+cargarSubtemas(stored.access_token);
+cargarTutorHistorial(stored.user.id, stored.access_token);
+}
+} catch {}
+}, []);
 
   // Cronómetro simulacro
   useEffect(() => {
@@ -183,6 +190,9 @@ export default function SecurePathPSP() {
       setSession(data);
       await cargarBanco(data.access_token);
       await cargarHistorial(data.user.id, data.access_token);
+await cargarPerfil(data.user.id, data.access_token);
+await cargarSubtemas(data.access_token);
+await cargarTutorHistorial(data.user.id, data.access_token);
     } catch (err) {
       setAuthError(err.message || "Error de autenticación. Verifica tus credenciales.");
     } finally {
@@ -196,38 +206,53 @@ export default function SecurePathPSP() {
     setSession(null);
     setBanco([]);
     setHistorialUsuario([]);
+setPerfil(null);
+setSubtemasMap({});
+setTutorMensajes([]);
   };
 
-  // ── TUTOR IA ──────────────────────────────────────────────────────────────
-  const handleEnviarTutor = async (texto) => {
-    if (!texto.trim() || tutorCargando) return;
-    const tutorKey = "sp_tutor_" + (session?.user?.id || "guest");
-    const nuevos = [...tutorMensajes, { rol: "user", texto }];
-    setTutorMensajes(nuevos);
-    setTutorInput("");
-    setTutorCargando(true);
-    const systemPrompt = "Eres un tutor experto en la certificacion PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en espanol." +
-      " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas fisicas y electronicas), D3 Implementation (gestion, auditoria, cumplimiento)." +
-      " Cuando el usuario pida una pregunta: genera una pregunta de opcion multiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por que las otras son incorrectas." +
-      " Cuando el usuario haga una pregunta libre, responde con ejemplos practicos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en espanol.";
-    try {
-      const historial = nuevos.map((m) => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto }));
-      const res = await fetch("/.netlify/functions/tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: historial, dominio: tutorDominio }),
-      });
-      const data = await res.json();
-      const respuesta = data.text || "Error al obtener respuesta.";
-      const finales = [...nuevos, { rol: "tutor", texto: respuesta }];
-      setTutorMensajes(finales);
-      try { localStorage.setItem(tutorKey, JSON.stringify(finales)); } catch {}
-    } catch {
-      setTutorMensajes([...nuevos, { rol: "tutor", texto: "Error de conexion. Intenta nuevamente." }]);
-    } finally {
-      setTutorCargando(false);
-    }
-  };
+// ── TUTOR IA ──────────────────────────────────────────────────────────────
+// B1: el historial del tutor se persiste en Supabase (tabla tutor_historial,
+// ligada a auth.uid()) en vez de localStorage, para que siga al usuario
+// entre dispositivos.
+const guardarMensajeTutor = async (rolInterno, texto) => {
+if (!session) return;
+try {
+await dbPost("tutor_historial", {
+usuario_id: session.user.id,
+rol: rolInterno === "user" ? "user" : "assistant",
+mensaje: texto,
+}, session.access_token);
+} catch (err) {
+console.error("Error guardando mensaje del tutor:", err);
+}
+};
+
+const handleEnviarTutor = async (texto) => {
+if (!texto.trim() || tutorCargando) return;
+const nuevos = [...tutorMensajes, { rol: "user", texto }];
+setTutorMensajes(nuevos);
+setTutorInput("");
+setTutorCargando(true);
+guardarMensajeTutor("user", texto);
+try {
+const historial = nuevos.map((m) => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto }));
+const res = await fetch("/.netlify/functions/tutor", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ messages: historial, dominio: tutorDominio }),
+});
+const data = await res.json();
+const respuesta = data.text || "Error al obtener respuesta.";
+const finales = [...nuevos, { rol: "tutor", texto: respuesta }];
+setTutorMensajes(finales);
+guardarMensajeTutor("assistant", respuesta);
+} catch {
+setTutorMensajes([...nuevos, { rol: "tutor", texto: "Error de conexion. Intenta nuevamente." }]);
+} finally {
+setTutorCargando(false);
+}
+};
 
   // ── BANCO SUPABASE ────────────────────────────────────────────────────────
   const cargarBanco = async (token) => {
@@ -253,7 +278,63 @@ export default function SecurePathPSP() {
     }
   };
 
-  // ── HISTORIAL SUPABASE ────────────────────────────────────────────────────
+  // ── PERFIL / SUBTEMAS / TUTOR (persistencia B1) ────────────────────────────
+    const cargarPerfil = async (userId, token) => {
+        try {
+              const data = await dbGet("usuarios", `select=nombre,email&id=eq.${userId}`, token);
+                    setPerfil((data && data[0]) || null);
+                        } catch (err) {
+                              console.error("Error cargando perfil:", err);
+                                  }
+                                    };
+                                    
+                                      const cargarSubtemas = async (token) => {
+                                          try {
+                                                const data = await dbGet("subtemas", "select=id,codigo", token);
+                                                      const map = {};
+                                                            (data || []).forEach((s) => {
+                                                                    map[s.codigo] = s.id;
+                                                                          });
+                                                                                setSubtemasMap(map);
+                                                                                    } catch (err) {
+                                                                                          console.error("Error cargando subtemas:", err);
+                                                                                              }
+                                                                                                };
+                                                                                                
+                                                                                                  const cargarTutorHistorial = async (userId, token) => {
+                                                                                                      try {
+                                                                                                            const data = await dbGet(
+                                                                                                                    "tutor_historial",
+                                                                                                                            `select=rol,mensaje&usuario_id=eq.${userId}&order=created_at.asc`,
+                                                                                                                                    token
+                                                                                                                                          );
+                                                                                                                                                setTutorMensajes(
+                                                                                                                                                        (data || []).map((m) => ({ rol: m.rol === "user" ? "user" : "tutor", texto: m.mensaje }))
+                                                                                                                                                              );
+                                                                                                                                                                  } catch (err) {
+                                                                                                                                                                        console.error("Error cargando historial del tutor:", err);
+                                                                                                                                                                            }
+                                                                                                                                                                              };
+                                                                                                                                                                              
+                                                                                                                                                                                const marcarSubtemaVisto = async (codigo) => {
+                                                                                                                                                                                    if (!session) return;
+                                                                                                                                                                                        const subtemaId = subtemasMap[codigo];
+                                                                                                                                                                                            if (!subtemaId) return;
+                                                                                                                                                                                                try {
+                                                                                                                                                                                                      await dbUpsert(
+                                                                                                                                                                                                              "progreso_subtema",
+                                                                                                                                                                                                                      { usuario_id: session.user.id, subtema_id: subtemaId, ultima_sesion: new Date().toISOString() },
+                                                                                                                                                                                                                              session.access_token,
+                                                                                                                                                                                                                                      "usuario_id,subtema_id"
+                                                                                                                                                                                                                                            );
+                                                                                                                                                                                                                                                } catch (err) {
+                                                                                                                                                                                                                                                      console.error("Error marcando subtema visto:", err);
+                                                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                                                            };
+                                                                                                                                                                                                                                                            
+const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) return; try { await dbDelete("tutor_historial", `usuario_id=eq.${session.user.id}`, session.access_token); } catch (err) { console.error("Error limpiando historial del tutor:", err); } };
+
+// ── HISTORIAL SUPABASE ──────────────────────────────────────────────────────
   const cargarHistorial = async (userId, token) => {
     try {
       const data = await dbGet(
@@ -490,7 +571,8 @@ export default function SecurePathPSP() {
   if (vista === "dashboard") {
     const prog = calcProgreso();
     const email = session.user?.email || "";
-    const msgIdx = new Date().getDay();
+    const nombreMostrado = perfil?.nombre || (session.user?.email || "").split("@")[0];
+        const msgIdx = new Date().getDay();
     const diasEstudio = new Set(historialUsuario.map((s) => s.created_at?.slice(0, 10))).size;
 
     return (
@@ -501,7 +583,7 @@ export default function SecurePathPSP() {
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 8 }}>BIENVENIDO</div>
             <h1 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, marginBottom: 10, lineHeight: 1.15 }}>
-              {email.split("@")[0]}
+              {nombreMostrado}
             </h1>
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 500, padding: "12px 16px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>
               {MENSAJES_DIA[msgIdx]}
@@ -978,7 +1060,7 @@ export default function SecurePathPSP() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {GUIA.filter((g) => g.dominio === d).map((g) => (
-                  <button key={g.codigo} onClick={() => setSubtemaSeleccionado(g)}
+                  <button key={g.codigo} onClick={() => { setSubtemaSeleccionado(g); marcarSubtemaVisto(g.codigo); }}
                     style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s" }}>
                     <div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(d), letterSpacing: "0.15em", marginBottom: 4 }}>{g.codigo}</div>
@@ -1095,7 +1177,6 @@ export default function SecurePathPSP() {
   // VISTA: TUTOR IA
   // ─────────────────────────────────────────────────────────────────────────
   if (vista === "tutor") {
-    const tutorKey = `sp_tutor_${session?.user?.id || "guest"}`;
     const dominiosColor = { 0: C.gold, 1: C.gold, 2: C.blue, 3: C.purple };
 
     const systemPrompt = "Eres un tutor experto en la certificación PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en español." +
@@ -1127,7 +1208,7 @@ export default function SecurePathPSP() {
                 </button>
               ))}
               {tutorMensajes.length > 0 && (
-                <button onClick={() => { setTutorMensajes([]); try { localStorage.removeItem(tutorKey); } catch {} }}
+                <button onClick={() => { limpiarHistorialTutor() }}
                   style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
                   Limpiar
                 </button>
@@ -1135,6 +1216,7 @@ export default function SecurePathPSP() {
             </div>
           </div>
         </div>
+<div style={{ borderTop: "1px solid " + C.border, padding: "12px 20px", background: C.dark }}><div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}><input value={tutorInput} onChange={(e) => setTutorInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)} placeholder="Escribe tu respuesta o pregunta sobre el PSP..." style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, outline: "none" }} /><button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()} style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>→</button></div></div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -1189,21 +1271,6 @@ export default function SecurePathPSP() {
           </div>
         </div>
 
-        <div style={{ borderTop: "1px solid " + C.border, padding: "12px 20px", background: C.dark }}>
-          <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}>
-            <input
-              value={tutorInput}
-              onChange={(e) => setTutorInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)}
-              placeholder="Escribe tu respuesta o pregunta sobre el PSP..."
-              style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, outline: "none" }}
-            />
-            <button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()}
-              style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>
-              →
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
