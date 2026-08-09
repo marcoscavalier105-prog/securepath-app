@@ -132,6 +132,8 @@ const [subtemasMap, setSubtemasMap] = useState({});
   const [idxRevision, setIdxRevision] = useState(0);
   const [simulacroPantalla, setSimulacroPantalla] = useState("inicio"); // "inicio" | "simulacro" | "resultado"
   const [modoExamen, setModoExamen] = useState(false); // true = sin ver respuestas hasta el final
+    const [modoLeccion, setModoLeccion] = useState(null);
+      const [progresoSubtemaMap, setProgresoSubtemaMap] = useState({});
   const tiemposPorPregunta = useRef([]);
   const tiempoInicioP = useRef(Date.now());
 
@@ -158,6 +160,7 @@ cargarBanco(stored.access_token);
 cargarHistorial(stored.user.id, stored.access_token);
 cargarPerfil(stored.user.id, stored.access_token);
 cargarSubtemas(stored.access_token);
+cargarProgresoSubtema(stored.user.id, stored.access_token);
 cargarTutorHistorial(stored.user.id, stored.access_token);
 }
 } catch {}
@@ -192,6 +195,7 @@ cargarTutorHistorial(stored.user.id, stored.access_token);
       await cargarHistorial(data.user.id, data.access_token);
 await cargarPerfil(data.user.id, data.access_token);
 await cargarSubtemas(data.access_token);
+await cargarProgresoSubtema(data.user.id, data.access_token);
 await cargarTutorHistorial(data.user.id, data.access_token);
     } catch (err) {
       setAuthError(err.message || "Error de autenticación. Verifica tus credenciales.");
@@ -260,11 +264,11 @@ setTutorCargando(false);
     try {
       const data = await dbGet(
         "preguntas",
-        "select=id,dominio_id,texto,opciones,correcta,explicacion&activa=eq.true&order=dominio_id",
+        "select=id,dominio_id,subtema_id,texto,opciones,correcta,explicacion&activa=eq.true&order=dominio_id",
         token
       );
       const norm = data.map((p) => ({
-        id: p.id, dominio: p.dominio_id, texto: p.texto,
+        id: p.id, dominio: p.dominio_id, subtemaId: p.subtema_id, texto: p.texto,
         opciones: p.opciones, correcta: p.correcta, explicacion: p.explicacion,
       }));
       setBanco(norm);
@@ -277,6 +281,21 @@ setTutorCargando(false);
       setCargandoBanco(false);
     }
   };
+
+    const cargarProgresoSubtema = async (userId, token) => {
+        try {
+              const data = await dbGet(
+                      "progreso_subtema",
+                              "select=subtema_id,preguntas_vistas,correctas_total,pct_dominio&usuario_id=eq." + userId,
+                                      token
+                                            );
+                                                  const map = {};
+                                                        (data || []).forEach((p) => { map[p.subtema_id] = p; });
+                                                              setProgresoSubtemaMap(map);
+                                                                  } catch (err) {
+                                                                        console.error("Error cargando progreso de subtemas:", err);
+                                                                            }
+                                                                              };
 
   // ── PERFIL / SUBTEMAS / TUTOR (persistencia B1) ────────────────────────────
     const cargarPerfil = async (userId, token) => {
@@ -382,6 +401,32 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
     }
   };
 
+  const completarLeccion = async (codigo, todasRespuestas) => {
+  if (!session) return;
+  const subtemaId = subtemasMap[codigo];
+  if (!subtemaId) return;
+  try {
+  const correctas = todasRespuestas.filter((r) => r.correcta).length;
+  const pct = Math.round((correctas / todasRespuestas.length) * 100);
+  await dbUpsert(
+  "progreso_subtema",
+  {
+  usuario_id: session.user.id,
+  subtema_id: subtemaId,
+  preguntas_vistas: todasRespuestas.length,
+  correctas_total: correctas,
+  pct_dominio: pct,
+  ultima_sesion: new Date().toISOString(),
+  },
+  session.access_token,
+  "usuario_id,subtema_id"
+  );
+  await cargarProgresoSubtema(session.user.id, session.access_token);
+  } catch (err) {
+  console.error("Error guardando progreso de la leccion:", err);
+  }
+  };
+
   // ── SIMULACRO LOGIC ───────────────────────────────────────────────────────
   const iniciarSimulacro = (cantidad, examen = false) => {
     const pool = filtroDominio === 0 ? banco : banco.filter((p) => p.dominio === filtroDominio);
@@ -391,10 +436,27 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
     setRespuestas([]); setSegundos(0); setPausado(false);
     setRachaActual(0); setRachaMax(0);
     setModoExamen(examen);
-    tiemposPorPregunta.current = [];
+    setModoLeccion(null);
+tiemposPorPregunta.current = [];
     tiempoInicioP.current = Date.now();
     setSimulacroPantalla("simulacro");
   };
+
+    const iniciarLeccionQuiz = (g) => {
+        const subtemaId = subtemasMap[g.codigo];
+            const poolLeccion = banco.filter((p) => p.subtemaId === subtemaId);
+                const mezcladasLeccion = mezclarConOpciones(poolLeccion).slice(0, Math.min(8, poolLeccion.length));
+                    setPreguntas(mezcladasLeccion);
+                        setIdx(0); setSeleccion(null); setMostrarExp(false);
+                            setRespuestas([]); setSegundos(0); setPausado(false);
+                                setRachaActual(0); setRachaMax(0);
+                                    setModoExamen(false);
+                                        setModoLeccion(g.codigo);
+                                            tiemposPorPregunta.current = [];
+                                                tiempoInicioP.current = Date.now();
+                                                    setVista("simulacro");
+                                                        setSimulacroPantalla("simulacro");
+                                                          };
 
   const responder = (key) => {
     if (seleccion) return;
@@ -421,7 +483,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
     if (idx + 1 < preguntas.length) {
       setIdx((i) => i + 1); setSeleccion(null); setMostrarExp(false);
     } else {
-      guardarSesion(todasRespuestas);
+if (modoLeccion) { completarLeccion(modoLeccion, todasRespuestas); } else { guardarSesion(todasRespuestas); }
       setSimulacroPantalla("resultado");
     }
   };
@@ -439,6 +501,23 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
       : 0;
     return { dominios, totalCorrectas, total: respuestas.length, pctTotal, tiempoPromedio };
   };
+
+    const LECCION_APROBACION = 70;
+      const estadoLeccion = (g) => {
+          const subtemaId = subtemasMap[g.codigo];
+              const prog = subtemaId ? progresoSubtemaMap[subtemaId] : null;
+                  if (prog && prog.pct_dominio >= LECCION_APROBACION) return "completado";
+                      const idxG = GUIA.findIndex((x) => x.codigo === g.codigo);
+                          if (idxG === 0) return "disponible";
+                              const anterior = GUIA[idxG - 1];
+                                  const anteriorId = subtemasMap[anterior.codigo];
+                                      const progAnterior = anteriorId ? progresoSubtemaMap[anteriorId] : null;
+                                          return progAnterior && progAnterior.pct_dominio >= LECCION_APROBACION ? "disponible" : "bloqueado";
+                                            };
+                                              const progresoCurso = () => {
+                                                  const completados = GUIA.filter((g) => estadoLeccion(g) === "completado").length;
+                                                      return { completados, total: GUIA.length, pct: Math.round((completados / GUIA.length) * 100) };
+                                                        };
 
   // ── PROGRESO CALCULADO ────────────────────────────────────────────────────
   const calcProgreso = () => {
@@ -551,7 +630,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
         Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
       </button>
       <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["guia", "Guía"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
+        {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["guia", "Curso"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
           <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
             style={{ padding: "6px 12px", background: vista === v ? C.goldD : "none", border: `1px solid ${vista === v ? C.goldB : "transparent"}`, color: vista === v ? C.gold : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", letterSpacing: "0.08em" }}>
             {l}
@@ -671,7 +750,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
             {[
               ["Simulacro", "Practica con preguntas del banco real", "simulacro", C.gold],
-              ["Guía Teórica", "Repasa los 20 subtemas del PSP", "guia", C.blue],
+              ["Curso", progresoCurso().completados + "/" + progresoCurso().total + " lecciones completadas", "guia", C.blue],
               ["Mi Progreso", "Historial y tendencias de estudio", "progreso", C.purple],
             ].map(([titulo, desc, v, color]) => (
               <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
@@ -1029,6 +1108,10 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
             <div style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, fontFamily: "'IBM Plex Mono', monospace" }}>
               REF: {g.referencia}
             </div>
+            <button onClick={() => { iniciarLeccionQuiz(g); }} disabled={estadoLeccion(g) === "bloqueado"}
+            style={{ marginTop: 12, width: "100%", padding: "13px", background: estadoLeccion(g) === "bloqueado" ? C.border : C.green, color: estadoLeccion(g) === "bloqueado" ? C.muted : C.black, border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: estadoLeccion(g) === "bloqueado" ? "not-allowed" : "pointer" }}>
+            {estadoLeccion(g) === "completado" ? "Repasar quiz de la leccion" : estadoLeccion(g) === "bloqueado" ? "Bloqueado - completa la leccion anterior" : "Iniciar quiz de la leccion"}
+            </button>
 
             <button onClick={() => { setVista("simulacro"); setFiltroDominio(g.dominio); setSimulacroPantalla("inicio"); }}
               style={{ marginTop: 24, width: "100%", padding: "13px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -1048,6 +1131,15 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
           <p style={{ fontSize: 13, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>
             Conceptos clave, reglas y referencias ASIS para cada subtema del examen.
           </p>
+          <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "16px 18px", marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>Progreso del curso</div>
+          <div style={{ fontSize: 13, color: C.muted }}>{progresoCurso().completados + "/" + progresoCurso().total + " lecciones"}</div>
+          </div>
+          <div style={{ width: "100%", height: 8, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ width: progresoCurso().pct + "%", height: "100%", background: C.green, borderRadius: 4 }}></div>
+          </div>
+          </div>
 
           {[1, 2, 3].map((d) => (
             <div key={d} style={{ marginBottom: 28 }}>
@@ -1060,7 +1152,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {GUIA.filter((g) => g.dominio === d).map((g) => (
-                  <button key={g.codigo} onClick={() => { setSubtemaSeleccionado(g); marcarSubtemaVisto(g.codigo); }}
+                  <button key={g.codigo} onClick={() => { if (estadoLeccion(g) === "bloqueado") return; setSubtemaSeleccionado(g); marcarSubtemaVisto(g.codigo); }}
                     style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s" }}>
                     <div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(d), letterSpacing: "0.15em", marginBottom: 4 }}>{g.codigo}</div>
