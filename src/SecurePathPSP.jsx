@@ -361,6 +361,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
           : todasRespuestas.length <= 25
           ? "medio"
           : "completo";
+      const resultadoDominios = [1, 2, 3].map((d) => { const deD = todasRespuestas.filter((r) => r.dominio === d); const correctasD = deD.filter((r) => r.correcta).length; return { dominio: d, total: deD.length, correctas: correctasD, pct: deD.length ? Math.round((correctasD / deD.length) * 100) : null }; }).filter((d) => d.total > 0);
       const sesion = {
         usuario_id: session.user.id,
         dominio_filtro: filtroDominio === 0 ? null : filtroDominio,
@@ -370,6 +371,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
         porcentaje: pct,
         tiempo_segundos: segundos,
         completada: true,
+        resultado_dominios: resultadoDominios,
       };
       await dbPost("sesiones_simulacro", sesion, session.access_token);
       await cargarHistorial(session.user.id, session.access_token);
@@ -464,10 +466,8 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
       // Sesiones especificas de ese dominio + sesiones mixtas
       const sesEspecificas = historialUsuario.filter((s) => s.dominio_filtro === d);
       const sesMixtas = historialUsuario.filter((s) => s.dominio_filtro === null || s.dominio_filtro === 0);
-      const todasSes = [...sesEspecificas, ...sesMixtas].slice(0, 10);
-      if (todasSes.length) {
-        porDominio[d] = Math.round(todasSes.reduce((a, s) => a + (s.porcentaje || 0), 0) / todasSes.length);
-      }
+      const valores = [...sesEspecificas.map((s) => s.porcentaje || 0), ...sesMixtas.map((s) => { const rd = Array.isArray(s.resultado_dominios) ? s.resultado_dominios.find((x) => x.dominio === d) : null; return rd && rd.total > 0 ? rd.pct : (s.porcentaje || 0); })].slice(0, 10);
+              porDominio[d] = valores.length ? Math.round(valores.reduce((a, b) => a + b, 0) / valores.length) : null;
     });
     return { global, sesiones, mejor, ultimo, racha, porDominio };
   };
