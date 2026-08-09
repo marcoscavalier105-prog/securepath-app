@@ -585,13 +585,13 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
             <h1 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, marginBottom: 10, lineHeight: 1.15 }}>
               {nombreMostrado}
             </h1>
-            <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 500, padding: "12px 16px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>
+            <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, maxWidth: 500, padding: "12px 16px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>
               {MENSAJES_DIA[msgIdx]}
             </p>
           </div>
 
           {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
             {[
               [cargandoBanco ? "..." : totalPorDominio[0], "Preguntas"],
               [prog.sesiones, "Simulacros"],
@@ -656,7 +656,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
             return (
               <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderLeft: `3px solid ${C.red}` }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.red, letterSpacing: "0.15em", marginBottom: 6 }}>RECOMENDACIÓN</div>
-                <div style={{ fontSize: 13, color: C.white, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 15, color: C.white, lineHeight: 1.6 }}>
                   Tu dominio más débil es <span style={{ color: colores[debil], fontWeight: 700 }}>D{debil} · {nombres[debil]}</span> con {prog.porDominio[debil]}%.{" "}
                   <button onClick={() => { setFiltroDominio(debil); setVista("simulacro"); setSimulacroPantalla("inicio"); }}
                     style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline" }}>
@@ -836,7 +836,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
                   <button key={op.key} onClick={() => responder(op.key)} disabled={!!seleccion}
                     style={{ padding: "14px 18px", background: bg, border: `1px solid ${border}`, borderLeft: mostrar && (esCorrecta || esElegida) ? `3px solid ${border}` : `1px solid ${border}`, color, textAlign: "left", cursor: seleccion ? "default" : "pointer", display: "flex", gap: 12, alignItems: "flex-start", transition: "all 0.15s" }}>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, opacity: 0.6, flexShrink: 0, marginTop: 1 }}>{op.key}</span>
-                    <span style={{ fontSize: 13, lineHeight: 1.55 }}>{op.texto}</span>
+                    <span style={{ fontSize: 15, lineHeight: 1.55 }}>{op.texto}</span>
                   </button>
                 );
               })}
@@ -846,7 +846,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: seleccion === p.correcta ? C.green : C.red, letterSpacing: "0.1em", marginBottom: 8 }}>
                   {seleccion === p.correcta ? "\u2713 CORRECTO" : `\u2717 INCORRECTO \u2014 LA CORRECTA ERA ${p.correcta}`}
                 </div>
-                <p style={{ fontSize: 13, color: "#b8ccd6", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
+                <p style={{ fontSize: 15, color: "#b8ccd6", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
               </div>
             )}
             {mostrarExp && modoExamen && (
@@ -1091,7 +1091,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
           <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Historial de estudio</h2>
 
           {/* Resumen */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
             {[
               [prog.sesiones, "Simulacros"],
               [prog.global ? `${prog.global}%` : "--", "Promedio"],
@@ -1223,7 +1223,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
             {tutorMensajes.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
                 <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
-                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
+                <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
                   Practica con preguntas infinitas generadas por IA o consulta cualquier concepto del examen PSP.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -1242,7 +1242,7 @@ const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) 
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
                   {m.rol === "user" ? "TU" : "TUTOR PSP"}
                 </div>
-                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
                   {m.texto}
                 </div>
               </div>
