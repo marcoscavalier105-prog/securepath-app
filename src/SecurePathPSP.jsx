@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.1"; 
+const APP_VERSION = "5.2"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -193,8 +193,6 @@ export default function SecurePathPSP() {
     } catch {}
   }, []);
 
-  // NOTA: Se eliminó el useEffect dependiente de [vista] para evitar bucles de recarga y condiciones de carrera (Race Condition).
-
   useEffect(() => {
     try { localStorage.setItem("sp_tutor_history", JSON.stringify(Array.isArray(mensajesTutor) ? mensajesTutor : [])); } catch {}
   }, [mensajesTutor]);
@@ -225,28 +223,27 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
+  // FUNCIÓN DE CARGA BLINDADA Y PROTEGIDA CONTRA SOBREESCRITURA VACÍA
   const cargarDatos = async (userId, token) => {
     try {
-      // 1. Cargar el banco de preguntas primero
       const bancoRes = await dbGet("preguntas", "select=*", token);
       if (Array.isArray(bancoRes)) setBanco(bancoRes);
 
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
 
-      // 2. Cargar historial de Supabase
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
       
       if (Array.isArray(histRes)) {
         const map = new Map();
         
-        // Priorizar datos locales primero para preservar errores y desgloses detallados
+        // 1. Priorizamos lo local para mantener errores y desgloses de subtareas intactos
         localHist.forEach(item => {
           const key = item.id || item.created_at;
           if (key) map.set(key, item);
         });
 
-        // Combinar con Supabase sin perder información local rica
+        // 2. Integramos Supabase sin borrar detalles locales ricos
         histRes.forEach(item => {
           const key = item.id || item.created_at;
           if (key) {
@@ -255,7 +252,6 @@ export default function SecurePathPSP() {
             } else {
               const existing = map.get(key);
               map.set(key, {
-                ...existing,
                 ...item,
                 detalle_errores: existing.detalle_errores || item.detalle_errores || [],
                 desglose_subtemas: existing.desglose_subtemas || item.desglose_subtemas || {}
@@ -364,7 +360,6 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
-  // CÁLCULO PRECISO DE DOMINIOS CON FALLBACK ROBUSTO PARA MÓVIL/NUBE
   const getPromedioPorDominio = (domNum) => {
     let totalPreg = 0; 
     let totalAcertadas = 0;
@@ -382,13 +377,11 @@ export default function SecurePathPSP() {
     });
 
     if (totalPreg === 0) {
-      // Fallback si el dispositivo móvil no posee el desglose guardado en la nube
       const simsDom = safeHistorial.filter(s => String(s.dominio || "").trim() === String(domNum));
       if (simsDom.length > 0) {
         const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
         return { prom, cant: simsDom.length * 10 };
       }
-      // Si son simulacros generales, usar el promedio general como referencia para que nunca aparezca N/A
       if (totalSims > 0) {
         return { prom: promedioGral, cant: totalSims * 10 };
       }
