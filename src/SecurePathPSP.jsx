@@ -50,97 +50,71 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opciones: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
-const SUBTEMAS_LISTA = [
-  "1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", 
-  "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos", "6. Principios de Diseño de Seguridad Física", 
-  "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", 
-  "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física",
-  "13. Protección de Ejecutivos y Personal", "14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias",
-  "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo",
-  "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"
+// ─── DOMINIOS Y SUBTEMAS ESTRUCTURADOS (ESTILO UDEMY) ──────────────────────────
+const DOMINIOS_CURSO = [
+  {
+    id: 1,
+    nombre: "Dominio 1: Physical Security Assessment",
+    subtemas: [
+      "1. Fundamentos de Gestión de Riesgos",
+      "2. Análisis y Evaluación de Activos",
+      "3. Identificación y Análisis de Amenazas",
+      "4. Análisis de Vulnerabilidades",
+      "5. Metodologías de Cuantificación de Riesgos"
+    ]
+  },
+  {
+    id: 2,
+    nombre: "Dominio 2: Physical Security Design",
+    subtemas: [
+      "6. Principios de Diseño de Seguridad Física",
+      "7. Contramedidas Perimetrales y Barreras",
+      "8. Sistemas de Control de Acceso (PACS)",
+      "9. Sistemas de Detección de Intrusos y Alarmas",
+      "10. Videovigilancia (CCTV) y Analítica",
+      "11. Iluminación y Criterios Visuales",
+      "12. Seguridad de la Información y Ciberseguridad Física",
+      "13. Protección de Ejecutivos y Personal"
+    ]
+  },
+  {
+    id: 3,
+    nombre: "Dominio 3: Physical Security Implementation",
+    subtemas: [
+      "14. Gestión de Crisis y Continuidad de Negocio",
+      "15. Planificación de Respuesta a Emergencias",
+      "16. Investigaciones Corporativas y Entrevistas",
+      "17. Gestión de Contratistas y Proveedores",
+      "18. Auditoría y Cumplimiento Normativo",
+      "19. Arquitectura de Seguridad Integrada",
+      "20. Liderazgo y Gestión de Operaciones de Seguridad"
+    ]
+  }
 ];
 
+const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
+
 const HANDBOOK_TEORIA = {
-  0: {
-    titulo: "1. Fundamentos de Gestión de Riesgos",
-    teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos de una organización mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades. Se rige por los principios fundamentales establecidos en los estándares internacionales de ASIS International, equilibrando costo, operabilidad y nivel de protección."
-  },
-  1: {
-    titulo: "2. Análisis y Evaluación de Activos",
-    teoria: "El primer paso crítico en la gestión de seguridad es la identificación, valoración y catalogación de los activos críticos de la organización (humanos, físicos, información, intangibles). Un activo se valora en función de su criticidad para la continuidad del negocio y el impacto financiero o reputacional en caso de pérdida."
-  },
-  2: {
-    titulo: "3. Identificación y Análisis de Amenazas",
-    teoria: "Las amenazas representan cualquier circunstancia o evento con el potencial de causar daño o pérdida a un activo. El análisis de amenazas evalúa la intención, capacidad y oportunidad de actores hostiles (internos o externos), desastres naturales y fallas tecnológicas."
-  },
-  3: {
-    titulo: "4. Análisis de Vulnerabilidades",
-    teoria: "Una vulnerabilidad es una debilidad en el diseño, operación, seguridad física o procedimientos de una instalación que puede ser explotada por una amenaza. La evaluación de vulnerabilidades determina la susceptibilidad y efectividad de las defensas actuales."
-  },
-  4: {
-    titulo: "5. Metodologías de Cuantificación de Riesgos",
-    teoria: "Las metodologías cuantitativas y cualitativas permiten estimar el nivel de riesgo combinando la probabilidad de ocurrencia y la severidad del impacto. Modelos como RAMCAP y metodologías basadas en matrices de riesgo de ASIS proporcionan marcos formales de decisión."
-  },
-  5: {
-    titulo: "6. Principios de Diseño de Seguridad Física",
-    teoria: "El diseño de seguridad física se basa en el concepto de defensa en profundidad y CPTED (Crime Prevention Through Environmental Design), utilizando control natural de accesos, territorialidad y refuerzo del espacio para disuadir e impedir intrusiones."
-  },
-  6: {
-    titulo: "7. Contramedidas Perimetrales y Barreras",
-    teoria: "Las barreras perimetrales físicas (cercas, muros, bolardos antiram) retardan, detectan y evalúan el acceso no autorizado antes de que alcancen los activos críticos, sirviendo como la primera línea de defensa activa y pasiva."
-  },
-  7: {
-    titulo: "8. Sistemas de Control de Acceso (PACS)",
-    teoria: "Los sistemas de control de acceso regulan el flujo de personas y vehículos hacia áreas restringidas mediante credenciales, autenticación biométrica y arquitectura de lectores lógicos y físicos integrados."
-  },
-  8: {
-    titulo: "9. Sistemas de Detección de Intrusos y Alarmas",
-    teoria: "Los IDS (Intrusion Detection Systems) emplean sensores volumétricos, magnéticos y microondas para detectar accesos no autorizados en zonas protegidas, transmitiendo alertas en tiempo real a la central de monitoreo."
-  },
-  9: {
-    titulo: "10. Videovigilancia (CCTV) y Analítica",
-    teoria: "Los sistemas de circuito cerrado de televisión modernos utilizan cámaras de alta resolución, compresión de video avanzada y analítica inteligente (reconocimiento facial, cruce de líneas, detección de merodeo) para verificación visual y disuasión."
-  },
-  10: {
-    titulo: "11. Iluminación y Criterios Visuales",
-    teoria: "Una iluminación perimetral e interior adecuada es una contramedida disuasoria y de apoyo operativo crucial para la videovigilancia y la identificación positiva de personas en horarios nocturnos o de baja visibilidad."
-  },
-  11: {
-    titulo: "12. Seguridad de la Información y Ciberseguridad Física",
-    teoria: "Protección convergente de los datos corporativos, servidores y redes de control de seguridad física (OT/IT), previniendo sabotajes lógicos y fugas de información confidencial desde las instalaciones."
-  },
-  12: {
-    titulo: "13. Protección de Ejecutivos y Personal",
-    teoria: "Evaluación de riesgos de viaje, caravanas de seguridad, contravigilancia y protocolos de protección para altos ejecutivos o personal expuesto a amenazas directas."
-  },
-  13: {
-    titulo: "14. Gestión de Crisis y Continuidad de Negocio",
-    teoria: "Planes de respuesta ante emergencias mayores, conformación del comité de crisis, gestión de comunicaciones y estrategias de continuidad operativa (ISO 22301) ante interrupciones graves."
-  },
-  14: {
-    titulo: "15. Planificación de Respuesta a Emergencias",
-    teoria: "Protocolos operativos estándar (SOP) para evacuaciones, sismos, incendios, amenazas de bomba y ataques armados active shooter, coordinados con autoridades locales."
-  },
-  15: {
-    titulo: "16. Investigaciones Corporativas y Entrevistas",
-    teoria: "Metodologías de investigación interna para fraudes, robos o conductas indebidas, técnicas de entrevista profesional, recopilación de evidencia y cadena de custodia."
-  },
-  16: {
-    titulo: "17. Gestión de Contratistas y Proveedores",
-    teoria: "Políticas de selección, verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto para personal externo que labora en las instalaciones."
-  },
-  17: {
-    titulo: "18. Auditoría y Cumplimiento Normativo",
-    teoria: "Evaluación independiente de los sistemas de seguridad frente a normativas vigentes, estándares internacionales (ASIS, ISO 9001, ISO 45001) y políticas internas de la organización."
-  },
-  18: {
-    titulo: "19. Arquitectura de Seguridad Integrada",
-    teoria: "Integración de subcategorías tecnológicas y operativas en una plataforma unificada (PSIM) que centraliza alarmas, video, control de acceso y comunicaciones."
-  },
-  19: {
-    titulo: "20. Liderazgo y Gestión de Operaciones de Seguridad",
-    teoria: "Dirección estratégica del departamento de seguridad, gestión presupuestaria, liderazgo de equipos de supervisores y oficiales, y mejora continua de los servicios de protección."
-  }
+  0: { titulo: "1. Fundamentos de Gestión de Riesgos", teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades, equilibrando costo, operabilidad y protección." },
+  1: { titulo: "2. Análisis y Evaluación de Activos", teoria: "Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información). Se valora su criticidad para la continuidad del negocio y el impacto financiero." },
+  2: { titulo: "3. Identificación y Análisis de Amenazas", teoria: "Evaluación de circunstancias o eventos con potencial de causar daño. Analiza la intención, capacidad y oportunidad de actores hostiles, desastres y fallas." },
+  3: { titulo: "4. Análisis de Vulnerabilidades", teoria: "Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
+  4: { titulo: "5. Metodologías de Cuantificación de Riesgos", teoria: "Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto (ej. RAMCAP, matrices de ASIS)." },
+  5: { titulo: "6. Principios de Diseño de Seguridad Física", teoria: "Defensa en profundidad y CPTED (Crime Prevention Through Environmental Design) para disuadir e impedir intrusiones." },
+  6: { titulo: "7. Contramedidas Perimetrales y Barreras", teoria: "Cercas, muros y barreras físicas para retardar, detectar y evaluar accesos no autorizados en la primera línea de defensa." },
+  7: { titulo: "8. Sistemas de Control de Acceso (PACS)", teoria: "Regulación del flujo de personas y vehículos mediante credenciales, biometría y arquitectura de lectores lógicos/físicos." },
+  8: { titulo: "9. Sistemas de Detección de Intrusos y Alarmas", teoria: "Sensores volumétricos, magnéticos y microondas para detectar intrusiones en tiempo real hacia la central de monitoreo." },
+  9: { titulo: "10. Videovigilancia (CCTV) y Analítica", teoria: "Cámaras de alta resolución y analítica inteligente (reconocimiento facial, cruce de líneas) para verificación visual." },
+  10: { titulo: "11. Iluminación y Criterios Visuales", teoria: "Iluminación perimetral e interior para disuasión y soporte operativo de cámaras en horarios nocturnos." },
+  11: { titulo: "12. Seguridad de la Información y Ciberseguridad Física", teoria: "Protección convergente de datos corporativos, servidores y redes OT/IT de seguridad física." },
+  12: { titulo: "13. Protección de Ejecutivos y Personal", teoria: "Evaluación de riesgos de viaje, contravigilancia y protocolos para ejecutivos expuestos." },
+  13: { titulo: "14. Gestión de Crisis y Continuidad de Negocio", teoria: "Planes de respuesta ante emergencias mayores, comité de crisis y continuidad operativa (ISO 22301)." },
+  14: { titulo: "15. Planificación de Respuesta a Emergencias", teoria: "Procedimientos operativos estándar (SOP) para evacuaciones, sismos, incendios y tirador activo." },
+  15: { titulo: "16. Investigaciones Corporativas y Entrevistas", teoria: "Metodologías de investigación interna, entrevistas profesionales y cadena de custodia de evidencia." },
+  16: { titulo: "17. Gestión de Contratistas y Proveedores", teoria: "Verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto." },
+  17: { titulo: "18. Auditoría y Cumplimiento Normativo", teoria: "Evaluación independiente de sistemas frente a normativas internacionales y políticas internas." },
+  18: { titulo: "19. Arquitectura de Seguridad Integrada", teoria: "Unificación de subsistemas (PSIM) que centralizan alarmas, video, control de acceso y comunicaciones." },
+  19: { titulo: "20. Liderazgo y Gestión de Operaciones de Seguridad", teoria: "Dirección estratégica del departamento, gestión presupuestaria y liderazgo de equipos de supervisores." }
 };
 
 export default function SecurePathPSP() {
@@ -164,9 +138,10 @@ export default function SecurePathPSP() {
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
   const [feedbackInmediato, setFeedbackInmediato] = useState(null);
 
-  // Curso states
-  const [subtemaActivo, setSubtemaActivo] = useState(null);
+  // Curso / Udemy / Subtareas states
+  const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
+  const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria"); // "teoria", "video", "quiz"
 
   // Tutor IA states
   const [mensajesTutor, setMensajesTutor] = useState(() => {
@@ -175,7 +150,7 @@ export default function SecurePathPSP() {
       if (saved) return JSON.parse(saved);
     } catch {}
     return [
-      { role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP de ASIS International. Selecciona un dominio abajo o escribe tu consulta libre." }
+      { role: "assistant", content: "Hola Marcos, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }
     ];
   });
   const [inputTutor, setInputTutor] = useState("");
@@ -230,17 +205,17 @@ export default function SecurePathPSP() {
   const cargarBanco = async (token) => {
     try {
       const data = await dbGet("preguntas", "select=*", token);
-      console.log("Banco de preguntas cargado:", data);
+      console.log("Banco cargado correctamente:", data);
       setBanco(data || []);
     } catch (err) {
-      console.error("Error cargando banco:", err);
+      console.error("Error cargando banco de preguntas:", err);
     }
   };
 
   const cargarHistorial = async (userId, token) => {
     try {
       const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      console.log("Historial cargado desde Supabase:", data);
+      console.log("Historial cargado correctamente:", data);
       setHistorialUsuario(data || []);
     } catch (err) {
       console.error("Error cargando historial:", err);
@@ -276,7 +251,7 @@ export default function SecurePathPSP() {
       setSubtemasCompletados(nuevo);
       localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
     }
-    setSubtemaActivo(null);
+    alert("¡Actividad y Quiz completados con éxito! Subtema desbloqueado.");
   };
 
   const enviarTutorConPrompt = async (textoPrompt) => {
@@ -307,7 +282,7 @@ export default function SecurePathPSP() {
     return (
       <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <div style={{ width: "100%", maxWidth: 420, background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-          <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath <span style={{ color: C.white, fontWeight: 400 }}>PSP</span></h2>
+          <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath PSP</h2>
           <p style={{ color: C.muted, marginBottom: 24, fontSize: 14 }}>Plataforma de preparación para la certificación</p>
           <input type="email" placeholder="Correo electrónico" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
           <input type="password" placeholder="Contraseña" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 16, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
@@ -321,7 +296,6 @@ export default function SecurePathPSP() {
   const totalSims = historialUsuario.length;
   const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
-  // Condicional de color para el promedio global según la nota
   let colorPromedio = C.blue;
   if (promedioGral >= 80) colorPromedio = C.green;
   else if (promedioGral >= 60) colorPromedio = C.gold;
@@ -388,7 +362,7 @@ export default function SecurePathPSP() {
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Accede a los 20 subtemas con control de avance.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Accede a los dominios y subtemas estructurados.</div>
               </button>
               <button onClick={() => setVista("tutor")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Tutor IA</div>
@@ -430,7 +404,7 @@ export default function SecurePathPSP() {
                 </div>
 
                 <div style={{ background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico (Todas las disponibles):</h4>
+                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[
                       [1, "Dominio 1: Assessment"], 
@@ -459,9 +433,8 @@ export default function SecurePathPSP() {
                   </div>
                 </div>
 
-                {/* Enunciado de la pregunta con respaldo robusto */}
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>
-                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text || "Pregunta sin texto"}
+                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text || preguntasSimulacro[indiceActual].question || "Pregunta sin texto"}
                 </h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
@@ -526,7 +499,7 @@ export default function SecurePathPSP() {
                             correctas++;
                           } else {
                             erroresDetalle.push({ 
-                              pregunta: p.pregunta || p.enunciado || p.text || "Pregunta", 
+                              pregunta: p.pregunta || p.enunciado || p.text || p.question || "Pregunta", 
                               tu_respuesta: respUsr || "Sin responder", 
                               correcta: respCorr, 
                               explicacion: p.explicacion || p.explanation || "Sin explicación disponible." 
@@ -536,11 +509,10 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0, detalle_errores: erroresDetalle };
                         try {
-                          const resIns = await dbPost("sesiones_simulacro", payload, session.access_token);
-                          console.log("Simulacro guardado exitosamente en Supabase:", resIns);
+                          await dbPost("sesiones_simulacro", payload, session.access_token);
                           await cargarHistorial(session.user.id, session.access_token);
                         } catch (err) {
-                          console.error("Error al guardar simulacro:", err);
+                          console.error("Error guardando sesión:", err);
                         }
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar y Ver Resultado</button>
@@ -571,53 +543,108 @@ export default function SecurePathPSP() {
                   </div>
                 )}
 
-                <button onClick={() => setSimulacroPantalla("inicio")} style={{ padding: "12px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Volver al Menú de Simulacros</button>
+                <button onClick={() => { setResultadoFinal(null); setSimulacroPantalla("inicio"); }} style={{ padding: "12px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Volver al Menú de Simulacros</button>
               </div>
             )}
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA CON EL HANDBOOK COMPLETO */}
+        {/* 3. GUÍA TEÓRICA ESTRUCTURADA (ESTILO UDEMY) */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica Estructurada — Handbook PSP</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona un subtema para acceder a la teoría detallada y completar tu quiz de avance.</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Organizado por dominios oficiales. Selecciona un subtema para iniciar tus actividades de aprendizaje.</p>
                 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-                  {SUBTEMAS_LISTA.map((subtema, idx) => {
-                    const completado = subtemasCompletados.includes(idx);
-                    return (
-                      <div key={idx} onClick={() => setSubtemaActivo(idx)} style={{ background: C.card, padding: 18, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <span style={{ fontWeight: 700, fontSize: 16, color: C.gold }}>{subtema}</span>
-                          <span style={{ fontSize: 12, padding: "2px 8px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
-                            {completado ? "Completado" : "Pendiente"}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 13, color: C.muted }}>Teoría oficial del Handbook, marcos normativos y recursos.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+                  {DOMINIOS_CURSO.map((dom) => (
+                    <div key={dom.id} style={{ background: C.black, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                      <h3 style={{ color: C.gold, fontSize: 18, marginBottom: 16, borderBottom: `1px solid ${C.border}`, paddingBottom: 8 }}>{dom.nombre}</h3>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+                        {dom.subtemas.map((subText) => {
+                          const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
+                          const completado = subtemasCompletados.includes(idxGlobal);
+                          return (
+                            <div key={idxGlobal} onClick={() => { setSubtemaActivo(idxGlobal); setPestanaCursoActiva("teoria"); }}
+                              style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                <span style={{ fontWeight: 700, fontSize: 15, color: C.white }}>{subText}</span>
+                                <span style={{ fontSize: 11, padding: "2px 6px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
+                                  {completado ? "Completado" : "Pendiente"}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 12, color: C.muted }}>Teoría, Video y Quiz de avance</div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16, fontSize: 14 }}>← Volver a la lista de subtemas</button>
-                <h2 style={{ fontSize: 24, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
+                <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16, fontSize: 14 }}>← Volver al índice de dominios</button>
+                <h2 style={{ fontSize: 22, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
                 
-                <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.7, fontSize: 15 }}>
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>{HANDBOOK_TEORIA[subtemaActivo]?.titulo || SUBTEMAS_LISTA[subtemaActivo]}</h3>
-                  <p style={{ marginBottom: 16, whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado en proceso de integración para este módulo."}</p>
-                  
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>Directrices de Aplicación Práctica</h3>
-                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección física deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo real según los lineamientos de ASIS.</p>
+                <div style={{ display: "flex", gap: 10, marginBottom: 20, borderBottom: `1px solid ${C.border}`, paddingBottom: 10 }}>
+                  {[["teoria", "1. Leer Teoría"], ["video", "2. Video Clase (Drive)"], ["quiz", "3. Quiz & Actividad"]].map(([key, label]) => (
+                    <button key={key} onClick={() => setPestanaCursoActiva(key)} style={{ padding: "8px 16px", background: pestanaCursoActiva === key ? C.goldD : C.card, border: `1px solid ${pestanaCursoActiva === key ? C.goldB : C.border}`, color: pestanaCursoActiva === key ? C.gold : C.white, borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
-                <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
-                  Completar Quiz y Desbloquear Subtema
-                </button>
+                {pestanaCursoActiva === "teoria" && (
+                  <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.7, fontSize: 15 }}>
+                    <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>Marco Teórico Oficial (Handbook PSP)</h3>
+                    <p style={{ marginBottom: 16, whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado en proceso de integración para este submódulo."}</p>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button onClick={() => setPestanaCursoActiva("video")} style={{ padding: "10px 20px", background: C.gold, border: "none", color: C.white, borderRadius: 6, cursor: "pointer", fontWeight: "bold" }}>Siguiente: Ver Video →</button>
+                    </div>
+                  </div>
+                )}
+
+                {pestanaCursoActiva === "video" && (
+                  <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, textAlign: "center" }}>
+                    <h3 style={{ color: C.blue, marginBottom: 16, fontSize: 18 }}>Video Clase Explicativa</h3>
+                    <div style={{ background: C.card, padding: 40, borderRadius: 8, marginBottom: 20, color: C.muted, border: `1px dashed ${C.border}` }}>
+                      <p style={{ marginBottom: 12 }}>🎥 Reproductor integrado para el video de Google Drive asociado a este subtema.</p>
+                      <span style={{ fontSize: 13, color: C.gold }}>(El enlace de Google Drive se configurará directamente en este bloque)</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <button onClick={() => setPestanaCursoActiva("teoria")} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>← Regresar a Teoría</button>
+                      <button onClick={() => setPestanaCursoActiva("quiz")} style={{ padding: "10px 20px", background: C.gold, border: "none", color: C.white, borderRadius: 6, cursor: "pointer", fontWeight: "bold" }}>Siguiente: Tomar Quiz →</button>
+                    </div>
+                  </div>
+                )}
+
+                {pestanaCursoActiva === "quiz" && (
+                  <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24 }}>
+                    <h3 style={{ color: C.blue, marginBottom: 16, fontSize: 18 }}>Quiz de Consolidación</h3>
+                    <p style={{ color: C.muted, marginBottom: 20 }}>Demuestra tu comprensión de este subtema para desbloquear tu avance oficial en la plataforma.</p>
+                    
+                    <div style={{ background: C.card, padding: 16, borderRadius: 8, marginBottom: 20, border: `1px solid ${C.border}` }}>
+                      <p style={{ fontWeight: "bold", marginBottom: 12 }}>Pregunta de validación rápida:</p>
+                      <p style={{ marginBottom: 14 }}>¿Cuál es el propósito fundamental de este subtema dentro del marco de la certificación PSP?</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {["A) Incrementar costos operativos innecesarios.", "B) Mitigar riesgos y proteger activos críticos de manera eficiente.", "C) Ignorar las normativas internacionales de seguridad."].map((opt, oIdx) => (
+                          <label key={oIdx} style={{ display: "flex", gap: 10, cursor: "pointer", fontSize: 14 }}>
+                            <input type="radio" name="quiz_opt" defaultChecked={oIdx === 1} /> {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <button onClick={() => setPestanaCursoActiva("video")} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>← Regresar a Video</button>
+                      <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                        Enviar Quiz y Completar Subtema ✓
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -644,7 +671,7 @@ export default function SecurePathPSP() {
 
             <h3 style={{ fontSize: 20, marginBottom: 16 }}>Historial de Simulacros Realizados</h3>
             {historialUsuario.length === 0 ? (
-              <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
+              <p style={{ color: C.muted }}>Aún no tienes simulacros registrados en la base de datos.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {historialUsuario.map((sim, index) => {
