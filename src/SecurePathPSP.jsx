@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "2.4"; // Control de versiones automático para caché móvil
+const APP_VERSION = "2.5"; // Control de versiones automático para caché móvil
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -244,7 +244,6 @@ export default function SecurePathPSP() {
     let filtradas = [...banco];
     if (dominio > 0) filtradas = getPreguntasPorDominio(dominio);
     
-    // Muestra práctica de 25 preguntas si es por dominio específico
     const totalAUsar = dominio > 0 ? Math.min(25, filtradas.length) : Math.min(cantidad, filtradas.length);
     const seleccionadas = mezclarConOpciones(filtradas).slice(0, totalAUsar);
     
@@ -377,8 +376,8 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Preguntas Acertadas</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{totalAciertos} <span style={{fontSize: 16, color: C.muted}}>/ {totalPreguntasRespondidas}</span></div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Realizadas / Acertadas</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.white }}>{totalPreguntasRespondidas} <span style={{fontSize: 24, color: C.green}}>/ {totalAciertos}</span></div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico</div>
@@ -756,7 +755,7 @@ export default function SecurePathPSP() {
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacros #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
