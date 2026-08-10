@@ -34,8 +34,6 @@ const dbPost = (table, body, token) =>
   sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
 // ─── UTILS: BUSCADOR DE COLUMNAS A PRUEBA DE FALLOS ─────────────────────────
-// Esto soluciona el problema de que no salgan las preguntas o los dominios.
-// Busca la llave sin importar mayúsculas/minúsculas.
 const obtenerValorBD = (obj, posiblesLlaves) => {
   if (!obj) return null;
   const objMinusculas = Object.keys(obj).reduce((acc, key) => {
@@ -191,7 +189,7 @@ export default function SecurePathPSP() {
     let filtradas = [...banco];
     if (dominio > 0) {
       filtradas = filtradas.filter(p => {
-        const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio']);
+        const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria']);
         return String(valDom).includes(String(dominio));
       });
     }
@@ -221,7 +219,7 @@ export default function SecurePathPSP() {
       const data = await res.json();
       setMensajesTutor([...nuevos, { role: "assistant", content: data.text }]);
     } catch (err) {
-      setMensajesTutor([...nuevos, { role: "assistant", content: "Error de conexión." }]);
+      setMensajesTutor([...nuevos, { role: "assistant", content: "Error de conexión con la IA." }]);
     }
     setLoadingTutor(false);
   };
@@ -327,7 +325,6 @@ export default function SecurePathPSP() {
                   <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[ [1, "Assessment"], [2, "Design"], [3, "Implementation"] ].map(([d, label]) => {
-                      // Búsqueda a prueba de fallos de la columna dominio
                       const cantDominio = banco.filter(p => String(obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria'])).includes(String(d))).length;
                       return (
                         <button key={d} onClick={() => iniciarSimulacro("dominio", cantDominio || 50, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
@@ -347,7 +344,6 @@ export default function SecurePathPSP() {
                   <span style={{ background: C.black, padding: "4px 10px", borderRadius: 4, fontFamily: "monospace", color: C.gold }}>⏱ {formatearTiempo(segundosTranscurridos)}</span>
                 </div>
 
-                {/* Búsqueda a prueba de fallos para el ENCABEZADO de la pregunta */}
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5, color: C.white }}>
                   {obtenerValorBD(preguntasSimulacro[indiceActual], ['pregunta', 'enunciado', 'text', 'question', 'texto', 'descripcion', 'body']) || "[Error en base de datos: Columna de pregunta no encontrada]"}
                 </h3>
@@ -371,7 +367,7 @@ export default function SecurePathPSP() {
                 {!modoConfig.prometric && feedbackInmediato !== null && (
                   <div style={{ background: feedbackInmediato.esCorrecta ? C.greenD : C.redD, border: `1px solid ${feedbackInmediato.esCorrecta ? C.green : C.red}`, padding: 16, borderRadius: 8, marginBottom: 20 }}>
                     <div style={{ fontWeight: "bold", color: feedbackInmediato.esCorrecta ? C.green : C.red, marginBottom: 6 }}>
-                      {feedbackInmediato.esCorrecta ? "¡Correcto!" : `Incorrecto. La respuesta correcta era: ${feedbackInmediato.correcta}`}
+                      {feedbackInmediato.esCorrecta ? "¡Correcto!" : `Incorrecto. La respuesta correcta era la opción: ${feedbackInmediato.correcta}`}
                     </div>
                     <div style={{ fontSize: 14, color: C.white, lineHeight: 1.4 }}>{feedbackInmediato.explicacion}</div>
                   </div>
@@ -386,7 +382,6 @@ export default function SecurePathPSP() {
                       if (!respUsr) { alert("Selecciona una alternativa antes de verificar."); return; }
                       const p = preguntasSimulacro[indiceActual];
                       
-                      // Búsqueda segura de la respuesta y explicación
                       const respCorr = obtenerValorBD(p, ['respuesta_correcta', 'correcta', 'answer', 'respuesta']);
                       const explicacion = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación disponible en la BD.";
                       
@@ -405,15 +400,27 @@ export default function SecurePathPSP() {
                           const textoPreguntaFinal = obtenerValorBD(p, ['pregunta', 'enunciado', 'text', 'question', 'descripcion']) || "Pregunta sin texto";
                           const expFinal = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación.";
 
-                          if (respUsr === respCorr) correctas++;
-                          else erroresDetalle.push({ pregunta: textoPreguntaFinal, tu_respuesta: respUsr || "Sin responder", correcta: respCorr, explicacion: expFinal });
+                          // Extraemos el texto COMPLETO de las opciones elegidas y correctas para el historial
+                          const opcionesArray = p.opcionesExtraidas || [];
+                          const textoUsr = opcionesArray.find(o => o.key === respUsr)?.texto || "Sin responder";
+                          const textoCorr = opcionesArray.find(o => o.key === respCorr)?.texto || "No especificada";
+
+                          if (respUsr === respCorr) {
+                            correctas++;
+                          } else {
+                            erroresDetalle.push({ 
+                              pregunta: textoPreguntaFinal, 
+                              tu_respuesta: respUsr ? `${respUsr}) ${textoUsr}` : "Sin responder", 
+                              correcta: respCorr ? `${respCorr}) ${textoCorr}` : "No especificada", 
+                              explicacion: expFinal 
+                            });
+                          }
                         });
                         
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
-                        // CARGA EN UI INMEDIATA (Optimistic Update) para que SÍ sume al dashboard al instante
                         const nuevoIntento = {
-                          id: Date.now(), // ID temporal
+                          id: Date.now(), 
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
@@ -424,10 +431,9 @@ export default function SecurePathPSP() {
                         setHistorialUsuario(prev => [nuevoIntento, ...prev]);
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
 
-                        // Intentamos guardar en Supabase (si falla, al menos el usuario ya lo ve en su pantalla actual)
                         try {
                           await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
-                        } catch (err) { console.error("Aviso: No se pudo guardar en Supabase por permisos o columnas, pero se muestra localmente.", err); }
+                        } catch (err) { console.error("Aviso: Fallo guardando en remoto, guardado solo localmente.", err); }
                         
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
@@ -529,18 +535,21 @@ export default function SecurePathPSP() {
                           <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)} style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>{desplegadoSim === index ? "Ocultar errores" : "Ver errores"}</button>
                         </div>
                       </div>
+                      
                       {desplegadoSim === index && (
                         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
                           {sim.detalle_errores && sim.detalle_errores.length > 0 ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                               {sim.detalle_errores.map((err, errIdx) => (
-                                <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13 }}>
-                                  <div style={{ fontWeight: "bold", marginBottom: 4 }}>{err.pregunta}</div>
-                                  <div style={{ color: C.red }}>Tu respuesta: {err.tu_respuesta} | Correcta: {err.correcta}</div>
+                                <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13, borderLeft: `3px solid ${C.red}` }}>
+                                  <div style={{ fontWeight: "bold", marginBottom: 8, color: C.white }}>{err.pregunta}</div>
+                                  <div style={{ color: C.red, marginBottom: 4 }}><strong>Tu respuesta:</strong> {err.tu_respuesta}</div>
+                                  <div style={{ color: C.green, marginBottom: 8 }}><strong>Correcta:</strong> {err.correcta}</div>
+                                  <div style={{ color: C.muted, fontStyle: "italic" }}>{err.explicacion}</div>
                                 </div>
                               ))}
                             </div>
-                          ) : <p style={{ fontSize: 13, color: C.muted }}>Sin errores en este intento.</p>}
+                          ) : <p style={{ fontSize: 13, color: C.green }}>¡Perfecto! No tuviste errores en este simulacro.</p>}
                         </div>
                       )}
                     </div>
@@ -548,6 +557,36 @@ export default function SecurePathPSP() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 5. TUTOR IA */}
+        {vista === "tutor" && (
+          <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
+            <p style={{ color: C.muted, marginBottom: 16, fontSize: 14 }}>Haz clic en un dominio para que el tutor te genere un caso o pregunta de práctica inmediata:</p>
+            
+            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D1</button>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D2</button>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D3</button>
+            </div>
+
+            <div style={{ height: 380, overflowY: "auto", marginBottom: 20, padding: 16, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
+              {mensajesTutor.map((m, i) => (
+                <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
+                  <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>{m.role === "user" ? "Tú" : "Tutor PSP"}</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.content}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <input value={inputTutor} onChange={(e) => setInputTutor(e.target.value)} onKeyDown={(e) => e.key === "Enter" && enviarTutor()} placeholder="Escribe tu consulta o pide un caso práctico..." style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
+              <button onClick={enviarTutor} disabled={loadingTutor} style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                {loadingTutor ? "Pensando..." : "Enviar"}
+              </button>
+            </div>
           </div>
         )}
       </div>
