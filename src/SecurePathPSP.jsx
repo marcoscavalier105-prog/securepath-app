@@ -1,39 +1,26 @@
 import { useState, useEffect } from "react";
 
-// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
+// ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
+const APP_VERSION = "2.4"; // Control de versiones automático para caché móvil
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${(opts.token || SUPABASE_ANON_KEY)}`,
-      "Content-Type": "application/json",
-      Prefer: opts.prefer || "",
-      ...opts.headers,
-    },
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${(opts.token || SUPABASE_ANON_KEY)}`, "Content-Type": "application/json", Prefer: opts.prefer || "", ...opts.headers },
     method: opts.method || "GET",
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.error_description || `HTTP ${res.status}`);
-  }
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || err.error_description || `HTTP ${res.status}`); }
   return res.status === 204 ? null : res.json();
 };
 
-const authSignIn = (email, password) =>
-  sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
-const authSignOut = (token) =>
-  sb("/auth/v1/logout", { method: "POST", token });
+const authSignIn = (email, password) => sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
+const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
+const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token });
+const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
-const dbGet = (table, query, token) =>
-  sb(`/rest/v1/${table}?${query}`, { token });
-const dbPost = (table, body, token) =>
-  sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
-
-// ─── UTILS: BUSCADORES A PRUEBA DE FALLOS ──────────────────────────────────
+// ─── UTILS ──────────────────────────────────────────────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
   if (!obj) return null;
   const keys = Object.keys(obj);
@@ -54,15 +41,12 @@ const getTextoPregunta = (p) => {
   let longest = "";
   for (let key in p) {
     if (typeof p[key] === 'string' && p[key].length > longest.length) {
-      if (!p[key].trim().startsWith('{') && !p[key].trim().startsWith('[')) {
-        longest = p[key];
-      }
+      if (!p[key].trim().startsWith('{') && !p[key].trim().startsWith('[')) longest = p[key];
     }
   }
   return longest || "Pregunta no detectada correctamente en BD.";
 };
 
-// ─── PALETA Y ESTILOS ────────────────────────────────────────────────────────
 const C = {
   black: "#0b1d2a", dark: "#132c3f", card: "#1b3a52",
   border: "rgba(216,232,240,0.12)", gold: "#ff5a1f", goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
@@ -73,28 +57,15 @@ const C = {
 const mezclar = (arr) => Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
 const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   let ops = obtenerValorBD(p, ['opciones', 'options', 'alternativas']);
-  if (ops && !Array.isArray(ops) && typeof ops === "object") {
-    ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
-  }
+  if (ops && !Array.isArray(ops) && typeof ops === "object") ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
   return { ...p, opcionesExtraidas: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
-// ─── DOMINIOS Y SUBTEMAS (20 SUBTAREAS OFICIALES) ───────────────────────────
 const DOMINIOS_CURSO = [
-  {
-    id: 1, nombre: "Dominio 1: Physical Security Assessment",
-    subtemas: ["1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos"]
-  },
-  {
-    id: 2, nombre: "Dominio 2: Physical Security Design",
-    subtemas: ["6. Principios de Diseño de Seguridad Física", "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física", "13. Protección de Ejecutivos y Personal"]
-  },
-  {
-    id: 3, nombre: "Dominio 3: Physical Security Implementation",
-    subtemas: ["14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias", "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo", "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"]
-  }
+  { id: 1, nombre: "Dominio 1: Physical Security Assessment", subtemas: ["1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos"] },
+  { id: 2, nombre: "Dominio 2: Physical Security Design", subtemas: ["6. Principios de Diseño de Seguridad Física", "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física", "13. Protección de Ejecutivos y Personal"] },
+  { id: 3, nombre: "Dominio 3: Physical Security Implementation", subtemas: ["14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias", "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo", "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"] }
 ];
-
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
 const HANDBOOK_TEORIA = {
@@ -146,10 +117,7 @@ export default function SecurePathPSP() {
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [subtemasCompletados, setSubtemasCompletados] = useState(() => {
-    try { 
-      const data = JSON.parse(localStorage.getItem("sp_subtemas")); 
-      return Array.isArray(data) ? data : [];
-    } catch { return []; }
+    try { const data = JSON.parse(localStorage.getItem("sp_subtemas")); return Array.isArray(data) ? data : []; } catch { return []; }
   });
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
 
@@ -157,10 +125,7 @@ export default function SecurePathPSP() {
   const [mensajesTutor, setMensajesTutor] = useState(() => {
     try {
       const saved = localStorage.getItem("sp_tutor_history");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
+      if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) return parsed; }
     } catch (e) {}
     return [{ role: "assistant", content: "Hola Marcos, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }];
   });
@@ -168,6 +133,12 @@ export default function SecurePathPSP() {
   const [loadingTutor, setLoadingTutor] = useState(false);
 
   useEffect(() => {
+    const v = localStorage.getItem("sp_v");
+    if (v !== APP_VERSION) {
+      localStorage.removeItem("sp_session");
+      localStorage.setItem("sp_v", APP_VERSION);
+    }
+    
     try {
       const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
       if (stored?.access_token) {
@@ -216,31 +187,20 @@ export default function SecurePathPSP() {
     } catch (err) { console.error("Error cargando banco:", err); }
   };
 
-  // 🛡️ CARGA BLINDADA DE HISTORIAL (Supabase + Fallback Local)
   const cargarHistorial = async (userId, token) => {
     try {
       let dbData = [];
       try {
         const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
         dbData = Array.isArray(data) ? data : [];
-      } catch (e) {
-        console.error("Fallo obteniendo datos de Supabase", e);
-      }
+      } catch (e) {}
 
       const localData = JSON.parse(localStorage.getItem("sp_historial_fallback") || "[]");
       const merged = [...dbData];
-
-      localData.forEach(ld => {
-        if (!merged.find(md => md.id === ld.id || md.created_at === ld.created_at)) {
-          merged.push(ld);
-        }
-      });
-
+      localData.forEach(ld => { if (!merged.find(md => md.id === ld.id || md.created_at === ld.created_at)) merged.push(ld); });
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setHistorialUsuario(merged);
-    } catch (err) {
-      console.error("Error crítico cargando historial:", err);
-    }
+    } catch (err) { console.error("Error crítico cargando historial:", err); }
   };
 
   const getPreguntasPorDominio = (d) => {
@@ -264,7 +224,6 @@ export default function SecurePathPSP() {
     });
   };
 
-  // Detector inteligente de subtarea en una pregunta
   const obtenerSubtemaDePregunta = (p) => {
     const subVal = obtenerValorBD(p, ['subtema', 'sub_tema', 'subtask', 'tema', 'subdomain']);
     if (subVal) {
@@ -283,16 +242,10 @@ export default function SecurePathPSP() {
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
     let filtradas = [...banco];
-    if (dominio > 0) {
-      filtradas = getPreguntasPorDominio(dominio);
-    }
+    if (dominio > 0) filtradas = getPreguntasPorDominio(dominio);
     
-    if (filtradas.length === 0) {
-      alert(`No se detectó el Dominio ${dominio}. Se usarán preguntas generales.`);
-      filtradas = [...banco];
-    }
-
-    const totalAUsar = Math.min(cantidad, filtradas.length);
+    // Muestra práctica de 25 preguntas si es por dominio específico
+    const totalAUsar = dominio > 0 ? Math.min(25, filtradas.length) : Math.min(cantidad, filtradas.length);
     const seleccionadas = mezclarConOpciones(filtradas).slice(0, totalAUsar);
     
     setModoConfig({ tipo, cantidad: seleccionadas.length, dominio, prometric });
@@ -340,6 +293,9 @@ export default function SecurePathPSP() {
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
+  const totalPreguntasRespondidas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
+  const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
+
   const getPromedioPorDominio = (domNum) => {
     const simsDom = safeHistorial.filter(s => {
       const domStr = String(s.dominio || s.domain || "").toLowerCase();
@@ -355,15 +311,13 @@ export default function SecurePathPSP() {
       }
       return false;
     });
-
     if (simsDom.length === 0) return { prom: 0, cant: 0 };
     const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
     return { prom, cant: simsDom.length };
   };
 
   const getPromedioPorSubtema = (subNombre) => {
-    let totalPreg = 0;
-    let totalAcertadas = 0;
+    let totalPreg = 0; let totalAcertadas = 0;
     safeHistorial.forEach(s => {
       if (s.desglose_subtemas && s.desglose_subtemas[subNombre]) {
         totalPreg += s.desglose_subtemas[subNombre].total;
@@ -413,7 +367,7 @@ export default function SecurePathPSP() {
               <p style={{ color: C.muted, fontSize: 16 }}>Resumen de rendimiento y accesos rápidos para tu preparación.</p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 40 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 40 }}>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Simulacros Realizados</div>
                 <div style={{ fontSize: 36, fontWeight: 800, color: C.gold }}>{totalSims}</div>
@@ -423,8 +377,12 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance de Subtareas</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{avanceSubtemas}</div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Preguntas Acertadas</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{totalAciertos} <span style={{fontSize: 16, color: C.muted}}>/ {totalPreguntasRespondidas}</span></div>
+              </div>
+              <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.blue }}>{avanceSubtemas}</div>
               </div>
             </div>
 
@@ -473,7 +431,7 @@ export default function SecurePathPSP() {
                 </div>
 
                 <div style={{ background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
+                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico (Genera muestra de 25):</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[ [1, "Assessment"], [2, "Design"], [3, "Implementation"] ].map(([d, label]) => {
                       const cantDominio = getPreguntasPorDominio(d).length;
@@ -556,9 +514,7 @@ export default function SecurePathPSP() {
                           const subName = obtenerSubtemaDePregunta(p);
 
                           listaSubtemasPreguntas.push(subName);
-                          if (!desgloseSubtemas[subName]) {
-                            desgloseSubtemas[subName] = { total: 0, correctas: 0 };
-                          }
+                          if (!desgloseSubtemas[subName]) desgloseSubtemas[subName] = { total: 0, correctas: 0 };
                           desgloseSubtemas[subName].total++;
 
                           const opcionesArray = p.opcionesExtraidas || [];
@@ -628,7 +584,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA ESTRUCTURADA (SECUENCIAL Y BLOQUEANTE) */}
+        {/* CURSO */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
@@ -720,7 +676,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 4. PROGRESO E HISTORIAL CON DESGLOSE POR DOMINIO Y SUBTEMA */}
+        {/* PROGRESO */}
         {vista === "progreso" && (
           <div>
             <h2 style={{ fontSize: 26, marginBottom: 8 }}>Desglose de Rendimiento</h2>
@@ -740,7 +696,6 @@ export default function SecurePathPSP() {
               </div>
             </div>
 
-            {/* Promedios por Dominio */}
             <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoPromedios(!desplegadoPromedios)}>
                 <h3 style={{ fontSize: 18, color: C.gold, margin: 0 }}>Ver promedios por Dominio</h3>
@@ -765,7 +720,6 @@ export default function SecurePathPSP() {
               )}
             </div>
 
-            {/* Desplegable por Subtarea */}
             <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoSubtemasProgreso(!desplegadoSubtemasProgreso)}>
                 <h3 style={{ fontSize: 18, color: C.blue, margin: 0 }}>Desglose de Rendimiento por Subtarea (20 Subtemas)</h3>
@@ -802,7 +756,7 @@ export default function SecurePathPSP() {
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacros #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -835,7 +789,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 5. TUTOR IA */}
+        {/* TUTOR IA */}
         {vista === "tutor" && (
           <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
