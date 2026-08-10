@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "4.6"; 
+const APP_VERSION = "4.7"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -325,8 +325,13 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
+  // ACTUALIZACIÓN CLAVE: Ahora los simulacros generales (dominio 0 o "General") 
+  // también alimentan los promedios de cada dominio para evitar el estado N/A.
   const getPromedioPorDominio = (domNum) => {
-    const simsDom = safeHistorial.filter(s => String(s.dominio || s.domain || "") === String(domNum));
+    const simsDom = safeHistorial.filter(s => {
+      const d = String(s.dominio || s.domain || "").trim();
+      return d === String(domNum) || d === "0" || d === "" || d.toLowerCase().includes("general");
+    });
     if (simsDom.length === 0) return { prom: 0, cant: 0 };
     const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
     return { prom, cant: simsDom.length };
