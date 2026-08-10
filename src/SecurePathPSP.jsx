@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "4.3"; // Versión completa y definitiva
+const APP_VERSION = "4.4"; // Versión con categorización y guardado completo restaurado
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -18,7 +18,7 @@ const sb = async (path, opts = {}) => {
 const authSignIn = (email, password) => sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
 const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 
-// Rango ampliado a 5000 registros para asegurar que carguen todas tus preguntas
+// Límite ampliado a 5000 registros para asegurar que carguen todas tus preguntas
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
