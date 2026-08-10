@@ -54,8 +54,16 @@ const C = {
 };
 
 // ─── UTILIDADES ───────────────────────────────────────────────────────────────
-const mezclar = (arr) => [...arr].sort(() => Math.random() - 0.5);
-const mezclarConOpciones = (ps) => mezclar(ps).map((p) => ({ ...p, opciones: mezclar(p.opciones) }));
+const mezclar = (arr) => Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
+const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
+  // Asegurar que p.opciones sea un arreglo válido (ya sea array o si viene como objeto JSON/diccionario)
+  let ops = p.opciones;
+  if (ops && !Array.isArray(ops) && typeof ops === "object") {
+    // Si está guardado como {"A": "...", "B": "..."} lo convertimos a array de objetos
+    ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
+  }
+  return { ...p, opciones: mezclar(Array.isArray(ops) ? ops : []) };
+});
 const fmtTiempo = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 const colorDominio = (d) => [C.gold, C.blue, C.purple][d - 1] || C.gold;
 const nombreDominio = (d) => ["Physical Security Assessment", "Application & Design", "Implementation"][d - 1] || "";
@@ -258,29 +266,41 @@ setTutorCargando(false);
 }
 };
 
-  // ── BANCO SUPABASE ────────────────────────────────────────────────────────
-  const cargarBanco = async (token) => {
-    setCargandoBanco(true);
-    try {
-      const data = await dbGet(
-        "preguntas",
-        "select=id,dominio_id,subtema_id,texto,opciones,correcta,explicacion&activa=eq.true&order=dominio_id",
-        token
-      );
-      const norm = data.map((p) => ({
-        id: p.id, dominio: p.dominio_id, subtemaId: p.subtema_id, texto: p.texto,
-        opciones: p.opciones, correcta: p.correcta, explicacion: p.explicacion,
-      }));
-      setBanco(norm);
-      const t = { 0: norm.length };
-      [1, 2, 3].forEach((d) => { t[d] = norm.filter((p) => p.dominio === d).length; });
-      setTotalPorDominio(t);
-    } catch (err) {
-      console.error("Error cargando banco:", err);
-    } finally {
-      setCargandoBanco(false);
-    }
-  };
+// ── BANCO SUPABASE ────────────────────────────────────────────────────────
+const cargarBanco = async (token) => {
+  setCargandoBanco(true);
+  try {
+    const data = await dbGet(
+      "preguntas",
+      "select=id,dominio_id,subtema_id,texto,opciones,correcta,explicacion&activa=eq.true&order=dominio_id",
+      token
+    );
+    const norm = (data || []).map((p) => {
+      let ops = p.opciones;
+      // Si las opciones vienen como objeto JSON plano, las convertimos a array de forma segura
+      if (ops && !Array.isArray(ops) && typeof ops === "object") {
+        ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
+      }
+      return {
+        id: p.id, 
+        dominio: p.dominio_id, 
+        subtemaId: p.subtema_id, 
+        texto: p.texto,
+        opciones: Array.isArray(ops) ? ops : [], 
+        correcta: p.correcta, 
+        explicacion: p.explicacion,
+      };
+    });
+    setBanco(norm);
+    const t = { 0: norm.length };
+    [1, 2, 3].forEach((d) => { t[d] = norm.filter((p) => p.dominio === d).length; });
+    setTotalPorDominio(t);
+  } catch (err) {
+    console.error("Error cargando banco:", err);
+  } finally {
+    setCargandoBanco(false);
+  }
+};
 
     const cargarProgresoSubtema = async (userId, token) => {
         try {
@@ -683,7 +703,17 @@ if (modoLeccion) { completarLeccion(modoLeccion, todasRespuestas); } else { guar
               </div>
             ))}
           </div>
-
+<div style={{ marginBottom: 28 }}>
+  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>RESUMEN GENERAL</div>
+  <div style={{ background: C.dark, border: "1px solid " + C.border, padding: "20px 24px" }}>
+  <div style={{ fontSize: 15, color: C.white, marginBottom: 14, lineHeight: 1.6 }}>
+  {"Llevas " + progresoCurso().completados + " de " + progresoCurso().total + " lecciones del curso" + (prog.sesiones > 0 ? ", con " + prog.global + "% de promedio en " + prog.sesiones + " simulacros" : "") + "."}
+  </div>
+  <div style={{ width: "100%", height: 8, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+  <div style={{ width: progresoCurso().pct + "%", height: "100%", background: C.green, borderRadius: 4 }}></div>
+  </div>
+  </div>
+  </div>
           {/* Progreso por dominio */}
           {Object.keys(prog.porDominio).length > 0 && (
             <div style={{ marginBottom: 28 }}>

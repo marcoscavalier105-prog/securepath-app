@@ -1,0 +1,201 @@
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // VISTA: PROGRESO
+  // ─────────────────────────────────────────────────────────────────────────
+  if (vista === "progreso") {
+    const prog = calcProgreso();
+    return (
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+        <NavHeader />
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>MI PROGRESO</div>
+          <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Historial de estudio</h2>
+
+          {/* Resumen */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
+            {[
+              [prog.sesiones, "Simulacros"],
+              [prog.global ? `${prog.global}%` : "--", "Promedio"],
+              [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
+            ].map(([n, l]) => (
+              <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Historial completo */}
+          {historialUsuario.length === 0 ? (
+            <div style={{ padding: "32px", textAlign: "center", color: C.muted, border: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 24, marginBottom: 10 }}>📊</div>
+              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Sin simulacros todavía</div>
+              <div style={{ fontSize: 12, lineHeight: 1.6 }}>Completa tu primer simulacro para ver tu progreso aquí.</div>
+              <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }}
+                style={{ marginTop: 16, padding: "10px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Ir al simulacro →
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>TODAS LAS SESIONES</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {historialUsuario.map((h, i) => (
+                  <div key={i} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{(h.dominio_filtro === 0 || h.dominio_filtro === null) ? "1+2+3" : h.dominio_filtro}</div>
+                      <div style={{ fontSize: 12, color: C.white, marginTop: 3 }}>{h.total_preguntas} preguntas · {fmtTiempo(h.tiempo_segundos || 0)}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
+                        {h.porcentaje}%
+                      </div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.correctas}/{h.total_preguntas}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tendencia visual simple */}
+              {historialUsuario.length >= 3 && (
+                <div style={{ marginTop: 24, padding: "16px 18px", background: C.dark, border: `1px solid ${C.border}` }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TENDENCIA (últimas {Math.min(10, historialUsuario.length)} sesiones)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+                    {historialUsuario.slice(0, 10).reverse().map((h, i) => {
+                      const pct = h.porcentaje || 0;
+                      const color = pct >= 75 ? C.green : pct >= 55 ? C.gold : C.red;
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color }}>
+                            {pct}
+                          </div>
+                          <div style={{ width: "100%", background: color, height: `${Math.max(4, pct * 0.48)}px`, opacity: 0.8 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginTop: 8 }}>
+                    {(() => {
+                      const recent = historialUsuario.slice(0, 5);
+                      const older = historialUsuario.slice(5, 10);
+                      if (older.length === 0) return "Sigue practicando para ver tu tendencia.";
+                      const avgRecent = recent.reduce((a, s) => a + (s.porcentaje || 0), 0) / recent.length;
+                      const avgOlder = older.reduce((a, s) => a + (s.porcentaje || 0), 0) / older.length;
+                      const diff = Math.round(avgRecent - avgOlder);
+                      return diff > 0 ? `📈 Mejoraste ${diff} puntos en tus últimas 5 sesiones.` : diff < 0 ? `📉 Bajaste ${Math.abs(diff)} puntos. Revisa la guía teórica.` : "Rendimiento estable. Apunta al 75% para aprobar.";
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // VISTA: TUTOR IA
+  // ─────────────────────────────────────────────────────────────────────────
+  if (vista === "tutor") {
+    const dominiosColor = { 0: C.gold, 1: C.gold, 2: C.blue, 3: C.purple };
+
+    const systemPrompt = "Eres un tutor experto en la certificación PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en español." +
+      " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas físicas y electrónicas), D3 Implementation (gestión, auditoría, cumplimiento)." +
+      " Cuando el usuario pida una pregunta: genera una pregunta de opción múltiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por qué las otras son incorrectas." +
+      " Cuando el usuario haga pregunta libre, responde de forma clara con ejemplos prácticos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en español." +
+      (tutorDominio > 0 ? " Enfocate en el Dominio " + tutorDominio + " del examen PSP." : "");
+
+
+
+    const acciones = [
+      { label: "Generar pregunta", prompt: "Genera una pregunta de practica PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : " de cualquier dominio") },
+      { label: "Pregunta dificil", prompt: "Genera una pregunta dificil nivel avanzado PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
+      { label: "Pregunta trampa", prompt: "Genera una pregunta trampa tipica del examen PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
+      { label: "Explica un concepto", prompt: "Explicame un concepto clave para el PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
+    ];
+
+    return (
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", flexDirection: "column" }}>
+        <NavHeader />
+        <div style={{ background: C.dark, borderBottom: "1px solid " + C.border, padding: "12px 20px" }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 8 }}>TUTOR IA — BETA FUNDADORES</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[0,1,2,3].map((d) => (
+                <button key={d} onClick={() => setTutorDominio(d)}
+                  style={{ padding: "5px 12px", background: tutorDominio === d ? dominiosColor[d] + "20" : "transparent", border: "1px solid " + (tutorDominio === d ? dominiosColor[d] : C.border), color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
+                  {d === 0 ? "Todos" : "D" + d}
+                </button>
+              ))}
+              {tutorMensajes.length > 0 && (
+                <button onClick={() => { limpiarHistorialTutor() }}
+                  style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+<div style={{ borderTop: "1px solid " + C.border, padding: "12px 20px", background: C.dark }}><div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}><input value={tutorInput} onChange={(e) => setTutorInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)} placeholder="Escribe tu respuesta o pregunta sobre el PSP..." style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, outline: "none" }} /><button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()} style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>→</button></div></div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            {tutorMensajes.length === 0 && (
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
+                <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
+                  Practica con preguntas infinitas generadas por IA o consulta cualquier concepto del examen PSP.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {acciones.map((a) => (
+                    <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
+                      style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
+                      {a.label} →
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tutorMensajes.map((m, i) => (
+              <div key={i} style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: m.rol === "user" ? "flex-end" : "flex-start" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
+                  {m.rol === "user" ? "TU" : "TUTOR PSP"}
+                </div>
+                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                  {m.texto}
+                </div>
+              </div>
+            ))}
+
+            {tutorCargando && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, borderLeft: "3px solid " + C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>
+                  Pensando...
+                </div>
+              </div>
+            )}
+
+            {tutorMensajes.length > 0 && !tutorCargando && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                {acciones.slice(0,2).map((a) => (
+                  <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
+                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.goldB, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer" }}>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div ref={tutorEndRef} />
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  return null;
+}
+
