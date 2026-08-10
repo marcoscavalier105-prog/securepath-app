@@ -271,7 +271,6 @@ export default function SecurePathPSP() {
       const match = SUBTEMAS_LISTA.find(s => s.toLowerCase().includes(String(subVal).toLowerCase()));
       if (match) return match;
     }
-    // Si no tiene etiqueta explícita, se asigna por dominio detectado
     const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
     if (valDom !== null) {
       const str = String(valDom);
@@ -279,7 +278,7 @@ export default function SecurePathPSP() {
       if (str.includes('2')) return SUBTEMAS_LISTA[5];
       if (str.includes('3')) return SUBTEMAS_LISTA[13];
     }
-    return SUBTEMAS_LISTA[0]; // Default
+    return SUBTEMAS_LISTA[0];
   };
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
@@ -341,12 +340,10 @@ export default function SecurePathPSP() {
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
-  // Cálculo Inteligente por Dominio (Incluso si el simulacro fue general, evalúa sus preguntas mapeadas)
   const getPromedioPorDominio = (domNum) => {
     const simsDom = safeHistorial.filter(s => {
       const domStr = String(s.dominio || s.domain || "").toLowerCase();
       if (domStr === String(domNum) || domStr.includes(`dominio ${domNum}`) || domStr.includes(`domain ${domNum}`)) return true;
-      // Si el simulacro fue general, evaluamos si sus preguntas pertenecían a este dominio
       if ((!s.dominio || s.dominio === 0 || s.dominio === "0") && s.detalle_preguntas_subtemas) {
         return s.detalle_preguntas_subtemas.some(sub => {
           const idx = SUBTEMAS_LISTA.indexOf(sub);
@@ -364,7 +361,6 @@ export default function SecurePathPSP() {
     return { prom, cant: simsDom.length };
   };
 
-  // Cálculo por Subtarea
   const getPromedioPorSubtema = (subNombre) => {
     let totalPreg = 0;
     let totalAcertadas = 0;
@@ -482,7 +478,7 @@ export default function SecurePathPSP() {
                     {[ [1, "Assessment"], [2, "Design"], [3, "Implementation"] ].map(([d, label]) => {
                       const cantDominio = getPreguntasPorDominio(d).length;
                       return (
-                        <button key={d} onClick={() => iniciarSimulacro("dominio", cantDominio || 50, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
+                        <button key={d} onClick={() => iniciarSimulacro("dominio", 25, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
                           Dominio {d}: {label} ({cantDominio} preg.)
                         </button>
                       );
@@ -596,7 +592,6 @@ export default function SecurePathPSP() {
                           created_at: new Date().toISOString()
                         };
                         
-                        // 🛡️ Guardado blindado
                         try {
                           await dbPost("sesiones_simulacro", {
                             usuario_id: nuevoIntento.usuario_id,
@@ -807,7 +802,7 @@ export default function SecurePathPSP() {
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacros #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
