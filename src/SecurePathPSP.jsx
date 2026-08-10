@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "2.5"; // Control de versiones automático para caché móvil
+const APP_VERSION = "2.6"; // Sincronización multi-dispositivo unificada
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -100,6 +100,7 @@ export default function SecurePathPSP() {
   const [vista, setVista] = useState("dashboard");
   const [banco, setBanco] = useState([]);
   const [historialUsuario, setHistorialUsuario] = useState([]);
+  const [subtemasCompletados, setSubtemasCompletados] = useState([]);
 
   // Simulacro states
   const [simulacroPantalla, setSimulacroPantalla] = useState("inicio");
@@ -116,9 +117,6 @@ export default function SecurePathPSP() {
 
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
-  const [subtemasCompletados, setSubtemasCompletados] = useState(() => {
-    try { const data = JSON.parse(localStorage.getItem("sp_subtemas")); return Array.isArray(data) ? data : []; } catch { return []; }
-  });
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
 
   // Tutor IA
@@ -144,7 +142,7 @@ export default function SecurePathPSP() {
       if (stored?.access_token) {
         setSession(stored);
         cargarBanco(stored.access_token);
-        cargarHistorial(stored.user.id, stored.access_token);
+        cargarHistorialYProgreso(stored.user.id, stored.access_token);
       }
     } catch {}
   }, []);
@@ -168,7 +166,7 @@ export default function SecurePathPSP() {
       localStorage.setItem("sp_session", JSON.stringify(data));
       setSession(data);
       cargarBanco(data.access_token);
-      cargarHistorial(data.user.id, data.access_token);
+      cargarHistorialYProgreso(data.user.id, data.access_token);
     } catch (err) {
       setAuthError("Correo o contraseña incorrectos.");
     }
@@ -187,7 +185,8 @@ export default function SecurePathPSP() {
     } catch (err) { console.error("Error cargando banco:", err); }
   };
 
-  const cargarHistorial = async (userId, token) => {
+  // ☁️ CARGA UNIFICADA DESDE SUPABASE (Simulacros + Progreso de Subtemas)
+  const cargarHistorialYProgreso = async (userId, token) => {
     try {
       let dbData = [];
       try {
@@ -199,8 +198,18 @@ export default function SecurePathPSP() {
       const merged = [...dbData];
       localData.forEach(ld => { if (!merged.find(md => md.id === ld.id || md.created_at === ld.created_at)) merged.push(ld); });
       merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setHistorialUsuario(merged);
-    } catch (err) { console.error("Error crítico cargando historial:", err); }
+
+      // Filtrar simulacros (dominio !== 999) y subtemas completados almacenados en la nube (dominio === 999)
+      const sims = merged.filter(s => s.dominio !== 999);
+      const subsCloud = merged.filter(s => s.dominio === 999).map(s => s.total_preguntas);
+      
+      const localSubs = JSON.parse(localStorage.getItem("sp_subtemas") || "[]");
+      const mergedSubs = [...new Set([...subsCloud, ...localSubs])];
+
+      setHistorialUsuario(sims);
+      setSubtemasCompletados(mergedSubs);
+      localStorage.setItem("sp_subtemas", JSON.stringify(mergedSubs));
+    } catch (err) { console.error("Error crítico cargando datos unificados:", err); }
   };
 
   const getPreguntasPorDominio = (d) => {
@@ -563,7 +572,7 @@ export default function SecurePathPSP() {
                           localStorage.setItem("sp_historial_fallback", JSON.stringify([nuevoIntento, ...local]));
                         }
                         
-                        await cargarHistorial(session.user.id, session.access_token);
+                        await cargarHistorialYProgreso(session.user.id, session.access_token);
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
@@ -658,13 +667,26 @@ export default function SecurePathPSP() {
                       </div>
                     </div>
 
-                    <button onClick={() => {
-                      if (!Array.isArray(subtemasCompletados)) setSubtemasCompletados([subtemaActivo]);
-                      else if (!subtemasCompletados.includes(subtemaActivo)) {
-                        const nuevo = [...subtemasCompletados, subtemaActivo];
-                        setSubtemasCompletados(nuevo);
-                        localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
+                    <button onClick={async () => {
+                      const nuevo = Array.isArray(subtemasCompletados) ? [...new Set([...subtemasCompletados, subtemaActivo])] : [subtemaActivo];
+                      setSubtemasCompletados(nuevo);
+                      localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
+                      
+                      // Guardar progreso del subtema en Supabase para sincronizar con otros dispositivos
+                      if (session?.access_token && session?.user?.id) {
+                        try {
+                          await dbPost("sesiones_simulacro", {
+                            usuario_id: session.user.id,
+                            puntaje_porcentaje: 100,
+                            total_preguntas: subtemaActivo,
+                            dominio: 999, // Marcador en nube para subtema completado
+                            detalle_errores: [],
+                            detalle_preguntas_subtemas: [SUBTEMAS_LISTA[subtemaActivo]],
+                            desglose_subtemas: {}
+                          }, session.access_token);
+                        } catch (e) {}
                       }
+
                       alert("¡Quiz superado! Subtema completado con éxito.");
                       setSubtemaActivo(null);
                     }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Enviar Quiz y Completar Subtema ✓</button>
