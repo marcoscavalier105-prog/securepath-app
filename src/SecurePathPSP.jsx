@@ -79,15 +79,22 @@ export default function SecurePathPSP() {
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
+  const [feedbackInmediato, setFeedbackInmediato] = useState(null); // Para mostrar si acertó en tiempo real
 
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null);
   const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
 
-  // Tutor IA states
-  const [mensajesTutor, setMensajesTutor] = useState([
-    { role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }
-  ]);
+  // Tutor IA states - Usamos localStorage para persistir el historial de chat
+  const [mensajesTutor, setMensajesTutor] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sp_tutor_history");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      { role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP de ASIS International. Selecciona un dominio abajo o escribe tu consulta libre." }
+    ];
+  });
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
 
@@ -101,6 +108,13 @@ export default function SecurePathPSP() {
       }
     } catch {}
   }, []);
+
+  // Guardar historial del tutor cada vez que cambie
+  useEffect(() => {
+    try {
+      localStorage.setItem("sp_tutor_history", JSON.stringify(mensajesTutor));
+    } catch {}
+  }, [mensajesTutor]);
 
   // Temporizador para simulacros activos
   useEffect(() => {
@@ -156,7 +170,6 @@ export default function SecurePathPSP() {
       filtradas = filtradas.filter(p => Number(p.dominio) === Number(dominio));
     }
     if (filtradas.length === 0) filtradas = [...banco];
-    // Si se pide una cantidad mayor a las disponibles, se toman todas las disponibles
     const totalAUsar = Math.min(cantidad, filtradas.length);
     const seleccionadas = mezclarConOpciones(filtradas).slice(0, totalAUsar);
     
@@ -170,6 +183,7 @@ export default function SecurePathPSP() {
     setRespuestasUsuario({});
     setResultadoFinal(null);
     setSegundosTranscurridos(0);
+    setFeedbackInmediato(null);
     setSimulacroPantalla("activo");
   };
 
@@ -221,8 +235,10 @@ export default function SecurePathPSP() {
     );
   }
 
+  // Cálculos precisos para el Dashboard e Historial
   const totalSims = historialUsuario.length;
-  const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + (s.puntaje_porcentaje || 0), 0) / totalSims) : 0;
+  // Soporte robusto para diferentes nombres de columnas de porcentaje en Supabase (puntaje_porcentaje o porcentaje o puntaje)
+  const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   const avanceSubtemas = `${subtemasCompletados.length}/${SUBTEMAS_LISTA.length}`;
 
   const formatearTiempo = (seg) => {
@@ -313,7 +329,7 @@ export default function SecurePathPSP() {
                   </button>
                   <button onClick={() => iniciarSimulacro("estandar", 25, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Simulacro Estándar</div>
-                    <div style={{ fontSize: 13, color: C.muted }}>25 preguntas mezcladas.</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>25 preguntas con retroalimentación inmediata.</div>
                   </button>
                   <button onClick={() => iniciarSimulacro("largo", 50, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Simulacro Largo</div>
@@ -355,13 +371,19 @@ export default function SecurePathPSP() {
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>{preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado}</h3>
+                {/* Enunciado de la pregunta con soporte para múltiples propiedades del esquema */}
+                <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>
+                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text}
+                </h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                   {preguntasSimulacro[indiceActual].opciones.map((op) => {
                     const sel = respuestasUsuario[indiceActual] === op.key;
                     return (
-                      <div key={op.key} onClick={() => setRespuestasUsuario({ ...respuestasUsuario, [indiceActual]: op.key })}
+                      <div key={op.key} onClick={() => {
+                        if (!modoConfig.prometric && feedbackInmediato !== null) return; // Bloquear cambio si ya respondió en modo normal
+                        setRespuestasUsuario({ ...respuestasUsuario, [indiceActual]: op.key });
+                      }}
                         style={{ padding: 14, background: sel ? C.goldD : C.card, border: `1px solid ${sel ? C.goldB : C.border}`, borderRadius: 8, cursor: "pointer", display: "flex", gap: 12, alignItems: "center" }}>
                         <span style={{ fontWeight: "bold", color: sel ? C.gold : C.muted }}>{op.key})</span>
                         <span style={{ fontSize: 15 }}>{op.texto}</span>
@@ -370,36 +392,69 @@ export default function SecurePathPSP() {
                   })}
                 </div>
 
+                {/* Retroalimentación Inmediata (Excepto Prometric) */}
+                {!modoConfig.prometric && feedbackInmediato !== null && (
+                  <div style={{ background: feedbackInmediato.esCorrecta ? C.greenD : C.redD, border: `1px solid ${feedbackInmediato.esCorrecta ? C.green : C.red}`, padding: 16, borderRadius: 8, marginBottom: 20 }}>
+                    <div style={{ fontWeight: "bold", color: feedbackInmediato.esCorrecta ? C.green : C.red, marginBottom: 6 }}>
+                      {feedbackInmediato.esCorrecta ? "¡Correcto!" : `Incorrecto. La respuesta correcta era: ${feedbackInmediato.correcta}`}
+                    </div>
+                    <div style={{ fontSize: 14, color: C.white, lineHeight: 1.4 }}>
+                      {feedbackInmediato.explicacion}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <button disabled={indiceActual === 0} onClick={() => setIndiceActual(indiceActual - 1)} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>Anterior</button>
-                  {indiceActual < preguntasSimulacro.length - 1 ? (
-                    <button onClick={() => setIndiceActual(indiceActual + 1)} style={{ padding: "10px 20px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Siguiente</button>
+                  <button disabled={indiceActual === 0} onClick={() => {
+                    setIndiceActual(indiceActual - 1);
+                    setFeedbackInmediato(null);
+                  }} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>Anterior</button>
+
+                  {!modoConfig.prometric && feedbackInmediato === null ? (
+                    <button onClick={() => {
+                      const respUsr = respuestasUsuario[indiceActual];
+                      if (!respUsr) {
+                        alert("Por favor selecciona una alternativa antes de verificar.");
+                        return;
+                      }
+                      const p = preguntasSimulacro[indiceActual];
+                      const respCorr = p.respuesta_correcta || p.correcta || p.answer;
+                      const explicacion = p.explicacion || p.explanation || "Sin explicación disponible en la base de datos.";
+                      setFeedbackInmediato({ esCorrecta: respUsr === respCorr, correcta: respCorr, explicacion });
+                    }} style={{ padding: "10px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Verificar Respuesta</button>
                   ) : (
-                    <button onClick={async () => {
-                      let correctas = 0;
-                      let erroresDetalle = [];
-                      preguntasSimulacro.forEach((p, idx) => {
-                        const respUsr = respuestasUsuario[idx];
-                        const respCorr = p.respuesta_correcta || p.correcta;
-                        if (respUsr === respCorr) {
-                          correctas++;
-                        } else {
-                          erroresDetalle.push({ 
-                            pregunta: p.pregunta || p.enunciado, 
-                            tu_respuesta: respUsr || "Sin responder", 
-                            correcta: respCorr, 
-                            explicacion: p.explicacion || "Sin explicación disponible." 
-                          });
-                        }
-                      });
-                      const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
-                      const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0, detalle_errores: erroresDetalle };
-                      try {
-                        await dbPost("sesiones_simulacro", payload, session.access_token);
-                        cargarHistorial(session.user.id, session.access_token);
-                      } catch {}
-                      setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
-                    }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar y Ver Resultado</button>
+                    indiceActual < preguntasSimulacro.length - 1 ? (
+                      <button onClick={() => {
+                        setIndiceActual(indiceActual + 1);
+                        setFeedbackInmediato(null);
+                      }} style={{ padding: "10px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Siguiente</button>
+                    ) : (
+                      <button onClick={async () => {
+                        let correctas = 0;
+                        let erroresDetalle = [];
+                        preguntasSimulacro.forEach((p, idx) => {
+                          const respUsr = respuestasUsuario[idx];
+                          const respCorr = p.respuesta_correcta || p.correcta || p.answer;
+                          if (respUsr === respCorr) {
+                            correctas++;
+                          } else {
+                            erroresDetalle.push({ 
+                              pregunta: p.pregunta || p.enunciado || p.text, 
+                              tu_respuesta: respUsr || "Sin responder", 
+                              correcta: respCorr, 
+                              explicacion: p.explicacion || p.explanation || "Sin explicación disponible." 
+                            });
+                          }
+                        });
+                        const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
+                        const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0, detalle_errores: erroresDetalle };
+                        try {
+                          await dbPost("sesiones_simulacro", payload, session.access_token);
+                          cargarHistorial(session.user.id, session.access_token);
+                        } catch {}
+                        setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
+                      }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar y Ver Resultado</button>
+                    )
                   )}
                 </div>
               </div>
@@ -413,7 +468,7 @@ export default function SecurePathPSP() {
                 
                 {resultadoFinal.erroresDetalle && resultadoFinal.erroresDetalle.length > 0 && (
                   <div style={{ textAlign: "left", marginBottom: 24, background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                    <h4 style={{ color: C.red, marginBottom: 12 }}>Retroalimentación de errores cometidos:</h4>
+                    <h4 style={{ color: C.red, marginBottom: 12 }}>Retroalimentación global de errores cometidos:</h4>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>
                       {resultadoFinal.erroresDetalle.map((err, eIdx) => (
                         <div key={eIdx} style={{ background: C.card, padding: 12, borderRadius: 6, fontSize: 13 }}>
@@ -432,13 +487,13 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (UDEMY STYLE) */}
+        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (UDEMY STYLE CON HANDBOOK) */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica Estructurada</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona un subtema para acceder a la teoría detallada y completar tu avance.</p>
+                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica Estructurada — Handbook PSP</h2>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona un subtema para acceder a la teoría detallada y completar tu quiz de avance.</p>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
                   {SUBTEMAS_LISTA.map((subtema, idx) => {
@@ -463,14 +518,14 @@ export default function SecurePathPSP() {
                 <h2 style={{ fontSize: 24, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
                 
                 <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.7, fontSize: 15 }}>
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>1. Marco Teórico y Conceptos Clave</h3>
-                  <p style={{ marginBottom: 16 }}>Este subtema abarca los principios fundamentales requeridos para la gestión de riesgos y seguridad física. Es vital comprender las definiciones normativas y la aplicación práctica de cada directriz.</p>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>1. Marco Teórico y Conceptos Clave del Handbook</h3>
+                  <p style={{ marginBottom: 16 }}>Este subtema desglosa los principios fundamentales requeridos para la gestión de riesgos y seguridad física según los estándares internacionales de ASIS International. Se abordan definiciones normativas, terminología técnica y reglas críticas de examen.</p>
                   
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>2. Directrices de Aplicación</h3>
-                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo.</p>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>2. Directrices de Aplicación Práctica</h3>
+                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo real.</p>
                   
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>3. Actividad y Evaluación</h3>
-                  <p style={{ color: C.muted }}>Revisa la teoría anterior, comprende los puntos críticos de examen y completa el quiz para registrar tu avance oficial en el sistema.</p>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>3. Actividad de Consolidación</h3>
+                  <p style={{ color: C.muted }}>Revisa la teoría anterior, comprende los puntos críticos y haz clic en completar quiz para desbloquear tu avance oficial.</p>
                 </div>
 
                 <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
@@ -513,8 +568,8 @@ export default function SecurePathPSP() {
                         <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <span style={{ fontSize: 22, fontWeight: 800, color: (sim.puntaje_porcentaje || 0) >= 80 ? C.green : C.gold }}>
-                          {sim.puntaje_porcentaje}%
+                        <span style={{ fontSize: 22, fontWeight: 800, color: (Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0)) >= 80 ? C.green : C.gold }}>
+                          {sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0}%
                         </span>
                         <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)}
                           style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
