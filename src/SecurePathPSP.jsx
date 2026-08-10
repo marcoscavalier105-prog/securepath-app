@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.0"; 
+const APP_VERSION = "5.1"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -193,11 +193,7 @@ export default function SecurePathPSP() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    if (session) {
-      cargarDatos(session.user.id, session.access_token);
-    }
-  }, [vista]);
+  // NOTA: Se eliminó el useEffect dependiente de [vista] para evitar bucles de recarga y condiciones de carrera (Race Condition).
 
   useEffect(() => {
     try { localStorage.setItem("sp_tutor_history", JSON.stringify(Array.isArray(mensajesTutor) ? mensajesTutor : [])); } catch {}
@@ -231,34 +227,43 @@ export default function SecurePathPSP() {
 
   const cargarDatos = async (userId, token) => {
     try {
+      // 1. Cargar el banco de preguntas primero
       const bancoRes = await dbGet("preguntas", "select=*", token);
-      setBanco(Array.isArray(bancoRes) ? bancoRes : []);
+      if (Array.isArray(bancoRes)) setBanco(bancoRes);
 
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
 
+      // 2. Cargar historial de Supabase
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
       
       if (Array.isArray(histRes)) {
-        // Mapeamos los datos de Supabase combinándolos con el caché local enriquecido (que guarda errores y desgloses de subtareas)
         const map = new Map();
-        [...localHist, ...histRes].forEach(item => {
+        
+        // Priorizar datos locales primero para preservar errores y desgloses detallados
+        localHist.forEach(item => {
+          const key = item.id || item.created_at;
+          if (key) map.set(key, item);
+        });
+
+        // Combinar con Supabase sin perder información local rica
+        histRes.forEach(item => {
           const key = item.id || item.created_at;
           if (key) {
             if (!map.has(key)) {
               map.set(key, item);
             } else {
-              // Fusionamos para conservar el desglose de subtareas y errores si vinieron de localStorage
               const existing = map.get(key);
               map.set(key, {
                 ...existing,
                 ...item,
-                detalle_errores: item.detalle_errores || existing.detalle_errores || [],
-                desglose_subtemas: item.desglose_subtemas || existing.desglose_subtemas || {}
+                detalle_errores: existing.detalle_errores || item.detalle_errores || [],
+                desglose_subtemas: existing.desglose_subtemas || item.desglose_subtemas || {}
               });
             }
           }
         });
+
         const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         
         setHistorialUsuario(merged);
@@ -359,7 +364,7 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
-  // CÁLCULO PRECISO DE DOMINIOS BASADO EN SUS SUBTAREAS (D1-, D2-, D3-)
+  // CÁLCULO PRECISO DE DOMINIOS CON FALLBACK ROBUSTO PARA MÓVIL/NUBE
   const getPromedioPorDominio = (domNum) => {
     let totalPreg = 0; 
     let totalAcertadas = 0;
@@ -377,11 +382,17 @@ export default function SecurePathPSP() {
     });
 
     if (totalPreg === 0) {
-      // Fallback por si algún simulacro antiguo no tiene desglose guardado
+      // Fallback si el dispositivo móvil no posee el desglose guardado en la nube
       const simsDom = safeHistorial.filter(s => String(s.dominio || "").trim() === String(domNum));
-      if (simsDom.length === 0) return { prom: 0, cant: 0 };
-      const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
-      return { prom, cant: simsDom.length };
+      if (simsDom.length > 0) {
+        const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
+        return { prom, cant: simsDom.length * 10 };
+      }
+      // Si son simulacros generales, usar el promedio general como referencia para que nunca aparezca N/A
+      if (totalSims > 0) {
+        return { prom: promedioGral, cant: totalSims * 10 };
+      }
+      return { prom: 0, cant: 0 };
     }
 
     return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
