@@ -48,7 +48,6 @@ const obtenerValorBD = (obj, posiblesLlaves) => {
   return null;
 };
 
-// Si todo falla, toma el string más largo (asume que es el enunciado de la pregunta)
 const getTextoPregunta = (p) => {
   const explicit = obtenerValorBD(p, ['pregunta', 'enunciado', 'text', 'question', 'texto', 'descripcion', 'body', 'prompt', 'item', 'contenido']);
   if (explicit) return explicit;
@@ -99,26 +98,26 @@ const DOMINIOS_CURSO = [
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
 const HANDBOOK_TEORIA = {
-  0: { titulo: "1. Fundamentos de Gestión de Riesgos", teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades, equilibrando costo, operabilidad y protección." },
-  1: { titulo: "2. Análisis y Evaluación de Activos", teoria: "Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información). Se valora su criticidad para la continuidad del negocio y el impacto financiero." },
-  2: { titulo: "3. Identificación y Análisis de Amenazas", teoria: "Evaluación de circunstancias o eventos con potencial de causar daño. Analiza la intención, capacidad y oportunidad de actores hostiles, desastres y fallas." },
-  3: { titulo: "4. Análisis de Vulnerabilidades", teoria: "Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
-  4: { titulo: "5. Metodologías de Cuantificación de Riesgos", teoria: "Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto (ej. RAMCAP, matrices de ASIS)." },
-  5: { titulo: "6. Principios de Diseño de Seguridad Física", teoria: "Defensa en profundidad y CPTED (Crime Prevention Through Environmental Design) para disuadir e impedir intrusiones." },
-  6: { titulo: "7. Contramedidas Perimetrales y Barreras", teoria: "Cercas, muros y barreras físicas para retardar, detectar y evaluar accesos no autorizados en la primera línea de defensa." },
-  7: { titulo: "8. Sistemas de Control de Acceso (PACS)", teoria: "Regulación del flujo de personas y vehículos mediante credenciales, biometría y arquitectura de lectores lógicos/físicos." },
-  8: { titulo: "9. Sistemas de Detección de Intrusos y Alarmas", teoria: "Sensores volumétricos, magnéticos y microondas para detectar intrusiones en tiempo real hacia la central de monitoreo." },
-  9: { titulo: "10. Videovigilancia (CCTV) y Analítica", teoria: "Cámaras de alta resolución y analítica inteligente (reconocimiento facial, cruce de líneas) para verificación visual." },
-  10: { titulo: "11. Iluminación y Criterios Visuales", teoria: "Iluminación perimetral e interior para disuasión y soporte operativo de cámaras en horarios nocturnos." },
-  11: { titulo: "12. Seguridad de la Información y Ciberseguridad Física", teoria: "Protección convergente de datos corporativos, servidores y redes OT/IT de seguridad física." },
-  12: { titulo: "13. Protección de Ejecutivos y Personal", teoria: "Evaluación de riesgos de viaje, contravigilancia y protocolos para ejecutivos expuestos." },
-  13: { titulo: "14. Gestión de Crisis y Continuidad de Negocio", teoria: "Planes de respuesta ante emergencias mayores, comité de crisis y continuidad operativa (ISO 22301)." },
-  14: { titulo: "15. Planificación de Respuesta a Emergencias", teoria: "Procedimientos operativos estándar (SOP) para evacuaciones, sismos, incendios y tirador activo." },
-  15: { titulo: "16. Investigaciones Corporativas y Entrevistas", teoria: "Metodologías de investigación interna, entrevistas profesionales y cadena de custodia de evidencia." },
-  16: { titulo: "17. Gestión de Contratistas y Proveedores", teoria: "Verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto." },
-  17: { titulo: "18. Auditoría y Cumplimiento Normativo", teoria: "Evaluación independiente de sistemas frente a normativas internacionales y políticas internas." },
-  18: { titulo: "19. Arquitectura de Seguridad Integrada", teoria: "Unificación de subsistemas (PSIM) que centralizan alarmas, video, control de acceso y comunicaciones." },
-  19: { titulo: "20. Liderazgo y Gestión de Operaciones de Seguridad", teoria: "Dirección estratégica del departamento, gestión presupuestaria y liderazgo de equipos de supervisores." }
+  0: { teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades, equilibrando costo, operabilidad y protección." },
+  1: { teoria: "Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información). Se valora su criticidad para la continuidad del negocio y el impacto financiero." },
+  2: { teoria: "Evaluación de circunstancias o eventos con potencial de causar daño. Analiza la intención, capacidad y oportunidad de actores hostiles, desastres y fallas." },
+  3: { teoria: "Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
+  4: { teoria: "Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto (ej. RAMCAP, matrices de ASIS)." },
+  5: { teoria: "Defensa en profundidad y CPTED (Crime Prevention Through Environmental Design) para disuadir e impedir intrusiones." },
+  6: { teoria: "Cercas, muros y barreras físicas para retardar, detectar y evaluar accesos no autorizados en la primera línea de defensa." },
+  7: { teoria: "Regulación del flujo de personas y vehículos mediante credenciales, biometría y arquitectura de lectores lógicos/físicos." },
+  8: { teoria: "Sensores volumétricos, magnéticos y microondas para detectar intrusiones en tiempo real hacia la central de monitoreo." },
+  9: { teoria: "Cámaras de alta resolución y analítica inteligente (reconocimiento facial, cruce de líneas) para verificación visual." },
+  10: { teoria: "Iluminación perimetral e interior para disuasión y soporte operativo de cámaras en horarios nocturnos." },
+  11: { teoria: "Protección convergente de datos corporativos, servidores y redes OT/IT de seguridad física." },
+  12: { teoria: "Evaluación de riesgos de viaje, contravigilancia y protocolos para ejecutivos expuestos." },
+  13: { teoria: "Planes de respuesta ante emergencias mayores, comité de crisis y continuidad operativa (ISO 22301)." },
+  14: { teoria: "Procedimientos operativos estándar (SOP) para evacuaciones, sismos, incendios y tirador activo." },
+  15: { teoria: "Metodologías de investigación interna, entrevistas profesionales y cadena de custodia de evidencia." },
+  16: { teoria: "Verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto." },
+  17: { teoria: "Evaluación independiente de sistemas frente a normativas internacionales y políticas internas." },
+  18: { teoria: "Unificación de subsistemas (PSIM) que centralizan alarmas, video, control de acceso y comunicaciones." },
+  19: { teoria: "Dirección estratégica del departamento, gestión presupuestaria y liderazgo de equipos de supervisores." }
 };
 
 export default function SecurePathPSP() {
@@ -139,6 +138,7 @@ export default function SecurePathPSP() {
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
+  const [desplegadoPromedios, setDesplegadoPromedios] = useState(false); // Para la sección de promedios por dominio
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
   const [feedbackInmediato, setFeedbackInmediato] = useState(null);
 
@@ -222,19 +222,29 @@ export default function SecurePathPSP() {
     } catch (err) { console.error("Error cargando historial:", err); }
   };
 
-  // Motor de Búsqueda de Fuerza Bruta para Dominios
+  // Motor Inteligente de Búsqueda de Dominios (Soporta múltiples nomenclaturas)
   const getPreguntasPorDominio = (d) => {
     return banco.filter(p => {
-      const strObj = JSON.stringify(p).toLowerCase();
-      // Búsqueda profunda en todo el string del JSON (infalible a variaciones de columnas)
-      return strObj.includes(`"dominio":${d}`) ||
-             strObj.includes(`"dominio":"${d}"`) ||
-             strObj.includes(`"domain":${d}`) ||
-             strObj.includes(`"domain":"${d}"`) ||
-             strObj.includes(`"id_dominio":${d}`) ||
-             strObj.includes(`"id_dominio":"${d}"`) ||
-             strObj.includes(`dominio ${d}`) ||
-             strObj.includes(`domain ${d}`);
+      // 1. Verificación en llaves conocidas
+      const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
+      if (valDom !== null && valDom !== undefined) {
+        const strVal = String(valDom).toLowerCase();
+        if (d === 1 && (strVal.includes('1') || strVal.includes('assessment'))) return true;
+        if (d === 2 && (strVal.includes('2') || strVal.includes('design'))) return true;
+        if (d === 3 && (strVal.includes('3') || strVal.includes('implementation'))) return true;
+      }
+      
+      // 2. Verificación inteligente en valores cortos de la fila (evita confundir con texto de preguntas)
+      return Object.values(p).some(v => {
+        if (v === null || v === undefined) return false;
+        const str = String(v).toLowerCase().trim();
+        if (str.length > 50) return false; // Ignoramos párrafos largos
+        
+        if (d === 1 && (str === '1' || str.includes('assessment') || str === 'dominio 1' || str === 'domain 1')) return true;
+        if (d === 2 && (str === '2' || str.includes('design') || str === 'dominio 2' || str === 'domain 2')) return true;
+        if (d === 3 && (str === '3' || str.includes('implementation') || str === 'dominio 3' || str === 'domain 3')) return true;
+        return false;
+      });
     });
   };
 
@@ -292,9 +302,17 @@ export default function SecurePathPSP() {
     );
   }
 
-  // Resumen Dashboard
-  const totalSims = Array.isArray(historialUsuario) ? historialUsuario.length : 0;
-  const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
+  // Cálculos de Resumen
+  const safeHistorial = Array.isArray(historialUsuario) ? historialUsuario : [];
+  const totalSims = safeHistorial.length;
+  const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
+  
+  const getPromedioPorDominio = (domNum) => {
+    const simsDom = safeHistorial.filter(s => Number(s.dominio) === domNum);
+    if (simsDom.length === 0) return { prom: 0, cant: 0 };
+    const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
+    return { prom, cant: simsDom.length };
+  };
   
   let colorPromedio = C.blue;
   if (promedioGral >= 80) colorPromedio = C.green;
@@ -350,7 +368,6 @@ export default function SecurePathPSP() {
               </div>
             </div>
 
-            {/* RESTAURADO: Accesos Rápidos */}
             <h3 style={{ fontSize: 20, marginBottom: 16 }}>Accesos Rápidos</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
               <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
@@ -418,7 +435,6 @@ export default function SecurePathPSP() {
                   <span style={{ background: C.black, padding: "4px 10px", borderRadius: 4, fontFamily: "monospace", color: C.gold }}>⏱ {formatearTiempo(segundosTranscurridos)}</span>
                 </div>
 
-                {/* Obtención Segura del Enunciado */}
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5, color: C.white }}>
                   {getTextoPregunta(preguntasSimulacro[indiceActual])}
                 </h3>
@@ -503,7 +519,6 @@ export default function SecurePathPSP() {
                         
                         try {
                           await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
-                          // Forzamos actualización para asegurar que suba en el progreso localmente y en BD
                           await cargarHistorial(session.user.id, session.access_token);
                         } catch (err) { 
                           console.error("Aviso: Fallo guardando en remoto.", err); 
@@ -544,7 +559,6 @@ export default function SecurePathPSP() {
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
                           const completado = Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal);
-                          // Es bloqueado si NO es el primero (0) y el anterior NO está completado
                           const bloqueado = idxGlobal > 0 && (!Array.isArray(subtemasCompletados) || !subtemasCompletados.includes(idxGlobal - 1));
                           
                           return (
@@ -593,7 +607,6 @@ export default function SecurePathPSP() {
                     <h3 style={{ color: C.blue, marginBottom: 16, fontSize: 18 }}>Quiz de Consolidación</h3>
                     <p style={{ color: C.muted, marginBottom: 20 }}>Demuestra tu comprensión de este subtema para desbloquear tu avance oficial.</p>
                     
-                    {/* RESTAURADO: Cuestionario de validación con Radio Buttons */}
                     <div style={{ background: C.card, padding: 16, borderRadius: 8, marginBottom: 20, border: `1px solid ${C.border}` }}>
                       <p style={{ fontWeight: "bold", marginBottom: 12 }}>Pregunta de validación rápida:</p>
                       <p style={{ marginBottom: 14 }}>¿Cuál es el propósito fundamental de este subtema dentro de la gestión de seguridad física?</p>
@@ -614,7 +627,7 @@ export default function SecurePathPSP() {
                         localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
                       }
                       alert("¡Quiz superado! Subtema completado con éxito.");
-                      setSubtemaActivo(null); // Lo regresa al índice para que vea que se desbloqueó el siguiente
+                      setSubtemaActivo(null);
                     }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Enviar Quiz y Completar Subtema ✓</button>
                   </div>
                 )}
@@ -623,13 +636,12 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 4. PROGRESO E HISTORIAL */}
+        {/* 4. PROGRESO E HISTORIAL CON DESGLOSE POR DOMINIO */}
         {vista === "progreso" && (
           <div>
             <h2 style={{ fontSize: 26, marginBottom: 8 }}>Desglose de Rendimiento</h2>
             
-            {/* RESTAURADO: Tarjetas de Resumen en Progreso */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 30 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 20 }}>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Promedio General</div>
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
@@ -644,18 +656,43 @@ export default function SecurePathPSP() {
               </div>
             </div>
 
+            {/* SECCIÓN NUEVA: Promedios Específicos por Dominio */}
+            <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoPromedios(!desplegadoPromedios)}>
+                <h3 style={{ fontSize: 18, color: C.gold, margin: 0 }}>Ver promedios por Dominio</h3>
+                <span style={{ color: C.white, fontWeight: "bold" }}>{desplegadoPromedios ? "▲" : "▼"}</span>
+              </div>
+              
+              {desplegadoPromedios && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginTop: 20 }}>
+                  {[1, 2, 3].map(d => {
+                    const stats = getPromedioPorDominio(d);
+                    return (
+                      <div key={d} style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                        <div style={{ color: C.muted, fontSize: 13, marginBottom: 6 }}>Dominio {d}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                          <span style={{ fontSize: 24, fontWeight: "bold", color: stats.prom >= 80 ? C.green : (stats.prom >= 60 ? C.gold : C.red) }}>{stats.cant > 0 ? `${stats.prom}%` : "N/A"}</span>
+                          <span style={{ fontSize: 12, color: C.white }}>{stats.cant} intentos</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             <h3 style={{ fontSize: 20, marginBottom: 16 }}>Historial Detallado de Simulacros</h3>
-            {historialUsuario.length === 0 ? (
+            {safeHistorial.length === 0 ? (
               <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {historialUsuario.map((sim, index) => {
+                {safeHistorial.map((sim, index) => {
                   const notaSim = Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0);
                   return (
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{historialUsuario.length - index} · Dominio: {sim.dominio || "General"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {sim.dominio || "General"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
