@@ -36,14 +36,16 @@ const dbPost = (table, body, token) =>
 // ─── UTILS: BUSCADOR DE COLUMNAS A PRUEBA DE FALLOS ─────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
   if (!obj) return null;
-  const objMinusculas = Object.keys(obj).reduce((acc, key) => {
-    acc[key.toLowerCase()] = obj[key];
-    return acc;
-  }, {});
+  const keys = Object.keys(obj);
+  // 1. Búsqueda exacta ignorando mayúsculas/minúsculas
   for (let llave of posiblesLlaves) {
-    if (objMinusculas[llave.toLowerCase()] !== undefined) {
-      return objMinusculas[llave.toLowerCase()];
-    }
+    const found = keys.find(k => k.toLowerCase().trim() === llave.toLowerCase().trim());
+    if (found) return obj[found];
+  }
+  // 2. Búsqueda parcial (ej. si la columna se llama "id_dominio" y buscamos "dominio")
+  for (let llave of posiblesLlaves) {
+    const found = keys.find(k => k.toLowerCase().includes(llave.toLowerCase()));
+    if (found) return obj[found];
   }
   return null;
 };
@@ -58,7 +60,7 @@ const C = {
 
 const mezclar = (arr) => Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
 const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
-  let ops = obtenerValorBD(p, ['opciones', 'options']);
+  let ops = obtenerValorBD(p, ['opciones', 'options', 'alternativas']);
   if (ops && !Array.isArray(ops) && typeof ops === "object") {
     ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
   }
@@ -68,25 +70,16 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
 // ─── DOMINIOS Y SUBTEMAS ESTRUCTURADOS (ESTILO UDEMY) ──────────────────────────
 const DOMINIOS_CURSO = [
   {
-    id: 1,
-    nombre: "Dominio 1: Physical Security Assessment",
-    subtemas: [
-      "1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos"
-    ]
+    id: 1, nombre: "Dominio 1: Physical Security Assessment",
+    subtemas: ["1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos"]
   },
   {
-    id: 2,
-    nombre: "Dominio 2: Physical Security Design",
-    subtemas: [
-      "6. Principios de Diseño de Seguridad Física", "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física", "13. Protección de Ejecutivos y Personal"
-    ]
+    id: 2, nombre: "Dominio 2: Physical Security Design",
+    subtemas: ["6. Principios de Diseño de Seguridad Física", "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física", "13. Protección de Ejecutivos y Personal"]
   },
   {
-    id: 3,
-    nombre: "Dominio 3: Physical Security Implementation",
-    subtemas: [
-      "14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias", "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo", "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"
-    ]
+    id: 3, nombre: "Dominio 3: Physical Security Implementation",
+    subtemas: ["14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias", "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo", "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"]
   }
 ];
 
@@ -115,14 +108,19 @@ export default function SecurePathPSP() {
 
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
-  const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
+  const [subtemasCompletados, setSubtemasCompletados] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sp_subtemas") || "[]"); } catch { return []; }
+  });
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
 
-  // Tutor IA
+  // Tutor IA (Blindado contra crashes)
   const [mensajesTutor, setMensajesTutor] = useState(() => {
     try {
       const saved = localStorage.getItem("sp_tutor_history");
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch {}
     return [{ role: "assistant", content: "Hola Marcos, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }];
   });
@@ -174,29 +172,42 @@ export default function SecurePathPSP() {
   const cargarBanco = async (token) => {
     try {
       const data = await dbGet("preguntas", "select=*", token);
-      setBanco(data || []);
+      setBanco(Array.isArray(data) ? data : []);
     } catch (err) { console.error("Error cargando banco:", err); }
   };
 
   const cargarHistorial = async (userId, token) => {
     try {
       const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      setHistorialUsuario(data || []);
+      setHistorialUsuario(Array.isArray(data) ? data : []);
     } catch (err) { console.error("Error cargando historial:", err); }
+  };
+
+  // Motor de filtrado agresivo para dominios
+  const getPreguntasPorDominio = (d) => {
+    return banco.filter(p => {
+      // 1. Busca en columnas habituales
+      const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
+      if (valDom !== null && valDom !== undefined) {
+        return String(valDom).includes(String(d));
+      }
+      // 2. Si no encuentra columna, busca el número de dominio en toda la fila (Fallback)
+      return Object.values(p).some(v => typeof v === 'string' && (v.includes(`Dominio ${d}`) || v === String(d)));
+    });
   };
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
     let filtradas = [...banco];
     if (dominio > 0) {
-      filtradas = filtradas.filter(p => {
-        const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria']);
-        return String(valDom).includes(String(dominio));
-      });
+      filtradas = getPreguntasPorDominio(dominio);
     }
+    
     if (filtradas.length === 0) {
-      alert(`No se encontraron preguntas para el dominio ${dominio}. Asegúrate de que la columna en la BD se llame 'dominio'.`);
-      return;
+      // Si a pesar del filtro agresivo no hay preguntas, tomamos todo el banco para no bloquear al usuario
+      alert(`No se detectó un formato claro para el Dominio ${dominio}. Se iniciará con preguntas generales.`);
+      filtradas = [...banco];
     }
+
     const totalAUsar = Math.min(cantidad, filtradas.length);
     const seleccionadas = mezclarConOpciones(filtradas).slice(0, totalAUsar);
     
@@ -211,7 +222,8 @@ export default function SecurePathPSP() {
   };
 
   const enviarTutorConPrompt = async (textoPrompt) => {
-    const nuevos = [...mensajesTutor, { role: "user", content: textoPrompt }];
+    const arraySeguro = Array.isArray(mensajesTutor) ? mensajesTutor : [];
+    const nuevos = [...arraySeguro, { role: "user", content: textoPrompt }];
     setMensajesTutor(nuevos);
     setLoadingTutor(true);
     try {
@@ -239,8 +251,8 @@ export default function SecurePathPSP() {
     );
   }
 
-  // Cálculos robustos para Progreso y Dashboard
-  const totalSims = historialUsuario.length;
+  // Cálculos robustos para Progreso y Dashboard basados en estado actualizado
+  const totalSims = Array.isArray(historialUsuario) ? historialUsuario.length : 0;
   const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
   let colorPromedio = C.blue;
@@ -325,7 +337,7 @@ export default function SecurePathPSP() {
                   <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[ [1, "Assessment"], [2, "Design"], [3, "Implementation"] ].map(([d, label]) => {
-                      const cantDominio = banco.filter(p => String(obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria'])).includes(String(d))).length;
+                      const cantDominio = getPreguntasPorDominio(d).length;
                       return (
                         <button key={d} onClick={() => iniciarSimulacro("dominio", cantDominio || 50, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
                           Dominio {d}: {label} ({cantDominio} preg.)
@@ -345,7 +357,7 @@ export default function SecurePathPSP() {
                 </div>
 
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5, color: C.white }}>
-                  {obtenerValorBD(preguntasSimulacro[indiceActual], ['pregunta', 'enunciado', 'text', 'question', 'texto', 'descripcion', 'body']) || "[Error en base de datos: Columna de pregunta no encontrada]"}
+                  {obtenerValorBD(preguntasSimulacro[indiceActual], ['pregunta', 'enunciado', 'text', 'question', 'texto', 'descripcion', 'body']) || "[Error: Pregunta no encontrada en la BD]"}
                 </h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
@@ -400,7 +412,6 @@ export default function SecurePathPSP() {
                           const textoPreguntaFinal = obtenerValorBD(p, ['pregunta', 'enunciado', 'text', 'question', 'descripcion']) || "Pregunta sin texto";
                           const expFinal = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación.";
 
-                          // Extraemos el texto COMPLETO de las opciones elegidas y correctas para el historial
                           const opcionesArray = p.opcionesExtraidas || [];
                           const textoUsr = opcionesArray.find(o => o.key === respUsr)?.texto || "Sin responder";
                           const textoCorr = opcionesArray.find(o => o.key === respCorr)?.texto || "No especificada";
@@ -420,21 +431,24 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
                         const nuevoIntento = {
-                          id: Date.now(), 
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
                           detalle_errores: erroresDetalle,
-                          created_at: new Date().toISOString()
                         };
-                        setHistorialUsuario(prev => [nuevoIntento, ...prev]);
-                        setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
-
+                        
                         try {
                           await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
-                        } catch (err) { console.error("Aviso: Fallo guardando en remoto, guardado solo localmente.", err); }
+                          // Forzar recarga desde BD para asegurar sincronización en Dashboard
+                          await cargarHistorial(session.user.id, session.access_token);
+                        } catch (err) { 
+                          console.error("Aviso: Fallo guardando en remoto.", err); 
+                          // Fallback local por si la DB falla
+                          setHistorialUsuario(prev => [{...nuevoIntento, created_at: new Date().toISOString(), id: Date.now()}, ...prev]);
+                        }
                         
+                        setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
                   )}
@@ -467,7 +481,7 @@ export default function SecurePathPSP() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
-                          const completado = subtemasCompletados.includes(idxGlobal);
+                          const completado = Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal);
                           return (
                             <div key={idxGlobal} onClick={() => { setSubtemaActivo(idxGlobal); setPestanaCursoActiva("teoria"); }} style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -499,7 +513,7 @@ export default function SecurePathPSP() {
                 {pestanaCursoActiva === "quiz" && (
                   <div style={{ background: C.black, padding: 24, borderRadius: 8 }}>
                     <button onClick={() => {
-                      if (!subtemasCompletados.includes(subtemaActivo)) {
+                      if (Array.isArray(subtemasCompletados) && !subtemasCompletados.includes(subtemaActivo)) {
                         const nuevo = [...subtemasCompletados, subtemaActivo];
                         setSubtemasCompletados(nuevo);
                         localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
@@ -573,7 +587,7 @@ export default function SecurePathPSP() {
             </div>
 
             <div style={{ height: 380, overflowY: "auto", marginBottom: 20, padding: 16, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
-              {mensajesTutor.map((m, i) => (
+              {(Array.isArray(mensajesTutor) ? mensajesTutor : []).map((m, i) => (
                 <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
                   <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>{m.role === "user" ? "Tú" : "Tutor PSP"}</div>
                   <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.content}</div>
@@ -582,8 +596,8 @@ export default function SecurePathPSP() {
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <input value={inputTutor} onChange={(e) => setInputTutor(e.target.value)} onKeyDown={(e) => e.key === "Enter" && enviarTutor()} placeholder="Escribe tu consulta o pide un caso práctico..." style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
-              <button onClick={enviarTutor} disabled={loadingTutor} style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+              <input value={inputTutor || ""} onChange={(e) => setInputTutor(e.target.value)} onKeyDown={(e) => e.key === "Enter" && enviarTutorConPrompt(inputTutor)} placeholder="Escribe tu consulta o pide un caso práctico..." style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
+              <button onClick={() => { if (inputTutor.trim()) { enviarTutorConPrompt(inputTutor); setInputTutor(""); } }} disabled={loadingTutor} style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
                 {loadingTutor ? "Pensando..." : "Enviar"}
               </button>
             </div>
