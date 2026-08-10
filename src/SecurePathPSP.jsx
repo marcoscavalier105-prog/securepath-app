@@ -38,7 +38,7 @@ const C = {
   black: "#0b1d2a", dark: "#132c3f", card: "#1b3a52",
   border: "rgba(216,232,240,0.12)", gold: "#ff5a1f", goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
   white: "#e3edf2", muted: "#7a92a3", green: "#3ddc84", greenD: "rgba(61,220,132,0.10)",
-  red: "#ff5c5c", blue: "#5fb8e0", purple: "#9d7aff"
+  red: "#ff5c5c", redD: "rgba(255,92,92,0.1)", blue: "#5fb8e0", purple: "#9d7aff"
 };
 
 const mezclar = (arr) => Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
@@ -60,6 +60,89 @@ const SUBTEMAS_LISTA = [
   "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"
 ];
 
+const HANDBOOK_TEORIA = {
+  0: {
+    titulo: "1. Fundamentos de Gestión de Riesgos",
+    teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos de una organización mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades. Se rige por los principios fundamentales establecidos en los estándares internacionales de ASIS International, equilibrando costo, operabilidad y nivel de protección."
+  },
+  1: {
+    titulo: "2. Análisis y Evaluación de Activos",
+    teoria: "El primer paso crítico en la gestión de seguridad es la identificación, valoración y catalogación de los activos críticos de la organización (humanos, físicos, información, intangibles). Un activo se valora en función de su criticidad para la continuidad del negocio y el impacto financiero o reputacional en caso de pérdida."
+  },
+  2: {
+    titulo: "3. Identificación y Análisis de Amenazas",
+    teoria: "Las amenazas representan cualquier circunstancia o evento con el potencial de causar daño o pérdida a un activo. El análisis de amenazas evalúa la intención, capacidad y oportunidad de actores hostiles (internos o externos), desastres naturales y fallas tecnológicas."
+  },
+  3: {
+    titulo: "4. Análisis de Vulnerabilidades",
+    teoria: "Una vulnerabilidad es una debilidad en el diseño, operación, seguridad física o procedimientos de una instalación que puede ser explotada por una amenaza. La evaluación de vulnerabilidades determina la susceptibilidad y efectividad de las defensas actuales."
+  },
+  4: {
+    titulo: "5. Metodologías de Cuantificación de Riesgos",
+    teoria: "Las metodologías cuantitativas y cualitativas permiten estimar el nivel de riesgo combinando la probabilidad de ocurrencia y la severidad del impacto. Modelos como RAMCAP y metodologías basadas en matrices de riesgo de ASIS proporcionan marcos formales de decisión."
+  },
+  5: {
+    titulo: "6. Principios de Diseño de Seguridad Física",
+    teoria: "El diseño de seguridad física se basa en el concepto de defensa en profundidad y CPTED (Crime Prevention Through Environmental Design), utilizando control natural de accesos, territorialidad y refuerzo del espacio para disuadir e impedir intrusiones."
+  },
+  6: {
+    titulo: "7. Contramedidas Perimetrales y Barreras",
+    teoria: "Las barreras perimetrales físicas (cercas, muros, bolardos antiram) retardan, detectan y evalúan el acceso no autorizado antes de que alcancen los activos críticos, sirviendo como la primera línea de defensa activa y pasiva."
+  },
+  7: {
+    titulo: "8. Sistemas de Control de Acceso (PACS)",
+    teoria: "Los sistemas de control de acceso regulan el flujo de personas y vehículos hacia áreas restringidas mediante credenciales, autenticación biométrica y arquitectura de lectores lógicos y físicos integrados."
+  },
+  8: {
+    titulo: "9. Sistemas de Detección de Intrusos y Alarmas",
+    teoria: "Los IDS (Intrusion Detection Systems) emplean sensores volumétricos, magnéticos y microondas para detectar accesos no autorizados en zonas protegidas, transmitiendo alertas en tiempo real a la central de monitoreo."
+  },
+  9: {
+    titulo: "10. Videovigilancia (CCTV) y Analítica",
+    teoria: "Los sistemas de circuito cerrado de televisión modernos utilizan cámaras de alta resolución, compresión de video avanzada y analítica inteligente (reconocimiento facial, cruce de líneas, detección de merodeo) para verificación visual y disuasión."
+  },
+  10: {
+    titulo: "11. Iluminación y Criterios Visuales",
+    teoria: "Una iluminación perimetral e interior adecuada es una contramedida disuasoria y de apoyo operativo crucial para la videovigilancia y la identificación positiva de personas en horarios nocturnos o de baja visibilidad."
+  },
+  11: {
+    titulo: "12. Seguridad de la Información y Ciberseguridad Física",
+    teoria: "Protección convergente de los datos corporativos, servidores y redes de control de seguridad física (OT/IT), previniendo sabotajes lógicos y fugas de información confidencial desde las instalaciones."
+  },
+  12: {
+    titulo: "13. Protección de Ejecutivos y Personal",
+    teoria: "Evaluación de riesgos de viaje, caravanas de seguridad, contravigilancia y protocolos de protección para altos ejecutivos o personal expuesto a amenazas directas."
+  },
+  13: {
+    titulo: "14. Gestión de Crisis y Continuidad de Negocio",
+    teoria: "Planes de respuesta ante emergencias mayores, conformación del comité de crisis, gestión de comunicaciones y estrategias de continuidad operativa (ISO 22301) ante interrupciones graves."
+  },
+  14: {
+    titulo: "15. Planificación de Respuesta a Emergencias",
+    teoria: "Protocolos operativos estándar (SOP) para evacuaciones, sismos, incendios, amenazas de bomba y ataques armados active shooter, coordinados con autoridades locales."
+  },
+  15: {
+    titulo: "16. Investigaciones Corporativas y Entrevistas",
+    teoria: "Metodologías de investigación interna para fraudes, robos o conductas indebidas, técnicas de entrevista profesional, recopilación de evidencia y cadena de custodia."
+  },
+  16: {
+    titulo: "17. Gestión de Contratistas y Proveedores",
+    teoria: "Políticas de selección, verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto para personal externo que labora en las instalaciones."
+  },
+  17: {
+    titulo: "18. Auditoría y Cumplimiento Normativo",
+    teoria: "Evaluación independiente de los sistemas de seguridad frente a normativas vigentes, estándares internacionales (ASIS, ISO 9001, ISO 45001) y políticas internas de la organización."
+  },
+  18: {
+    titulo: "19. Arquitectura de Seguridad Integrada",
+    teoria: "Integración de subcategorías tecnológicas y operativas en una plataforma unificada (PSIM) que centraliza alarmas, video, control de acceso y comunicaciones."
+  },
+  19: {
+    titulo: "20. Liderazgo y Gestión de Operaciones de Seguridad",
+    teoria: "Dirección estratégica del departamento de seguridad, gestión presupuestaria, liderazgo de equipos de supervisores y oficiales, y mejora continua de los servicios de protección."
+  }
+};
+
 export default function SecurePathPSP() {
   const [session, setSession] = useState(null);
   const [authEmail, setAuthEmail] = useState("");
@@ -79,13 +162,13 @@ export default function SecurePathPSP() {
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
-  const [feedbackInmediato, setFeedbackInmediato] = useState(null); // Para mostrar si acertó en tiempo real
+  const [feedbackInmediato, setFeedbackInmediato] = useState(null);
 
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null);
   const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
 
-  // Tutor IA states - Usamos localStorage para persistir el historial de chat
+  // Tutor IA states
   const [mensajesTutor, setMensajesTutor] = useState(() => {
     try {
       const saved = localStorage.getItem("sp_tutor_history");
@@ -109,14 +192,12 @@ export default function SecurePathPSP() {
     } catch {}
   }, []);
 
-  // Guardar historial del tutor cada vez que cambie
   useEffect(() => {
     try {
       localStorage.setItem("sp_tutor_history", JSON.stringify(mensajesTutor));
     } catch {}
   }, [mensajesTutor]);
 
-  // Temporizador para simulacros activos
   useEffect(() => {
     let timer = null;
     if (simulacroPantalla === "activo" && !resultadoFinal) {
@@ -149,6 +230,7 @@ export default function SecurePathPSP() {
   const cargarBanco = async (token) => {
     try {
       const data = await dbGet("preguntas", "select=*", token);
+      console.log("Banco de preguntas cargado:", data);
       setBanco(data || []);
     } catch (err) {
       console.error("Error cargando banco:", err);
@@ -158,9 +240,10 @@ export default function SecurePathPSP() {
   const cargarHistorial = async (userId, token) => {
     try {
       const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
+      console.log("Historial cargado desde Supabase:", data);
       setHistorialUsuario(data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error cargando historial:", err);
     }
   };
 
@@ -235,10 +318,15 @@ export default function SecurePathPSP() {
     );
   }
 
-  // Cálculos precisos para el Dashboard e Historial
   const totalSims = historialUsuario.length;
-  // Soporte robusto para diferentes nombres de columnas de porcentaje en Supabase (puntaje_porcentaje o porcentaje o puntaje)
   const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
+  
+  // Condicional de color para el promedio global según la nota
+  let colorPromedio = C.blue;
+  if (promedioGral >= 80) colorPromedio = C.green;
+  else if (promedioGral >= 60) colorPromedio = C.gold;
+  else if (promedioGral > 0) colorPromedio = C.red;
+
   const avanceSubtemas = `${subtemasCompletados.length}/${SUBTEMAS_LISTA.length}`;
 
   const formatearTiempo = (seg) => {
@@ -273,8 +361,8 @@ export default function SecurePathPSP() {
         {vista === "dashboard" && (
           <div>
             <div style={{ marginBottom: 30 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Panel Ejecutivo de Preparación</h1>
-              <p style={{ color: C.muted, fontSize: 16 }}>Resumen de rendimiento y accesos rápidos para tu certificación PSP®.</p>
+              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola Marcos</h1>
+              <p style={{ color: C.muted, fontSize: 16 }}>Resumen de rendimiento y accesos rápidos para tu preparación.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 40 }}>
@@ -284,7 +372,7 @@ export default function SecurePathPSP() {
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Promedio Global</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.blue }}>{promedioGral}%</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance de Subtareas</div>
@@ -371,9 +459,9 @@ export default function SecurePathPSP() {
                   </div>
                 </div>
 
-                {/* Enunciado de la pregunta con soporte para múltiples propiedades del esquema */}
+                {/* Enunciado de la pregunta con respaldo robusto */}
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>
-                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text}
+                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text || "Pregunta sin texto"}
                 </h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
@@ -381,7 +469,7 @@ export default function SecurePathPSP() {
                     const sel = respuestasUsuario[indiceActual] === op.key;
                     return (
                       <div key={op.key} onClick={() => {
-                        if (!modoConfig.prometric && feedbackInmediato !== null) return; // Bloquear cambio si ya respondió en modo normal
+                        if (!modoConfig.prometric && feedbackInmediato !== null) return;
                         setRespuestasUsuario({ ...respuestasUsuario, [indiceActual]: op.key });
                       }}
                         style={{ padding: 14, background: sel ? C.goldD : C.card, border: `1px solid ${sel ? C.goldB : C.border}`, borderRadius: 8, cursor: "pointer", display: "flex", gap: 12, alignItems: "center" }}>
@@ -392,7 +480,6 @@ export default function SecurePathPSP() {
                   })}
                 </div>
 
-                {/* Retroalimentación Inmediata (Excepto Prometric) */}
                 {!modoConfig.prometric && feedbackInmediato !== null && (
                   <div style={{ background: feedbackInmediato.esCorrecta ? C.greenD : C.redD, border: `1px solid ${feedbackInmediato.esCorrecta ? C.green : C.red}`, padding: 16, borderRadius: 8, marginBottom: 20 }}>
                     <div style={{ fontWeight: "bold", color: feedbackInmediato.esCorrecta ? C.green : C.red, marginBottom: 6 }}>
@@ -439,7 +526,7 @@ export default function SecurePathPSP() {
                             correctas++;
                           } else {
                             erroresDetalle.push({ 
-                              pregunta: p.pregunta || p.enunciado || p.text, 
+                              pregunta: p.pregunta || p.enunciado || p.text || "Pregunta", 
                               tu_respuesta: respUsr || "Sin responder", 
                               correcta: respCorr, 
                               explicacion: p.explicacion || p.explanation || "Sin explicación disponible." 
@@ -449,9 +536,12 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0, detalle_errores: erroresDetalle };
                         try {
-                          await dbPost("sesiones_simulacro", payload, session.access_token);
-                          cargarHistorial(session.user.id, session.access_token);
-                        } catch {}
+                          const resIns = await dbPost("sesiones_simulacro", payload, session.access_token);
+                          console.log("Simulacro guardado exitosamente en Supabase:", resIns);
+                          await cargarHistorial(session.user.id, session.access_token);
+                        } catch (err) {
+                          console.error("Error al guardar simulacro:", err);
+                        }
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar y Ver Resultado</button>
                     )
@@ -487,7 +577,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (UDEMY STYLE CON HANDBOOK) */}
+        {/* 3. GUÍA TEÓRICA CON EL HANDBOOK COMPLETO */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
@@ -506,7 +596,7 @@ export default function SecurePathPSP() {
                             {completado ? "Completado" : "Pendiente"}
                           </span>
                         </div>
-                        <div style={{ fontSize: 13, color: C.muted }}>Teoría oficial, marcos normativos y recursos de estudio.</div>
+                        <div style={{ fontSize: 13, color: C.muted }}>Teoría oficial del Handbook, marcos normativos y recursos.</div>
                       </div>
                     );
                   })}
@@ -518,14 +608,11 @@ export default function SecurePathPSP() {
                 <h2 style={{ fontSize: 24, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
                 
                 <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.7, fontSize: 15 }}>
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>1. Marco Teórico y Conceptos Clave del Handbook</h3>
-                  <p style={{ marginBottom: 16 }}>Este subtema desglosa los principios fundamentales requeridos para la gestión de riesgos y seguridad física según los estándares internacionales de ASIS International. Se abordan definiciones normativas, terminología técnica y reglas críticas de examen.</p>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>{HANDBOOK_TEORIA[subtemaActivo]?.titulo || SUBTEMAS_LISTA[subtemaActivo]}</h3>
+                  <p style={{ marginBottom: 16, whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado en proceso de integración para este módulo."}</p>
                   
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>2. Directrices de Aplicación Práctica</h3>
-                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo real.</p>
-                  
-                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>3. Actividad de Consolidación</h3>
-                  <p style={{ color: C.muted }}>Revisa la teoría anterior, comprende los puntos críticos y haz clic en completar quiz para desbloquear tu avance oficial.</p>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>Directrices de Aplicación Práctica</h3>
+                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección física deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo real según los lineamientos de ASIS.</p>
                 </div>
 
                 <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
@@ -560,44 +647,47 @@ export default function SecurePathPSP() {
               <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {historialUsuario.map((sim, index) => (
-                  <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{historialUsuario.length - index} · Dominio: {sim.dominio || "General"}</div>
-                        <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
+                {historialUsuario.map((sim, index) => {
+                  const notaSim = Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0);
+                  return (
+                    <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{historialUsuario.length - index} · Dominio: {sim.dominio || "General"}</div>
+                          <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color: notaSim >= 80 ? C.green : (notaSim >= 60 ? C.gold : C.red) }}>
+                            {notaSim}%
+                          </span>
+                          <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)}
+                            style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+                            {desplegadoSim === index ? "Ocultar errores" : "Ver detalle de errores"}
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <span style={{ fontSize: 22, fontWeight: 800, color: (Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0)) >= 80 ? C.green : C.gold }}>
-                          {sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0}%
-                        </span>
-                        <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)}
-                          style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                          {desplegadoSim === index ? "Ocultar errores" : "Ver detalle de errores"}
-                        </button>
-                      </div>
-                    </div>
 
-                    {desplegadoSim === index && (
-                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-                        <h4 style={{ fontSize: 14, color: C.red, marginBottom: 8 }}>Retroalimentación de preguntas fallidas:</h4>
-                        {sim.detalle_errores && Array.isArray(sim.detalle_errores) && sim.detalle_errores.length > 0 ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {sim.detalle_errores.map((err, errIdx) => (
-                              <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13 }}>
-                                <div style={{ fontWeight: "bold", marginBottom: 4 }}>{err.pregunta}</div>
-                                <div style={{ color: C.red }}>Tu respuesta: {err.tu_respuesta} | Correcta: {err.correcta}</div>
-                                <div style={{ color: C.muted, marginTop: 4 }}>Explicación: {err.explicacion}</div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p style={{ fontSize: 13, color: C.muted }}>No hay errores registrados en este intento o se completó perfectamente.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      {desplegadoSim === index && (
+                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+                          <h4 style={{ fontSize: 14, color: C.red, marginBottom: 8 }}>Retroalimentación de preguntas fallidas:</h4>
+                          {sim.detalle_errores && Array.isArray(sim.detalle_errores) && sim.detalle_errores.length > 0 ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {sim.detalle_errores.map((err, errIdx) => (
+                                <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13 }}>
+                                  <div style={{ fontWeight: "bold", marginBottom: 4 }}>{err.pregunta}</div>
+                                  <div style={{ color: C.red }}>Tu respuesta: {err.tu_respuesta} | Correcta: {err.correcta}</div>
+                                  <div style={{ color: C.muted, marginTop: 4 }}>Explicación: {err.explicacion}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 13, color: C.muted }}>No hay errores registrados en este intento o se completó perfectamente.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
