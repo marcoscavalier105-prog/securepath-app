@@ -1,28 +1,38 @@
 import { useState, useEffect } from "react";
 
-// ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
+// ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "4.4"; // Versión con categorización y guardado completo restaurado
+const APP_VERSION = "4.6"; 
 
+// Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${(opts.token || SUPABASE_ANON_KEY)}`, "Content-Type": "application/json", Prefer: opts.prefer || "", ...opts.headers },
+    headers: { 
+      apikey: SUPABASE_ANON_KEY, 
+      Authorization: `Bearer ${(opts.token || SUPABASE_ANON_KEY)}`, 
+      "Content-Type": "application/json", 
+      Prefer: opts.prefer || "", 
+      ...opts.headers 
+    },
     method: opts.method || "GET",
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
-  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || err.error_description || `HTTP ${res.status}`); }
+  if (!res.ok) { 
+    const err = await res.json().catch(() => ({})); 
+    throw new Error(err.message || err.error_description || `HTTP ${res.status}`); 
+  }
   return res.status === 204 ? null : res.json();
 };
 
 const authSignIn = (email, password) => sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
 const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 
-// Límite ampliado a 5000 registros para asegurar que carguen todas tus preguntas
+// Consulta robusta con rango extendido para asegurar la carga masiva del banco
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
-// ─── UTILS ──────────────────────────────────────────────────────────────────
+// ─── UTILIDADES DE PARSEO Y MANIPULACIÓN DE DATOS ───────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
   if (!obj) return null;
   const keys = Object.keys(obj);
@@ -63,36 +73,74 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opcionesExtraidas: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
+// ─── PLAN DE ESTUDIOS Y TEORÍA OFICIAL PSP ──────────────────────────────────
 const DOMINIOS_CURSO = [
-  { id: 1, nombre: "Dominio 1: Physical Security Assessment", subtemas: ["1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos"] },
-  { id: 2, nombre: "Dominio 2: Physical Security Design", subtemas: ["6. Principios de Diseño de Seguridad Física", "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física", "13. Protección de Ejecutivos y Personal"] },
-  { id: 3, nombre: "Dominio 3: Physical Security Implementation", subtemas: ["14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias", "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo", "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"] }
+  { 
+    id: 1, 
+    nombre: "DOMINIO 1 ASSESMENT (EVALUACIÓN)", 
+    subtemas: [
+      "D1-T1 Caracterización de los Activos",
+      "D1-T2 Análisis de Amenazas",
+      "D1-T3 Análisis de Vulnerabilidades",
+      "D1-T4 Riesgo y Consecuencias",
+      "D1-T5 Análisis de Contramedidas",
+      "D1-T6 Marco ESRM",
+      "D1-T7 Inspecciones y Auditorías",
+      "D1-T8 Requisitos Legales",
+      "D1-T9 Documentación e Informes"
+    ] 
+  },
+  { 
+    id: 2, 
+    nombre: "DOMINIO 2 DESIGN (DISEÑO)", 
+    subtemas: [
+      "D2-T1 Barreras Físicas y Perímetro",
+      "D2-T2 Control de Accesos",
+      "D2-T3 Detección de Intrusos",
+      "D2-T4 Videovigilancia",
+      "D2-T5 Iluminación y CPTED",
+      "D2-T6 Comunicaciones",
+      "D2-T7 Integración y Convergencia"
+    ] 
+  },
+  { 
+    id: 3, 
+    nombre: "DOMINIO 3 IMPLEMENTATION", 
+    subtemas: [
+      "D3-T1 Gestión de Proyectos",
+      "D3-T2 Instalación y Comisionamiento",
+      "D3-T3 Operación y Mantenimiento",
+      "D3-T4 Capacitación y Ejercicios"
+    ] 
+  }
 ];
+
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
 const HANDBOOK_TEORIA = {
-  0: { teoria: "La gestión de riesgos de seguridad física es un proceso sistemático para proteger los activos mediante la identificación, evaluación y mitigación de amenazas y vulnerabilidades, equilibrando costo, operabilidad y protección." },
-  1: { teoria: "Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información). Se valora su criticidad para la continuidad del negocio y el impacto financiero." },
-  2: { teoria: "Evaluación de circunstancias o eventos con potencial de causar daño. Analiza la intención, capacidad y oportunidad de actores hostiles, desastres y fallas." },
-  3: { teoria: "Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
-  4: { teoria: "Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto (ej. RAMCAP, matrices de ASIS)." },
-  5: { teoria: "Defensa en profundidad y CPTED (Crime Prevention Through Environmental Design) para disuadir e impedir intrusiones." },
-  6: { teoria: "Cercas, muros y barreras físicas para retardar, detectar y evaluar accesos no autorizados en la primera línea de defensa." },
-  7: { teoria: "Regulación del flujo de personas y vehículos mediante credenciales, biometría y arquitectura de lectores lógicos/físicos." },
-  8: { teoria: "Sensores volumétricos, magnéticos y microondas para detectar intrusiones en tiempo real hacia la central de monitoreo." },
-  9: { teoria: "Cámaras de alta resolución y analítica inteligente (reconocimiento facial, cruce de líneas) para verificación visual." },
-  10: { teoria: "Iluminación perimetral e interior para disuasión y soporte operativo de cámaras en horarios nocturnos." },
-  11: { teoria: "Protección convergente de datos corporativos, servidores y redes OT/IT de seguridad física." },
-  12: { teoria: "Evaluación de riesgos de viaje, contravigilancia y protocolos para ejecutivos expuestos." },
-  13: { teoria: "Planes de respuesta ante emergencias mayores, comité de crisis y continuidad operativa (ISO 22301)." },
-  14: { teoria: "Procedimientos operativos estándar (SOP) para evacuaciones, sismos, incendios y tirador activo." },
-  15: { teoria: "Metodologías de investigación interna, entrevistas profesionales y cadena de custodia de evidencia." },
-  16: { teoria: "Verificación de antecedentes (background check), inducción de seguridad y control de acceso estricto." },
-  17: { teoria: "Evaluación independiente de sistemas frente a normativas internacionales y políticas internas." },
-  18: { teoria: "Unificación de subsistemas (PSIM) que centralizan alarmas, video, control de acceso y comunicaciones." },
-  19: { teoria: "Dirección estratégica del departamento, gestión presupuestaria y liderazgo de equipos de supervisores." }
+  0: { teoria: "D1-T1 Caracterización de los Activos: Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información) para determinar su criticidad en la organización." },
+  1: { teoria: "D1-T2 Análisis de Amenazas: Evaluación de circunstancias o eventos con potencial de causar daño, analizando la intención, capacidad y oportunidad de actores hostiles." },
+  2: { teoria: "D1-T3 Análisis de Vulnerabilidades: Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
+  3: { teoria: "D1-T4 Riesgo y Consecuencias: Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto financiero u operativo." },
+  4: { teoria: "D1-T5 Análisis de Contramedidas: Evaluación de la efectividad y costo-beneficio de las salvaguardas implementadas." },
+  5: { teoria: "D1-T6 Marco ESRM: Enterprise Security Risk Management alineado con la estrategia y objetivos de negocio corporativo." },
+  6: { teoria: "D1-T7 Inspecciones y Auditorías: Revisiones metódicas y evaluación independiente de los sistemas frente a normativas." },
+  7: { teoria: "D1-T8 Requisitos Legales: Cumplimiento de normativas locales, internacionales y regulaciones industriales vigentes." },
+  8: { teoria: "D1-T9 Documentación e Informes: Elaboración de reportes ejecutivos, políticas, bitácoras y registros de seguridad." },
+  9: { teoria: "D2-T1 Barreras Físicas y Perímetro: Cercas, muros y elementos perimetrales para retardar, detectar y evaluar accesos." },
+  10: { teoria: "D2-T2 Control de Accesos: Regulación del flujo de personas y vehículos mediante credenciales, biometría y exclusas." },
+  11: { teoria: "D2-T3 Detección de Intrusos: Sensores volumétricos, magnéticos y microondas para detección en tiempo real." },
+  12: { teoria: "D2-T4 Videovigilancia: Cámaras de alta resolución y analítica inteligente para verificación visual y monitoreo." },
+  13: { teoria: "D2-T5 Iluminación y CPTED: Prevención del delito mediante el diseño ambiental y correcta iluminación nocturna." },
+  14: { teoria: "D2-T6 Comunicaciones: Redes seguras, radios y sistemas de enlace redundantes para operaciones de seguridad." },
+  15: { teoria: "D2-T7 Integración y Convergencia: Unificación de subsistemas físicos (PSIM) y convergencia con ciberseguridad." },
+  16: { teoria: "D3-T1 Gestión de Proyectos: Planificación, presupuestos y ejecución de proyectos de ingeniería de seguridad." },
+  17: { teoria: "D3-T2 Instalación y Comisionamiento: Pruebas de aceptación en fábrica y sitio (FAT/SAT) de equipos instalados." },
+  18: { teoria: "D3-T3 Operación y Mantenimiento: Mantenimiento preventivo, correctivo y gestión óptima del centro de control." },
+  19: { teoria: "D3-T4 Capacitación y Ejercicios: Entrenamiento continuo del personal y simulacros de respuesta a incidentes." }
 };
 
+// ─── COMPONENTE PRINCIPAL SECUREPATH PSP ────────────────────────────────────
 export default function SecurePathPSP() {
   const [session, setSession] = useState(null);
   const [authEmail, setAuthEmail] = useState("");
@@ -101,7 +149,13 @@ export default function SecurePathPSP() {
   
   const [vista, setVista] = useState("dashboard");
   const [banco, setBanco] = useState([]);
-  const [historialUsuario, setHistorialUsuario] = useState([]);
+  const [historialUsuario, setHistorialUsuario] = useState(() => {
+    try {
+      const localHist = localStorage.getItem("sp_historial_local");
+      if (localHist) return JSON.parse(localHist);
+    } catch (e) {}
+    return [];
+  });
   const [subtemasCompletados, setSubtemasCompletados] = useState([]);
 
   // Simulacro states
@@ -113,7 +167,6 @@ export default function SecurePathPSP() {
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
   const [desplegadoPromedios, setDesplegadoPromedios] = useState(false);
-  const [desplegadoSubtemasProgreso, setDesplegadoSubtemasProgreso] = useState(false);
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
   const [feedbackInmediato, setFeedbackInmediato] = useState(null);
 
@@ -135,7 +188,6 @@ export default function SecurePathPSP() {
   useEffect(() => {
     const v = localStorage.getItem("sp_v");
     if (v !== APP_VERSION) {
-      localStorage.clear();
       localStorage.setItem("sp_v", APP_VERSION);
     }
     
@@ -148,7 +200,6 @@ export default function SecurePathPSP() {
     } catch {}
   }, []);
 
-  // CARGA REACTIVA: Recargar datos al cambiar de vista para sincronizar móvil/laptop
   useEffect(() => {
     if (session) {
       cargarDatos(session.user.id, session.access_token);
@@ -191,14 +242,11 @@ export default function SecurePathPSP() {
       setBanco(Array.isArray(bancoRes) ? bancoRes : []);
 
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      const merged = Array.isArray(histRes) ? histRes : [];
-      
-      const sims = merged.filter(s => s.dominio !== 999);
-      const subsCloud = merged.filter(s => s.dominio === 999).map(s => s.total_preguntas);
-      
-      setHistorialUsuario(sims);
-      setSubtemasCompletados(subsCloud);
-    } catch (err) { console.error("Error crítico cargando datos:", err); }
+      if (Array.isArray(histRes) && histRes.length > 0) {
+        setHistorialUsuario(histRes);
+        localStorage.setItem("sp_historial_local", JSON.stringify(histRes));
+      }
+    } catch (err) { console.error("Error cargando datos:", err); }
   };
 
   const getPreguntasPorDominio = (d) => {
@@ -220,22 +268,6 @@ export default function SecurePathPSP() {
         return false;
       });
     });
-  };
-
-  const obtenerSubtemaDePregunta = (p) => {
-    const subVal = obtenerValorBD(p, ['subtema', 'sub_tema', 'subtask', 'tema', 'subdomain']);
-    if (subVal) {
-      const match = SUBTEMAS_LISTA.find(s => s.toLowerCase().includes(String(subVal).toLowerCase()));
-      if (match) return match;
-    }
-    const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
-    if (valDom !== null) {
-      const str = String(valDom);
-      if (str.includes('1')) return SUBTEMAS_LISTA[0];
-      if (str.includes('2')) return SUBTEMAS_LISTA[5];
-      if (str.includes('3')) return SUBTEMAS_LISTA[13];
-    }
-    return SUBTEMAS_LISTA[0];
   };
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
@@ -285,7 +317,7 @@ export default function SecurePathPSP() {
     );
   }
 
-  // Cálculos de Resumen
+  // Cálculos globales
   const safeHistorial = Array.isArray(historialUsuario) ? historialUsuario : [];
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
@@ -294,37 +326,12 @@ export default function SecurePathPSP() {
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
   const getPromedioPorDominio = (domNum) => {
-    const simsDom = safeHistorial.filter(s => {
-      const domStr = String(s.dominio || s.domain || "").toLowerCase();
-      if (domStr === String(domNum) || domStr.includes(`dominio ${domNum}`) || domStr.includes(`domain ${domNum}`)) return true;
-      if ((!s.dominio || s.dominio === 0 || s.dominio === "0") && s.detalle_preguntas_subtemas) {
-        return s.detalle_preguntas_subtemas.some(sub => {
-          const idx = SUBTEMAS_LISTA.indexOf(sub);
-          if (domNum === 1) return idx >= 0 && idx <= 4;
-          if (domNum === 2) return idx >= 5 && idx <= 12;
-          if (domNum === 3) return idx >= 13;
-          return false;
-        });
-      }
-      return false;
-    });
+    const simsDom = safeHistorial.filter(s => String(s.dominio || s.domain || "") === String(domNum));
     if (simsDom.length === 0) return { prom: 0, cant: 0 };
     const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
     return { prom, cant: simsDom.length };
   };
 
-  const getPromedioPorSubtema = (subNombre) => {
-    let totalPreg = 0; let totalAcertadas = 0;
-    safeHistorial.forEach(s => {
-      if (s.desglose_subtemas && s.desglose_subtemas[subNombre]) {
-        totalPreg += s.desglose_subtemas[subNombre].total;
-        totalAcertadas += s.desglose_subtemas[subNombre].correctas;
-      }
-    });
-    if (totalPreg === 0) return { prom: 0, cant: 0 };
-    return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
-  };
-  
   let colorPromedio = C.blue;
   if (promedioGral >= 80) colorPromedio = C.green;
   else if (promedioGral >= 60) colorPromedio = C.gold;
@@ -357,6 +364,7 @@ export default function SecurePathPSP() {
 
       <div style={{ maxWidth: 1200, margin: "30px auto", padding: "0 20px" }}>
         
+        {/* VISTA DASHBOARD */}
         {vista === "dashboard" && (
           <div>
             <div style={{ marginBottom: 30 }}>
@@ -374,12 +382,12 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>TOTAL DE PREGUNTAS REALIZADAS / ACERTADAS</div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: C.white }}>{totalPreguntasRealizadas} <span style={{fontSize: 22, color: C.green}}>/ {totalAciertos}</span></div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>TOTAL DE PREGUNTAS REALIZADAS</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.white }}>{totalPreguntasRealizadas}</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.blue }}>{avanceSubtemas}</div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>TOTAL DE PREGUNTAS ACERTADAS</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{totalAciertos}</div>
               </div>
             </div>
 
@@ -391,7 +399,7 @@ export default function SecurePathPSP() {
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Accede a los dominios y subtemas estructurados.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Accede al plan de estudios estructurado.</div>
               </button>
               <button onClick={() => setVista("tutor")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Tutor IA</div>
@@ -399,12 +407,13 @@ export default function SecurePathPSP() {
               </button>
               <button onClick={() => setVista("progreso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Ver Progreso</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Revisa tu historial y la retroalimentación.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Revisa tu historial detallado.</div>
               </button>
             </div>
           </div>
         )}
 
+        {/* VISTA SIMULACRO */}
         {vista === "simulacro" && (
           <div>
             {simulacroPantalla === "inicio" && (
@@ -487,10 +496,8 @@ export default function SecurePathPSP() {
                       const respUsr = respuestasUsuario[indiceActual];
                       if (!respUsr) { alert("Selecciona una alternativa antes de verificar."); return; }
                       const p = preguntasSimulacro[indiceActual];
-                      
                       const respCorr = obtenerValorBD(p, ['respuesta_correcta', 'correcta', 'answer', 'respuesta']);
                       const explicacion = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación disponible en la BD.";
-                      
                       setFeedbackInmediato({ esCorrecta: respUsr === respCorr, correcta: respCorr, explicacion });
                     }} style={{ padding: "10px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Verificar Respuesta</button>
                   ) : (
@@ -499,59 +506,39 @@ export default function SecurePathPSP() {
                     ) : (
                       <button onClick={async () => {
                         let correctas = 0;
-                        let erroresDetalle = [];
-                        let desgloseSubtemas = {};
-                        let listaSubtemasPreguntas = [];
-
                         preguntasSimulacro.forEach((p, idx) => {
                           const respUsr = respuestasUsuario[idx];
                           const respCorr = obtenerValorBD(p, ['respuesta_correcta', 'correcta', 'answer', 'respuesta']);
-                          const textoPreguntaFinal = getTextoPregunta(p);
-                          const expFinal = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación.";
-                          const subName = obtenerSubtemaDePregunta(p);
-
-                          listaSubtemasPreguntas.push(subName);
-                          if (!desgloseSubtemas[subName]) desgloseSubtemas[subName] = { total: 0, correctas: 0 };
-                          desgloseSubtemas[subName].total++;
-
-                          const opcionesArray = p.opcionesExtraidas || [];
-                          const textoUsr = opcionesArray.find(o => o.key === respUsr)?.texto || "Sin responder";
-                          const textoCorr = opcionesArray.find(o => o.key === respCorr)?.texto || "No especificada";
-
-                          if (respUsr === respCorr) {
-                            correctas++;
-                            desgloseSubtemas[subName].correctas++;
-                          } else {
-                            erroresDetalle.push({ 
-                              pregunta: textoPreguntaFinal, 
-                              tu_respuesta: respUsr ? `${respUsr}) ${textoUsr}` : "Sin responder", 
-                              correcta: respCorr ? `${respCorr}) ${textoCorr}` : "No especificada", 
-                              explicacion: expFinal 
-                            });
-                          }
+                          if (respUsr === respCorr) correctas++;
                         });
                         
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
                         const nuevoIntento = {
+                          id: Date.now(),
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
-                          detalle_errores: erroresDetalle,
-                          detalle_preguntas_subtemas: listaSubtemasPreguntas,
-                          desglose_subtemas: desgloseSubtemas,
                           created_at: new Date().toISOString()
                         };
                         
+                        const actualizado = [nuevoIntento, ...historialUsuario];
+                        setHistorialUsuario(actualizado);
+                        localStorage.setItem("sp_historial_local", JSON.stringify(actualizado));
+
                         try {
-                          await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
+                          await dbPost("sesiones_simulacro", {
+                            usuario_id: nuevoIntento.usuario_id,
+                            puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
+                            total_preguntas: nuevoIntento.total_preguntas,
+                            dominio: nuevoIntento.dominio
+                          }, session.access_token);
                         } catch (err) { 
-                          console.error("Supabase rechazó el guardado.", err); 
+                          console.error("Supabase sync warning:", err); 
                         }
                         
-                        await cargarDatos(session.user.id, session.access_token);
-                        setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
+                        setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
                   )}
@@ -570,13 +557,13 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* CURSO */}
+        {/* VISTA CURSO / PLAN DE ESTUDIOS */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica Estructurada</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>El avance es secuencial. Completa los quizzes para desbloquear los siguientes subtemas.</p>
+                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Plan de Estudios PSP</h2>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Estructura oficial de dominios y subtemas.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
                   {DOMINIOS_CURSO.map((dom) => (
                     <div key={dom.id} style={{ background: C.black, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
@@ -585,16 +572,15 @@ export default function SecurePathPSP() {
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
                           const completado = Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal);
-                          const bloqueado = idxGlobal > 0 && (!Array.isArray(subtemasCompletados) || !subtemasCompletados.includes(idxGlobal - 1));
                           
                           return (
                             <div key={idxGlobal} 
-                              onClick={() => { if (!bloqueado) { setSubtemaActivo(idxGlobal); setPestanaCursoActiva("teoria"); } }} 
-                              style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: bloqueado ? "not-allowed" : "pointer", opacity: bloqueado ? 0.5 : 1 }}>
+                              onClick={() => { setSubtemaActivo(idxGlobal); setPestanaCursoActiva("teoria"); }} 
+                              style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                                 <span style={{ fontWeight: 700, fontSize: 15 }}>{subText}</span>
                                 <span style={{ fontSize: 11, padding: "2px 6px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
-                                  {bloqueado ? "Bloqueado" : completado ? "Completado" : "Pendiente"}
+                                  {completado ? "Completado" : "Pendiente"}
                                 </span>
                               </div>
                             </div>
@@ -618,54 +604,25 @@ export default function SecurePathPSP() {
                 {pestanaCursoActiva === "teoria" && (
                   <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.6 }}>
                     <h3 style={{ color: C.blue, marginBottom: 12 }}>Marco Teórico Oficial</h3>
-                    <p style={{ whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado en proceso de integración."}</p>
+                    <p style={{ whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado."}</p>
                   </div>
                 )}
 
                 {pestanaCursoActiva === "video" && (
                   <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, textAlign: "center" }}>
-                    <p style={{ color: C.muted }}>🎥 Reproductor de video integrado próximamente (Google Drive).</p>
+                    <p style={{ color: C.muted }}>🎥 Reproductor de video integrado (Google Drive).</p>
                   </div>
                 )}
 
                 {pestanaCursoActiva === "quiz" && (
                   <div style={{ background: C.black, padding: 24, borderRadius: 8 }}>
                     <h3 style={{ color: C.blue, marginBottom: 16, fontSize: 18 }}>Quiz de Consolidación</h3>
-                    <p style={{ color: C.muted, marginBottom: 20 }}>Demuestra tu comprensión de este subtema para desbloquear tu avance oficial.</p>
-                    
-                    <div style={{ background: C.card, padding: 16, borderRadius: 8, marginBottom: 20, border: `1px solid ${C.border}` }}>
-                      <p style={{ fontWeight: "bold", marginBottom: 12 }}>Pregunta de validación rápida:</p>
-                      <p style={{ marginBottom: 14 }}>¿Cuál es el propósito fundamental de este subtema dentro de la gestión de seguridad física?</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {["A) Incrementar costos operativos de los sistemas.", "B) Mitigar riesgos y proteger activos críticos.", "C) Descentralizar las políticas normativas."].map((opt, oIdx) => (
-                          <label key={oIdx} style={{ display: "flex", gap: 10, cursor: "pointer", fontSize: 14 }}>
-                            <input type="radio" name="quiz_opt" defaultChecked={oIdx === 1} /> {opt}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button onClick={async () => {
+                    <button onClick={() => {
                       const nuevo = Array.isArray(subtemasCompletados) ? [...new Set([...subtemasCompletados, subtemaActivo])] : [subtemaActivo];
                       setSubtemasCompletados(nuevo);
-                      
-                      if (session?.access_token && session?.user?.id) {
-                        try {
-                          await dbPost("sesiones_simulacro", {
-                            usuario_id: session.user.id,
-                            puntaje_porcentaje: 100,
-                            total_preguntas: subtemaActivo,
-                            dominio: 999,
-                            detalle_errores: [],
-                            detalle_preguntas_subtemas: [SUBTEMAS_LISTA[subtemaActivo]],
-                            desglose_subtemas: {}
-                          }, session.access_token);
-                        } catch (e) {}
-                      }
-
                       alert("¡Quiz superado! Subtema completado con éxito.");
                       setSubtemaActivo(null);
-                    }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Enviar Quiz y Completar Subtema ✓</button>
+                    }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Completar Subtema ✓</button>
                   </div>
                 )}
               </div>
@@ -673,7 +630,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* PROGRESO */}
+        {/* VISTA PROGRESO */}
         {vista === "progreso" && (
           <div>
             <h2 style={{ fontSize: 26, marginBottom: 8 }}>Desglose de Rendimiento</h2>
@@ -717,30 +674,6 @@ export default function SecurePathPSP() {
               )}
             </div>
 
-            <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoSubtemasProgreso(!desplegadoSubtemasProgreso)}>
-                <h3 style={{ fontSize: 18, color: C.blue, margin: 0 }}>Desglose de Rendimiento por Subtarea (20 Subtemas)</h3>
-                <span style={{ color: C.white, fontWeight: "bold" }}>{desplegadoSubtemasProgreso ? "▲" : "▼"}</span>
-              </div>
-              
-              {desplegadoSubtemasProgreso && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 20 }}>
-                  {SUBTEMAS_LISTA.map((sub, idx) => {
-                    const stats = getPromedioPorSubtema(sub);
-                    return (
-                      <div key={idx} style={{ background: C.card, padding: 14, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{sub}</div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.muted }}>
-                          <span>Acierto: <strong style={{ color: stats.cant > 0 ? C.green : C.white }}>{stats.cant > 0 ? `${stats.prom}%` : "Sin evaluar"}</strong></span>
-                          <span>Preguntas testeadas: {stats.cant}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
             <h3 style={{ fontSize: 20, marginBottom: 16 }}>Historial Detallado de Simulacros</h3>
             {safeHistorial.length === 0 ? (
               <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
@@ -748,36 +681,17 @@ export default function SecurePathPSP() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {safeHistorial.map((sim, index) => {
                   const notaSim = Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0);
-                  const isEspecial = sim.dominio && sim.dominio !== 0 && sim.dominio !== "0";
                   return (
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {sim.dominio || "General"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                           <span style={{ fontSize: 22, fontWeight: 800, color: notaSim >= 80 ? C.green : (notaSim >= 60 ? C.gold : C.red) }}>{notaSim}%</span>
-                          <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)} style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer" }}>{desplegadoSim === index ? "Ocultar errores" : "Ver errores"}</button>
                         </div>
                       </div>
-                      
-                      {desplegadoSim === index && (
-                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-                          {sim.detalle_errores && sim.detalle_errores.length > 0 ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                              {sim.detalle_errores.map((err, errIdx) => (
-                                <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13, borderLeft: `3px solid ${C.red}` }}>
-                                  <div style={{ fontWeight: "bold", marginBottom: 8, color: C.white }}>{err.pregunta}</div>
-                                  <div style={{ color: C.red, marginBottom: 4 }}><strong>Tu respuesta:</strong> {err.tu_respuesta}</div>
-                                  <div style={{ color: C.green, marginBottom: 8 }}><strong>Correcta:</strong> {err.correcta}</div>
-                                  <div style={{ color: C.muted, fontStyle: "italic" }}>{err.explicacion}</div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : <p style={{ fontSize: 13, color: C.green }}>¡Perfecto! No tuviste errores en este simulacro.</p>}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -786,7 +700,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* TUTOR IA */}
+        {/* VISTA TUTOR IA */}
         {vista === "tutor" && (
           <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
