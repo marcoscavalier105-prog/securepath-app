@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "2.8";
+const APP_VERSION = "4.3"; // Versión completa y definitiva
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -17,7 +17,9 @@ const sb = async (path, opts = {}) => {
 
 const authSignIn = (email, password) => sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
 const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
-const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token });
+
+// Rango ampliado a 5000 registros para asegurar que carguen todas tus preguntas
+const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
 // ─── UTILS ──────────────────────────────────────────────────────────────────
@@ -146,6 +148,13 @@ export default function SecurePathPSP() {
     } catch {}
   }, []);
 
+  // CARGA REACTIVA: Recargar datos al cambiar de vista para sincronizar móvil/laptop
+  useEffect(() => {
+    if (session) {
+      cargarDatos(session.user.id, session.access_token);
+    }
+  }, [vista]);
+
   useEffect(() => {
     try { localStorage.setItem("sp_tutor_history", JSON.stringify(Array.isArray(mensajesTutor) ? mensajesTutor : [])); } catch {}
   }, [mensajesTutor]);
@@ -189,7 +198,6 @@ export default function SecurePathPSP() {
       
       setHistorialUsuario(sims);
       setSubtemasCompletados(subsCloud);
-      localStorage.setItem("sp_subtemas", JSON.stringify(subsCloud));
     } catch (err) { console.error("Error crítico cargando datos:", err); }
   };
 
@@ -282,7 +290,7 @@ export default function SecurePathPSP() {
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
-  const totalPreguntasRespondidas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
+  const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
   const getPromedioPorDominio = (domNum) => {
@@ -353,7 +361,7 @@ export default function SecurePathPSP() {
           <div>
             <div style={{ marginBottom: 30 }}>
               <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola Marcos</h1>
-              <p style={{ color: C.muted, fontSize: 16 }}>Resumen de rendimiento y accesos rápidos para tu preparación.</p>
+              <p style={{ color: C.muted, fontSize: 16 }}>Banco cargado: <strong>{banco.length} preguntas</strong> en total.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 40 }}>
@@ -366,8 +374,8 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Realizadas / Acertadas</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.white }}>{totalPreguntasRespondidas} <span style={{fontSize: 24, color: C.green}}>/ {totalAciertos}</span></div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>TOTAL DE PREGUNTAS REALIZADAS / ACERTADAS</div>
+                <div style={{ fontSize: 30, fontWeight: 800, color: C.white }}>{totalPreguntasRealizadas} <span style={{fontSize: 22, color: C.green}}>/ {totalAciertos}</span></div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico</div>
@@ -402,7 +410,7 @@ export default function SecurePathPSP() {
             {simulacroPantalla === "inicio" && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <h2 style={{ fontSize: 24, marginBottom: 8 }}>Módulo de Simulacros</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Banco total: {banco.length} preguntas</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Banco total disponible: {banco.length} preguntas</p>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
                   <button onClick={() => iniciarSimulacro("rapido", 10, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
@@ -526,7 +534,6 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
                         const nuevoIntento = {
-                          id: Date.now(),
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
@@ -538,15 +545,7 @@ export default function SecurePathPSP() {
                         };
                         
                         try {
-                          await dbPost("sesiones_simulacro", {
-                            usuario_id: nuevoIntento.usuario_id,
-                            puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
-                            total_preguntas: nuevoIntento.total_preguntas,
-                            dominio: nuevoIntento.dominio,
-                            detalle_errores: nuevoIntento.detalle_errores,
-                            detalle_preguntas_subtemas: nuevoIntento.detalle_preguntas_subtemas,
-                            desglose_subtemas: nuevoIntento.desglose_subtemas
-                          }, session.access_token);
+                          await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
                         } catch (err) { 
                           console.error("Supabase rechazó el guardado.", err); 
                         }
