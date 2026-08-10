@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 // ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4"; // ← pega tu anon public key
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -23,192 +23,57 @@ const sb = async (path, opts = {}) => {
   return res.status === 204 ? null : res.json();
 };
 
-// Auth helpers
-const authSignUp = (email, password) =>
-  sb("/auth/v1/signup", { method: "POST", body: { email, password } });
 const authSignIn = (email, password) =>
   sb("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
 const authSignOut = (token) =>
   sb("/auth/v1/logout", { method: "POST", token });
 
-// DB helpers
 const dbGet = (table, query, token) =>
   sb(`/rest/v1/${table}?${query}`, { token });
-const dbPost = (table, body, token) =>
-  sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
-const dbUpsert = (table, body, token, onConflict) =>
-sb(`/rest/v1/${table}?on_conflict=${onConflict}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
-const dbDelete = (table, query, token) =>
-sb(`/rest/v1/${table}?${query}`, { method: "DELETE", token });
 
-// ─── PALETA ───────────────────────────────────────────────────────────────────
+// ─── PALETA DE COLORES Y ESTILOS ──────────────────────────────────────────────
 const C = {
-  black: "#0f2c45", dark: "#1a3f60", card: "#204a70",
-  border: "rgba(216,232,240,0.10)", gold: "#ff5a1f", gold2: "#ff7d47",
-  goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
-  white: "#e3edf2", muted: "#6f8797", green: "#3ddc84",
-  greenD: "rgba(61,220,132,0.10)", greenB: "rgba(61,220,132,0.28)",
-  red: "#ff5c5c", redD: "rgba(255,92,92,0.08)", redB: "rgba(255,92,92,0.32)",
-  blue: "#5fb8e0", blueD: "rgba(95,184,224,0.08)", blueB: "rgba(95,184,224,0.25)",
-  purple: "#9d7aff",
+  black: "#0b1d2a", dark: "#132c3f", card: "#1b3a52",
+  border: "rgba(216,232,240,0.12)", gold: "#ff5a1f", goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
+  white: "#e3edf2", muted: "#7a92a3", green: "#3ddc84", greenD: "rgba(61,220,132,0.10)",
+  red: "#ff5c5c", redD: "rgba(255,92,92,0.08)", blue: "#5fb8e0", purple: "#9d7aff"
 };
 
-// ─── UTILIDADES ───────────────────────────────────────────────────────────────
-const mezclar = (arr) => Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
-const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
-  // Asegurar que p.opciones sea un arreglo válido (ya sea array o si viene como objeto JSON/diccionario)
-  let ops = p.opciones;
-  if (ops && !Array.isArray(ops) && typeof ops === "object") {
-    // Si está guardado como {"A": "...", "B": "..."} lo convertimos a array de objetos
-    ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
-  }
-  return { ...p, opciones: mezclar(Array.isArray(ops) ? ops : []) };
-});
-const fmtTiempo = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-const colorDominio = (d) => [C.gold, C.blue, C.purple][d - 1] || C.gold;
-const nombreDominio = (d) => ["Physical Security Assessment", "Application & Design", "Implementation"][d - 1] || "";
-
-const MENSAJES_DIA = [
-  "Cada pregunta que respondes hoy es una menos que puede sorprenderte el día del examen.",
-  "El PSP no se memoriza — se entiende. Estudia los principios, no las respuestas.",
-  "Los candidatos que pasan el PSP estudian en promedio 150 horas. ¿Cuántas llevas tú?",
-  "ASIS mide tu capacidad de aplicar criterio profesional, no de recitar definiciones.",
-  "Estudiar con banco de 400 preguntas es 4x más efectivo que con 100. Aprovéchalo.",
-  "El dominio más difícil es el que menos has practicado. Entra a la guía teórica hoy.",
-  "Cada explicación que lees después de un error vale más que 10 preguntas contestadas al azar.",
-];
-
-// ─── GUÍA TEÓRICA ─────────────────────────────────────────────────────────────
-const GUIA = [
-  { codigo:"D1-ST1", dominio:1, titulo:"Caracterización de Activos", resumen:"El Asset Characterization es el primer paso obligatorio de cualquier evaluación de riesgos según ASIS. Sin saber qué se protege, no se puede evaluar ninguna amenaza ni vulnerabilidad.", conceptos:[{term:"Activo",def:"Todo recurso de valor para la organización: personas, información, instalaciones, equipos, procesos y reputación."},{term:"Criticidad del activo",def:"Determinada por su valor, la consecuencia de su pérdida y la dificultad de reposición. Alta criticidad = impacto irreversible."},{term:"Asset Characterization",def:"Proceso de inventariar, describir y priorizar los activos antes de cualquier análisis de amenazas o vulnerabilidades."},{term:"Interdependencias",def:"Activos que dependen entre sí. La falla de uno puede comprometer a otros. Deben mapearse durante la caracterización."},{term:"Propietario del activo",def:"Área de negocio responsable del activo. En ESRM, es quien toma decisiones de tratamiento del riesgo."}], reglas:["Asset Characterization es SIEMPRE el paso 1 del proceso ASIS.","Un activo sin propietario definido no puede tener riesgo gestionado.","El valor del activo incluye valor operacional, estratégico y reputacional — no solo monetario."], referencia:"ASIS Risk Assessment Standard, Section 4.2" },
-  { codigo:"D1-ST2", dominio:1, titulo:"Análisis de Amenazas", resumen:"El Threat Analysis identifica y evalúa las amenazas que pueden afectar los activos. Una amenaza adversarial requiere capacidad E intención para ser real.", conceptos:[{term:"Amenaza",def:"Cualquier evento o agente con potencial de causar daño a un activo. Incluye adversarios humanos, errores, fallas y desastres naturales."},{term:"Capacidad + Intención",def:"Los dos factores que determinan la probabilidad de una amenaza adversarial. Sin ambos, la amenaza es teórica."},{term:"Threat History",def:"Historial de incidentes similares en la instalación, sector o región. Informa la probabilidad con datos reales."},{term:"Insider Threat",def:"Amenaza originada en personal con acceso legítimo. Frecuentemente la más subestimada y con mayor capacidad de daño."},{term:"Escalas cualitativas",def:"ASIS usa Bajo/Medio/Alto en lugar de probabilidades numéricas porque rara vez existen datos estadísticos suficientes."}], reglas:["Baja probabilidad + consecuencia catastrófica = riesgo ALTO. No ignorar.","El threat analysis debe revisarse ante cambios en el entorno operacional.","Una amenaza con alta capacidad pero sin intención (o viceversa) es teórica, no crítica."], referencia:"ASIS Risk Assessment Standard, Section 4.3" },
-  { codigo:"D1-ST3", dominio:1, titulo:"Análisis de Vulnerabilidades", resumen:"Una vulnerabilidad es una debilidad explotable. El VA identifica y prioriza debilidades físicas, operacionales y tecnológicas en las medidas de protección.", conceptos:[{term:"Vulnerabilidad",def:"Debilidad en diseño, implementación, procedimientos o controles que puede ser explotada por una amenaza."},{term:"Vulnerabilidad física",def:"Debilidades en barreras, accesos, iluminación, perímetro u otras contramedidas físicas."},{term:"Vulnerabilidad operacional",def:"Gaps en procedimientos, capacitación, supervisión o cumplimiento. La más frecuente y peligrosa."},{term:"Gap de implementación",def:"El control existe documentado pero no se aplica en la práctica. Crea falsa sensación de seguridad."},{term:"Vulnerabilidad residual",def:"La vulnerabilidad que permanece después de implementar contramedidas. Ningún sistema es 100% seguro."}], reglas:["Vulnerabilidad ≠ Amenaza ≠ Riesgo. Conceptos distintos con roles distintos en la metodología.","El VA usa: recorrido físico + entrevistas + revisión documental + pruebas funcionales.","Un sistema que solo tiene documentación pero no la aplica tiene vulnerabilidades operacionales críticas."], referencia:"ASIS Risk Assessment Standard, Section 4.4" },
-  { codigo:"D1-ST4", dominio:1, titulo:"Análisis de Riesgo y Consecuencias", resumen:"Riesgo = Probabilidad × Vulnerabilidad × Consecuencia. El Consequence Analysis evalúa el impacto multidimensional si la amenaza se materializa.", conceptos:[{term:"Fórmula del riesgo ASIS",def:"Riesgo = Probabilidad × Vulnerabilidad × Consecuencia. Las tres variables son necesarias."},{term:"Consecuencia catastrófica",def:"Impacto irreversible: pérdida de vidas, quiebra organizacional o daño permanente. Genera riesgo ALTO incluso con baja probabilidad."},{term:"Riesgo inherente vs residual",def:"Inherente: sin contramedidas. Residual: después de contramedidas. El objetivo es reducir el inherente a un residual aceptable."},{term:"5 dimensiones de consecuencia",def:"Financiero + Operacional + Reputacional + Regulatorio/Legal + Seguridad de personas."},{term:"Opciones de tratamiento",def:"Evitar, Mitigar, Transferir (seguros) y Aceptar. La gerencia decide — no el PSP."}], reglas:["La tolerancia al riesgo (risk appetite) es una decisión de la gerencia, no del PSP.","La aceptación de riesgos por la gerencia debe documentarse formalmente.","El risk register es dinámico — se actualiza ante cambios en amenazas, activos u operaciones."], referencia:"ASIS Risk Assessment Standard, Section 4.5" },
-  { codigo:"D1-ST5", dominio:1, titulo:"Análisis de Contramedidas", resumen:"Las contramedidas reducen el riesgo a niveles aceptables. Deben ser proporcionales al riesgo y cubrir las 5 funciones del modelo Deter-Detect-Delay-Respond-Recover.", conceptos:[{term:"Proporcionalidad",def:"Las contramedidas deben ser proporcionales al nivel de riesgo identificado. Ni más ni menos."},{term:"Preventiva / Detectiva / Correctiva",def:"Preventiva: antes del incidente. Detectiva: durante. Correctiva: después para restaurar."},{term:"D-D-D-R-R",def:"Deter → Detect → Delay → Respond → Recover. El conjunto de contramedidas debe cubrir las 5 funciones."},{term:"Layered security",def:"Capas concéntricas de contramedidas. Si una falla, las siguientes compensan. Ninguna capa es infalible aislada."},{term:"Contramedida compensatoria",def:"Medida alternativa cuando la contramedida ideal no puede implementarse. Debe documentarse su equivalencia."}], reglas:["Life safety SIEMPRE tiene precedencia sobre la seguridad de activos.","Las contramedidas rechazadas por la gerencia deben documentarse con el riesgo residual resultante.","El Countermeasure Analysis concluye con la entrega del informe — la implementación es una fase posterior."], referencia:"ASIS Risk Assessment Standard, Section 5" },
-  { codigo:"D1-ST6", dominio:1, titulo:"Marco ESRM", resumen:"ESRM alinea la seguridad con los objetivos del negocio. El Security Manager deja de ser 'jefe de guardias' para ser 'asesor estratégico de riesgos de negocio'.", conceptos:[{term:"ESRM",def:"Marco que posiciona la seguridad como función de gestión de riesgos empresariales, no como función técnica aislada."},{term:"Propietario del riesgo",def:"El responsable del área de negocio. Conoce mejor el valor de sus activos y toma las decisiones de tratamiento."},{term:"Ciclo ESRM",def:"Identificar y priorizar → Mitigar → Responder e investigar → Aprender y mejorar. Proceso continuo."},{term:"Security as business enabler",def:"La seguridad protege las condiciones que permiten operar, crecer y competir. No es costo — es habilitador."},{term:"Métricas ESRM",def:"Mide éxito en: riesgo reducido, valor protegido, riesgo residual gestionado — no en número de incidentes."}], reglas:["El PSP presenta opciones con costo-beneficio. La gerencia decide.","El primer paso para implementar ESRM es obtener el respaldo de la alta dirección y cambiar el lenguaje a 'negocio'.","ESRM y ISO 31000 son complementarios — el ESRM aplica los principios del ISO 31000 al dominio de seguridad."], referencia:"ASIS ESRM Guideline" },
-  { codigo:"D1-ST7", dominio:1, titulo:"Inspecciones y Auditorías", resumen:"Survey (¿qué existe?) ≠ Assessment (¿cuál es el riesgo?) ≠ Audit (¿se cumple lo establecido?). Son herramientas distintas para propósitos distintos.", conceptos:[{term:"Security Audit",def:"Revisión sistemática e independiente que verifica conformidad con políticas, estándares y objetivos."},{term:"Madurez del programa",def:"Documentado → Implementado → Medido → Gestionado → Optimizado. Un programa puede tener tecnología avanzada pero baja madurez."},{term:"No conformidad mayor",def:"Brecha entre lo documentado y lo practicado en controles críticos. Requiere acción correctiva con causa raíz."},{term:"Causa raíz",def:"El origen real del problema. Las acciones correctivas que atacan solo el síntoma generan recurrencia."},{term:"Tipos de auditoría",def:"1ra parte (interna) / 2da parte (cliente/contratante) / 3ra parte (organismo externo independiente)."}], reglas:["La independencia del auditor es esencial. No puede reportar al área auditada.","Los criterios de evaluación se definen ANTES de ejecutar la auditoría — no durante.","Una auditoría sin plan de seguimiento (follow-up) es un ejercicio incompleto."], referencia:"ASIS Security Audit Standard" },
-  { codigo:"D1-ST8", dominio:1, titulo:"Requisitos Legales y Normativos", resumen:"El PSP en Perú opera bajo múltiples normas simultáneas. La ley establece el piso mínimo; los estándares ASIS son las mejores prácticas. Ambos aplican a la vez.", conceptos:[{term:"Ley 28879",def:"Ley de Servicios de Seguridad Privada. Regula habilitaciones, funciones permitidas y prohibidas."},{term:"DS 003-2011-IN",def:"Reglamento de la Ley 28879. Personal armado requiere Licencia SUCAMEC. Responsabilidad solidaria del contratante."},{term:"Ley 29783",def:"Seguridad y Salud en el Trabajo. Identificar peligros, evaluar riesgos, adoptar controles proporcionales."},{term:"Ley 29733",def:"Protección de Datos Personales. Las imágenes de CCTV son datos personales. Requieren aviso visible y retención limitada."},{term:"Responsabilidad solidaria",def:"La empresa contratante responde junto a la empresa de seguridad privada. Terciarizar no exime de responsabilidad."}], reglas:["Seguridad privada NO puede detener, investigar criminalmente ni ejercer funciones de inteligencia del Estado.","El uso de la fuerza: proporcional + subsidiario + limitado a lo necesario para neutralizar la amenaza.","CCTV en baños, vestuarios y salas de lactancia: PROHIBIDO absolutamente."], referencia:"Ley 28879, DS 003-2011-IN, Ley 29783, Ley 29733" },
-  { codigo:"D1-ST9", dominio:1, titulo:"Documentación e Informes", resumen:"Los informes de evaluación son documentos altamente sensibles que revelan vulnerabilidades. Deben ser objetivos, específicos y accionables.", conceptos:[{term:"Estructura del informe",def:"Portada → Resumen ejecutivo → Alcance y metodología → Hallazgos → Recomendaciones priorizadas → Anexos."},{term:"Resumen ejecutivo",def:"En lenguaje de negocio para la alta gerencia. Sin jerga técnica. Impacto en objetivos, opciones, inversiones."},{term:"Chain of custody",def:"Registro de quién tuvo acceso a una evidencia desde su recolección. Hash criptográfico + registro de accesos."},{term:"Risk register",def:"Documento dinámico: riesgo + nivel + tratamiento + responsable + estado + riesgo residual actual."},{term:"Gap analysis",def:"Comparación estado actual vs. estado deseado del programa para identificar brechas a cerrar."}], reglas:["Hallazgo = descriptivo (qué existe). Recomendación = prescriptivo (qué hacer). No confundirlos.","El PSP no puede omitir hallazgos a pedido del cliente. La solución es clasificación correcta, no alteración.","Retención recomendada de informes: 5-7 años mínimo."], referencia:"ASIS Risk Assessment Standard - Documentation" },
-  { codigo:"D2-ST1", dominio:2, titulo:"Barreras Físicas y Perímetro", resumen:"Las barreras físicas cumplen la función DELAY. No eliminan la intrusión — compran tiempo para que llegue la respuesta.", conceptos:[{term:"Función DELAY",def:"El propósito principal de las barreras: retrasar al intruso el tiempo necesario para que la respuesta llegue antes de que alcance el activo."},{term:"Zonas concéntricas",def:"Perímetro exterior → Perímetro del edificio → Área protegida interior. Cada zona tiene sus propios controles."},{term:"Clear zone",def:"Espacio despejado a ambos lados de la cerca. Elimina ocultamiento, permite visibilidad y patrulla vehicular."},{term:"Standoff distance",def:"Distancia entre el perímetro y la estructura. Crítica en protección anti-VBIED: la onda de presión se disipa con la distancia."},{term:"CPTED",def:"4 principios: Vigilancia natural + Control natural de accesos + Refuerzo territorial + Mantenimiento."}], reglas:["Cerca eslabón de cadena: mínimo 1.8m con extensión superior inclinada hacia afuera.","Gap inferior de cerca: máximo 5 cm del suelo.","Ramas de árboles sobre la cerca = vulnerabilidad documentada."], referencia:"ASIS Physical Security Standard - Perimeter" },
-  { codigo:"D2-ST2", dominio:2, titulo:"Sistemas de Control de Acceso", resumen:"El ACS gestiona quién accede a qué y cuándo. El principio need-to-go (mínimo privilegio) es el fundamento de todo diseño.", conceptos:[{term:"Tres factores de autenticación",def:"TIENES (tarjeta) + SABES (PIN) + ERES (biometría). MFA combina dos o más factores."},{term:"Need-to-go",def:"Mínimo privilegio: cada persona accede solo a las áreas estrictamente necesarias para su función."},{term:"Anti-passback",def:"Impide usar una credencial para ingresar si no registró salida previa. Previene el tailgating de credencial."},{term:"Fail-safe vs fail-secure",def:"Fail-safe: al fallar queda abierta (prioriza evacuación). Fail-secure: queda cerrada (prioriza el activo)."},{term:"Credential lifecycle",def:"Onboarding → Cambios de rol → Offboarding inmediato. La falla en offboarding genera credenciales activas de exempleados."}], reglas:["Salidas de emergencia: SIEMPRE fail-safe. Life safety no se negocia.","Credenciales de exempleados activas = no conformidad crítica.","El duress code activa alarma silenciosa cuando el usuario es coaccionado."], referencia:"ASIS Physical Security Standard - ACS" },
-  { codigo:"D2-ST3", dominio:2, titulo:"Sistemas de Detección de Intrusos", resumen:"El IDS cumple la función DETECT. Debe detectar la intrusión dentro del tiempo de demora que las barreras ofrecen para que la respuesta llegue a tiempo.", conceptos:[{term:"Time-to-detect (TTD)",def:"Tiempo entre el inicio de la intrusión y la generación de la alerta. Debe ser menor que el tiempo de demora de las barreras."},{term:"Sensor dual-tech",def:"PIR + microondas. Solo alarma si ambos detectan simultáneamente. Reduce drásticamente las falsas alarmas."},{term:"Tamper detection",def:"Alerta cuando el sensor es manipulado. Un adversario sofisticado neutraliza sensores antes de ingresar."},{term:"Supervisión de línea",def:"Monitorea el circuito de comunicación. Si el cable es cortado, genera alarma inmediata."},{term:"Alarm fatigue",def:"Exceso de falsas alarmas → operadores ignoran todas las alarmas → las reales también se ignoran. Mayor riesgo operacional."}], reglas:["Tasa de falsas alarmas aceptable: < 10%. Mayor requiere investigación de causa raíz.","IDS perimetral + IDS interior = detección en capas concéntricas.","Pruebas periódicas del IDS son mantenimiento preventivo obligatorio."], referencia:"ASIS Physical Security Standard - IDS" },
-  { codigo:"D2-ST4", dominio:2, titulo:"Videovigilancia (CCTV)", resumen:"El CCTV cumple funciones proactiva (prevención en tiempo real) y reactiva (investigación forense). Un buen diseño sirve para ambas.", conceptos:[{term:"Detección / Reconocimiento / Identificación",def:"Tres niveles de calidad de imagen. Identificación requiere mayor resolución (~50-100 píxeles por metro de sujeto)."},{term:"Frame rate",def:"Mínimo 15 fps para uso forense. A menor fps se pierden movimientos rápidos."},{term:"WDR",def:"Wide Dynamic Range. Necesario cuando hay zonas muy brillantes y muy oscuras en el mismo encuadre (ej: entradas con sol)."},{term:"Video analytics",def:"Detecta eventos automáticamente. Reduce la dependencia del monitoreo humano continuo. Transforma el CCTV de reactivo a proactivo."},{term:"VMS",def:"Video Management System. Gestiona grabación, reproducción, búsqueda, usuarios e integración de todas las cámaras IP."}], reglas:["CCTV en baños, vestuarios y salas de lactancia: PROHIBIDO.","Aviso de videovigilancia visible: obligatorio (Ley 29733 Perú).","La cadena de custodia de grabaciones incluye hash criptográfico + registro de cada acceso posterior."], referencia:"ASIS Physical Security Standard - CCTV" },
-  { codigo:"D2-ST5", dominio:2, titulo:"Iluminación y CPTED", resumen:"La iluminación de seguridad tiene estándares mínimos, requiere respaldo energético y mantenimiento programado. No es solo operacional — es parte del sistema de protección.", conceptos:[{term:"Foot-candle (fc)",def:"Unidad de iluminancia. Peatonal exterior: ≥ 0.5 fc. Entradas: ≥ 2 fc. Inspección vehicular: ≥ 5 fc. Clear zone: ≥ 0.5 fc."},{term:"Uniformidad",def:"Relación máximo/mínimo de iluminación. Alta uniformidad evita zonas de sombra que sirven de ocultamiento."},{term:"Glare (deslumbramiento)",def:"Fuente brillante que deslumbra a guardias o cámaras. Puede ser usado intencionalmente por un atacante."},{term:"Orientación hacia afuera",def:"La iluminación perimetral apunta afuera: ilumina al intruso, deja al guardia en penumbra (ve sin ser visto)."},{term:"CPTED - 4 principios",def:"Vigilancia natural + Control natural de accesos + Refuerzo territorial + Mantenimiento."}], reglas:["Luminarias de seguridad deben tener respaldo energético: los cortes eléctricos ocurren en emergencias.","La vegetación sin mantenimiento crea puntos de ocultamiento — vulnerabilidad de seguridad documentada.","Light trespass: la luz de seguridad no debe derramarse sobre propiedades vecinas."], referencia:"ASIS Physical Security Standard - Lighting" },
-  { codigo:"D2-ST6", dominio:2, titulo:"Sistemas de Comunicación", resumen:"Los sistemas de comunicación son el sistema nervioso de la seguridad. Deben ser redundantes porque tienden a fallar exactamente durante las emergencias.", conceptos:[{term:"Redundancia real",def:"Múltiples canales INDEPENDIENTES (radio + teléfono + celular + satelital). Dos radios del mismo sistema NO es redundancia."},{term:"Duress alarm",def:"Botón de pánico SILENCIOSO. Alerta al CCS sin que el atacante lo sepa. Silencioso para no provocar escalada."},{term:"Sistema PA de emergencia",def:"Transmite instrucciones a toda la instalación simultáneamente. Cobertura total + respaldo energético obligatorios."},{term:"Comunicación degradada",def:"Plan cuando los sistemas primarios fallan: canales alternativos, procedimientos simplificados, puntos de encuentro."},{term:"Protocolo de notificación",def:"Información temprana incompleta es mejor que información tardía completa. Primer mensaje: qué, dónde, cuándo, estado."}], reglas:["El CCS debe tener protocolos predefinidos y probados con PNP, bomberos y emergencias médicas.","Todas las comunicaciones del CCS durante un incidente deben grabarse.","La latencia de comunicación consume el tiempo de demora que las barreras proporcionan."], referencia:"ASIS Physical Security Standard - Communications" },
-  { codigo:"D2-ST7", dominio:2, titulo:"Integración y Convergencia", resumen:"La integración permite que los sistemas respondan coordinadamente. La convergencia física-cibernética reconoce que las amenazas modernas cruzan ambos dominios.", conceptos:[{term:"Integración ACS-CCTV",def:"Un evento en el ACS activa automáticamente la cámara correcta. Acelera la verificación y el forense."},{term:"PSIM",def:"Physical Security Information Management. Integra todos los sistemas, correlaciona eventos, guía al operador."},{term:"ONVIF / OSDP",def:"Protocolos abiertos. ONVIF: cámaras IP. OSDP: lectores de acceso. Evitan el vendor lock-in."},{term:"Convergencia física-cibernética",def:"Ataque físico con objetivo cibernético (insertar dispositivo en red) y viceversa (hackear ACS para abrir puertas)."},{term:"Ciberseguridad de sistemas físicos",def:"Cambiar contraseñas por defecto + firmware actualizado + VLAN separada. Las cámaras IP son activos cibernéticos."}], reglas:["Testing de integración verifica los flujos entre sistemas, no solo el funcionamiento individual de cada uno.","Protocolos propietarios = vendor lock-in. Mayor costo de expansión, dependencia total del proveedor.","El SOC es el punto único de falla del sistema integrado. Debe tener redundancia."], referencia:"ASIS Physical Security Standard - Integration" },
-  { codigo:"D3-ST1", dominio:3, titulo:"Gestión de Proyectos y Adquisiciones", resumen:"Los proyectos de seguridad siguen el ciclo PMI. La triple restricción (Alcance-Tiempo-Costo) aplica siempre. El scope creep es el riesgo más frecuente y costoso.", conceptos:[{term:"Triple restricción",def:"Alcance + Tiempo + Costo. Cambiar uno impacta a los demás. La calidad sufre si se ignora el balance."},{term:"Scope creep",def:"Expansión no controlada del alcance por cambios informales. Se controla con proceso formal de control de cambios."},{term:"WBS",def:"Work Breakdown Structure. Descomposición jerárquica del proyecto. Base del cronograma y el presupuesto."},{term:"CAPEX vs OPEX",def:"CAPEX: inversión en activos (instalación). OPEX: costos recurrentes de operación y mantenimiento."},{term:"Especificación de desempeño",def:"Define QUÉ debe lograr el sistema, no qué instalar. Garantiza competencia real, evita especificaciones propietarias."}], reglas:["Los milestones son puntos de verificación de entregables — vinculados típicamente a pagos.","La gestión de stakeholders es crítica: RRHH, TI, Operaciones. Ignorarlos genera resistencia que bloquea el proyecto.","Contingencia (10-15%) se usa solo para riesgos identificados materializados — no para compensar errores."], referencia:"ASIS Physical Security Standard - Project Management" },
-  { codigo:"D3-ST2", dominio:3, titulo:"Instalación y Comisionamiento", resumen:"Instalación ≠ Comisionamiento. Un sistema instalado pero no comisionado puede no cumplir los requerimientos. El comisionamiento es la verificación formal del funcionamiento.", conceptos:[{term:"Comisionamiento",def:"Verificación sistemática de que el sistema completo funciona según los requerimientos del propietario."},{term:"Planos as-built",def:"Documentan cómo quedó realmente instalado (con todos los cambios). Indispensables para mantenimiento futuro."},{term:"FAT vs SAT",def:"FAT: verifica en fábrica antes del envío. SAT: verifica en el sitio real con condiciones e integraciones reales."},{term:"Aceptación provisional",def:"Sistema funciona con deficiencias menores pendientes de corrección. Las garantías corren desde aquí."},{term:"Protocolo de pruebas",def:"Define qué se probará, cómo, criterio de éxito/fallo, y quién aprueba. Se acuerda ANTES de ejecutar."}], reglas:["Planos as-built: entregable obligatorio del dossier de cierre.","El comisionamiento finaliza con la aceptación firmada del cliente, no con el pago final.","Etiquetado debe coincidir entre etiqueta física, planos y software del sistema."], referencia:"ASIS Physical Security Standard - Commissioning" },
-  { codigo:"D3-ST3", dominio:3, titulo:"Operaciones y Mantenimiento", resumen:"Un sistema sin mantenimiento se degrada silenciosamente hasta fallar en el momento más crítico. El mantenimiento preventivo es inversión — no gasto.", conceptos:[{term:"Mantenimiento preventivo",def:"Acciones planificadas para mantener el sistema funcionando y prevenir fallas antes de que ocurran."},{term:"MTBF",def:"Mean Time Between Failures. Tiempo promedio entre fallas. Usado para planificar reemplazos preventivos."},{term:"MTTR",def:"Mean Time To Repair. Tiempo promedio de reparación. Indicador clave del SLA del proveedor de mantenimiento."},{term:"SMA",def:"Service & Maintenance Agreement. Debe definir: SLA de respuesta, alcance, actualizaciones incluidas, repuestos cubiertos."},{term:"Ciclo de vida tecnológico",def:"Planificar el reemplazo antes de que el costo de mantenimiento supere el costo del reemplazo o el soporte termine."}], reglas:["El log de mantenimiento es la memoria del sistema. Sin él el conocimiento se pierde cuando cambia el técnico.","Las actualizaciones de firmware se planifican, prueban y documentan — no se aplican automáticamente en producción.","Contratistas de mantenimiento: credenciales temporales + acceso limitado + supervisión activa."], referencia:"ASIS Physical Security Standard - O&M" },
-  { codigo:"D3-ST4", dominio:3, titulo:"Capacitación y Ejercicios", resumen:"La capacitación convierte procedimientos en competencias. Los ejercicios convierten competencias en respuestas entrenadas bajo presión. Ambos son necesarios.", conceptos:[{term:"Evaluación de competencias",def:"Verifica que el personal adquirió las competencias requeridas, no solo que asistió. Mide resultado, no asistencia."},{term:"Tabletop exercise",def:"Simulación verbal de escenarios de emergencia. Identifica brechas sin el costo de un ejercicio en campo."},{term:"Conciencia de seguridad",def:"Para todos los empleados: no sostener puertas, reportar credenciales perdidas, identificar comportamientos sospechosos."},{term:"Formación vs educación",def:"Formación: habilidades para ejecutar tareas específicas. Educación: comprensión conceptual para adaptar a nuevos escenarios."},{term:"Post-incident review",def:"Después de cada incidente: ¿las brechas de capacitación contribuyeron? Si sí, actualizar el programa."}], reglas:["La efectividad se mide por resultados (reducción de errores) — no por horas de capacitación impartidas.","La capacitación en nuevos sistemas debe ocurrir ANTES de que entren en operación.","Los simulacros son más efectivos con debriefing estructurado que identifica brechas reales."], referencia:"ASIS Physical Security Standard - Training" },
-];
-
-// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 export default function SecurePathPSP() {
-  // Auth state
   const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [authMode, setAuthMode] = useState("login"); // solo login — registro deshabilitado
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [vista, setVista] = useState("dashboard");
+  const [historial, setHistorial] = useState([]);
+  const [desplegadoSim, setDesplegadoSim] = useState(null);
 
-  // App navigation
-  const [vista, setVista] = useState("dashboard"); // "dashboard" | "simulacro" | "guia" | "progreso"
+  // Tutor IA states
+  const [mensajesTutor, setMensajesTutor] = useState([
+    { role: "assistant", content: "Hola, soy tu tutor experto en la certificación PSP de ASIS International. ¿Qué dominio o concepto deseas practicar hoy?" }
+  ]);
+  const [inputTutor, setInputTutor] = useState("");
+  const [loadingTutor, setLoadingTutor] = useState(false);
 
-  // Banco de preguntas
-  const [banco, setBanco] = useState([]);
-  const [cargandoBanco, setCargandoBanco] = useState(false);
-  const [totalPorDominio, setTotalPorDominio] = useState({ 0: 0, 1: 0, 2: 0, 3: 0 });
-
-  // Progreso del usuario
-  const [historialUsuario, setHistorialUsuario] = useState([]);
-const [perfil, setPerfil] = useState(null);
-const [subtemasMap, setSubtemasMap] = useState({});
-
-  // Simulacro state
-  const [filtroDominio, setFiltroDominio] = useState(0);
-  const [preguntas, setPreguntas] = useState([]);
-  const [idx, setIdx] = useState(0);
-  const [seleccion, setSeleccion] = useState(null);
-  const [mostrarExp, setMostrarExp] = useState(false);
-  const [respuestas, setRespuestas] = useState([]);
-  const [segundos, setSegundos] = useState(0);
-  const [pausado, setPausado] = useState(false);
-  const [rachaActual, setRachaActual] = useState(0);
-  const [rachaMax, setRachaMax] = useState(0);
-  const [modoRevision, setModoRevision] = useState(false);
-  const [idxRevision, setIdxRevision] = useState(0);
-  const [simulacroPantalla, setSimulacroPantalla] = useState("inicio"); // "inicio" | "simulacro" | "resultado"
-  const [modoExamen, setModoExamen] = useState(false); // true = sin ver respuestas hasta el final
-    const [modoLeccion, setModoLeccion] = useState(null);
-      const [progresoSubtemaMap, setProgresoSubtemaMap] = useState({});
-  const tiemposPorPregunta = useRef([]);
-  const tiempoInicioP = useRef(Date.now());
-
-  // Guía teórica state
-  const [subtemaSeleccionado, setSubtemaSeleccionado] = useState(null);
-
-  // Tutor IA state
-  const [tutorMensajes, setTutorMensajes] = useState([]);
-  const [tutorInput, setTutorInput] = useState("");
-  const [tutorCargando, setTutorCargando] = useState(false);
-  const [tutorDominio, setTutorDominio] = useState(0);
-  const [tutorModo, setTutorModo] = useState("pregunta"); // "pregunta" | "libre"
-  const tutorEndRef = useRef(null);
-
-// Cargar sesión de localStorage al montar (la sesión de auth es lo único que
-// sigue viviendo en el dispositivo; el progreso e historial siempre se leen
-// de Supabase para que sigan al usuario entre dispositivos — ver B1).
-useEffect(() => {
-try {
-const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
-if (stored?.access_token) {
-setSession(stored);
-cargarBanco(stored.access_token);
-cargarHistorial(stored.user.id, stored.access_token);
-cargarPerfil(stored.user.id, stored.access_token);
-cargarSubtemas(stored.access_token);
-cargarProgresoSubtema(stored.user.id, stored.access_token);
-cargarTutorHistorial(stored.user.id, stored.access_token);
-}
-} catch {}
-}, []);
-
-  // Cronómetro simulacro
   useEffect(() => {
-    if (simulacroPantalla !== "simulacro" || pausado) return;
-    const t = setInterval(() => setSegundos((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [simulacroPantalla, pausado]);
+    try {
+      const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
+      if (stored?.access_token) {
+        setSession(stored);
+        cargarHistorial(stored.user.id, stored.access_token);
+      }
+    } catch {}
+  }, []);
 
-  // ── AUTH ──────────────────────────────────────────────────────────────────
   const handleAuth = async () => {
-    setAuthLoading(true);
     setAuthError("");
     try {
-      let data;
-      if (authMode === "login") {
-        data = await authSignIn(authEmail, authPassword);
-      } else {
-        data = await authSignUp(authEmail, authPassword);
-        if (!data.access_token) {
-          setAuthError("Registro exitoso. Revisa tu correo para confirmar tu cuenta.");
-          setAuthLoading(false);
-          return;
-        }
-      }
+      const data = await authSignIn(authEmail, authPassword);
       localStorage.setItem("sp_session", JSON.stringify(data));
       setSession(data);
-      await cargarBanco(data.access_token);
-      await cargarHistorial(data.user.id, data.access_token);
-await cargarPerfil(data.user.id, data.access_token);
-await cargarSubtemas(data.access_token);
-await cargarProgresoSubtema(data.user.id, data.access_token);
-await cargarTutorHistorial(data.user.id, data.access_token);
+      cargarHistorial(data.user.id, data.access_token);
     } catch (err) {
-      setAuthError(err.message || "Error de autenticación. Verifica tus credenciales.");
-    } finally {
-      setAuthLoading(false);
+      setAuthError("Correo o contraseña incorrectos.");
     }
   };
 
@@ -216,1186 +81,234 @@ await cargarTutorHistorial(data.user.id, data.access_token);
     try { await authSignOut(session.access_token); } catch {}
     localStorage.removeItem("sp_session");
     setSession(null);
-    setBanco([]);
-    setHistorialUsuario([]);
-setPerfil(null);
-setSubtemasMap({});
-setTutorMensajes([]);
   };
 
-// ── TUTOR IA ──────────────────────────────────────────────────────────────
-// B1: el historial del tutor se persiste en Supabase (tabla tutor_historial,
-// ligada a auth.uid()) en vez de localStorage, para que siga al usuario
-// entre dispositivos.
-const guardarMensajeTutor = async (rolInterno, texto) => {
-if (!session) return;
-try {
-await dbPost("tutor_historial", {
-usuario_id: session.user.id,
-rol: rolInterno === "user" ? "user" : "assistant",
-mensaje: texto,
-}, session.access_token);
-} catch (err) {
-console.error("Error guardando mensaje del tutor:", err);
-}
-};
-
-const handleEnviarTutor = async (texto) => {
-if (!texto.trim() || tutorCargando) return;
-const nuevos = [...tutorMensajes, { rol: "user", texto }];
-setTutorMensajes(nuevos);
-setTutorInput("");
-setTutorCargando(true);
-guardarMensajeTutor("user", texto);
-try {
-const historial = nuevos.map((m) => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto }));
-const res = await fetch("/.netlify/functions/tutor", {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ messages: historial, dominio: tutorDominio }),
-});
-const data = await res.json();
-const respuesta = data.text || "Error al obtener respuesta.";
-const finales = [...nuevos, { rol: "tutor", texto: respuesta }];
-setTutorMensajes(finales);
-guardarMensajeTutor("assistant", respuesta);
-} catch {
-setTutorMensajes([...nuevos, { rol: "tutor", texto: "Error de conexion. Intenta nuevamente." }]);
-} finally {
-setTutorCargando(false);
-}
-};
-
-// ── BANCO SUPABASE ────────────────────────────────────────────────────────
-const cargarBanco = async (token) => {
-  setCargandoBanco(true);
-  try {
-    const data = await dbGet(
-      "preguntas",
-      "select=id,dominio_id,subtema_id,texto,opciones,correcta,explicacion&activa=eq.true&order=dominio_id",
-      token
-    );
-    const norm = (data || []).map((p) => {
-      let ops = p.opciones;
-      // Si las opciones vienen como objeto JSON plano, las convertimos a array de forma segura
-      if (ops && !Array.isArray(ops) && typeof ops === "object") {
-        ops = Object.entries(ops).map(([key, texto]) => ({ key, texto }));
-      }
-      return {
-        id: p.id, 
-        dominio: p.dominio_id, 
-        subtemaId: p.subtema_id, 
-        texto: p.texto,
-        opciones: Array.isArray(ops) ? ops : [], 
-        correcta: p.correcta, 
-        explicacion: p.explicacion,
-      };
-    });
-    setBanco(norm);
-    const t = { 0: norm.length };
-    [1, 2, 3].forEach((d) => { t[d] = norm.filter((p) => p.dominio === d).length; });
-    setTotalPorDominio(t);
-  } catch (err) {
-    console.error("Error cargando banco:", err);
-  } finally {
-    setCargandoBanco(false);
-  }
-};
-
-    const cargarProgresoSubtema = async (userId, token) => {
-        try {
-              const data = await dbGet(
-                      "progreso_subtema",
-                              "select=subtema_id,preguntas_vistas,correctas_total,pct_dominio&usuario_id=eq." + userId,
-                                      token
-                                            );
-                                                  const map = {};
-                                                        (data || []).forEach((p) => { map[p.subtema_id] = p; });
-                                                              setProgresoSubtemaMap(map);
-                                                                  } catch (err) {
-                                                                        console.error("Error cargando progreso de subtemas:", err);
-                                                                            }
-                                                                              };
-
-  // ── PERFIL / SUBTEMAS / TUTOR (persistencia B1) ────────────────────────────
-    const cargarPerfil = async (userId, token) => {
-        try {
-              const data = await dbGet("usuarios", `select=nombre,email&id=eq.${userId}`, token);
-                    setPerfil((data && data[0]) || null);
-                        } catch (err) {
-                              console.error("Error cargando perfil:", err);
-                                  }
-                                    };
-                                    
-                                      const cargarSubtemas = async (token) => {
-                                          try {
-                                                const data = await dbGet("subtemas", "select=id,codigo", token);
-                                                      const map = {};
-                                                            (data || []).forEach((s) => {
-                                                                    map[s.codigo] = s.id;
-                                                                          });
-                                                                                setSubtemasMap(map);
-                                                                                    } catch (err) {
-                                                                                          console.error("Error cargando subtemas:", err);
-                                                                                              }
-                                                                                                };
-                                                                                                
-                                                                                                  const cargarTutorHistorial = async (userId, token) => {
-                                                                                                      try {
-                                                                                                            const data = await dbGet(
-                                                                                                                    "tutor_historial",
-                                                                                                                            `select=rol,mensaje&usuario_id=eq.${userId}&order=created_at.asc`,
-                                                                                                                                    token
-                                                                                                                                          );
-                                                                                                                                                setTutorMensajes(
-                                                                                                                                                        (data || []).map((m) => ({ rol: m.rol === "user" ? "user" : "tutor", texto: m.mensaje }))
-                                                                                                                                                              );
-                                                                                                                                                                  } catch (err) {
-                                                                                                                                                                        console.error("Error cargando historial del tutor:", err);
-                                                                                                                                                                            }
-                                                                                                                                                                              };
-                                                                                                                                                                              
-                                                                                                                                                                                const marcarSubtemaVisto = async (codigo) => {
-                                                                                                                                                                                    if (!session) return;
-                                                                                                                                                                                        const subtemaId = subtemasMap[codigo];
-                                                                                                                                                                                            if (!subtemaId) return;
-                                                                                                                                                                                                try {
-                                                                                                                                                                                                      await dbUpsert(
-                                                                                                                                                                                                              "progreso_subtema",
-                                                                                                                                                                                                                      { usuario_id: session.user.id, subtema_id: subtemaId, ultima_sesion: new Date().toISOString() },
-                                                                                                                                                                                                                              session.access_token,
-                                                                                                                                                                                                                                      "usuario_id,subtema_id"
-                                                                                                                                                                                                                                            );
-                                                                                                                                                                                                                                                } catch (err) {
-                                                                                                                                                                                                                                                      console.error("Error marcando subtema visto:", err);
-                                                                                                                                                                                                                                                          }
-                                                                                                                                                                                                                                                            };
-                                                                                                                                                                                                                                                            
-const limpiarHistorialTutor = async () => { setTutorMensajes([]); if (!session) return; try { await dbDelete("tutor_historial", `usuario_id=eq.${session.user.id}`, session.access_token); } catch (err) { console.error("Error limpiando historial del tutor:", err); } };
-
-// ── HISTORIAL SUPABASE ──────────────────────────────────────────────────────
   const cargarHistorial = async (userId, token) => {
     try {
-      const data = await dbGet(
-        "sesiones_simulacro",
-        `select=*&usuario_id=eq.${userId}&order=created_at.desc&limit=50`,
-        token
-      );
-      setHistorialUsuario(data || []);
+      const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
+      setHistorial(data || []);
     } catch (err) {
-      console.error("Error cargando historial:", err);
+      console.error(err);
     }
   };
 
-  const guardarSesion = async (todasRespuestas) => {
-    if (!session) return;
+  const enviarTutor = async () => {
+    if (!inputTutor.trim()) return;
+    setLoadingTutor(true);
+    const nuevos = [...mensajesTutor, { role: "user", content: inputTutor }];
+    setMensajesTutor(nuevos);
+    setInputTutor("");
     try {
-      const correctas = todasRespuestas.filter((r) => r.correcta).length;
-      const pct = Math.round((correctas / todasRespuestas.length) * 100);
-      const modo =
-        filtroDominio !== 0
-          ? "dominio"
-          : todasRespuestas.length <= 10
-          ? "rapido"
-          : todasRespuestas.length <= 25
-          ? "medio"
-          : "completo";
-      const resultadoDominios = [1, 2, 3].map((d) => { const deD = todasRespuestas.filter((r) => r.dominio === d); const correctasD = deD.filter((r) => r.correcta).length; return { dominio: d, total: deD.length, correctas: correctasD, pct: deD.length ? Math.round((correctasD / deD.length) * 100) : null }; }).filter((d) => d.total > 0);
-      const sesion = {
-        usuario_id: session.user.id,
-        dominio_filtro: filtroDominio === 0 ? null : filtroDominio,
-        modo,
-        total_preguntas: todasRespuestas.length,
-        correctas,
-        porcentaje: pct,
-        tiempo_segundos: segundos,
-        completada: true,
-        resultado_dominios: resultadoDominios,
-      };
-      await dbPost("sesiones_simulacro", sesion, session.access_token);
-      await cargarHistorial(session.user.id, session.access_token);
-      // Forzar re-render del dashboard
-      setVista((v) => v);
+      const res = await fetch("/.netlify/functions/tutor", {
+        method: "POST",
+        body: JSON.stringify({ messages: nuevos, dominio: 0 }),
+      });
+      const data = await res.json();
+      setMensajesTutor([...nuevos, { role: "assistant", content: data.text }]);
     } catch (err) {
-      console.error("Error guardando sesión:", err);
+      setMensajesTutor([...nuevos, { role: "assistant", content: "Error de conexión con el tutor." }]);
     }
+    setLoadingTutor(false);
   };
 
-  const completarLeccion = async (codigo, todasRespuestas) => {
-  if (!session) return;
-  const subtemaId = subtemasMap[codigo];
-  if (!subtemaId) return;
-  try {
-  const correctas = todasRespuestas.filter((r) => r.correcta).length;
-  const pct = Math.round((correctas / todasRespuestas.length) * 100);
-  await dbUpsert(
-  "progreso_subtema",
-  {
-  usuario_id: session.user.id,
-  subtema_id: subtemaId,
-  preguntas_vistas: todasRespuestas.length,
-  correctas_total: correctas,
-  pct_dominio: pct,
-  ultima_sesion: new Date().toISOString(),
-  },
-  session.access_token,
-  "usuario_id,subtema_id"
-  );
-  await cargarProgresoSubtema(session.user.id, session.access_token);
-  } catch (err) {
-  console.error("Error guardando progreso de la leccion:", err);
-  }
-  };
-
-  // ── SIMULACRO LOGIC ───────────────────────────────────────────────────────
-  const iniciarSimulacro = (cantidad, examen = false) => {
-    const pool = filtroDominio === 0 ? banco : banco.filter((p) => p.dominio === filtroDominio);
-    const mezcladas = mezclarConOpciones(pool).slice(0, Math.min(cantidad, pool.length));
-    setPreguntas(mezcladas);
-    setIdx(0); setSeleccion(null); setMostrarExp(false);
-    setRespuestas([]); setSegundos(0); setPausado(false);
-    setRachaActual(0); setRachaMax(0);
-    setModoExamen(examen);
-    setModoLeccion(null);
-tiemposPorPregunta.current = [];
-    tiempoInicioP.current = Date.now();
-    setSimulacroPantalla("simulacro");
-  };
-
-    const iniciarLeccionQuiz = (g) => {
-        const subtemaId = subtemasMap[g.codigo];
-            const poolLeccion = banco.filter((p) => p.subtemaId === subtemaId);
-                const mezcladasLeccion = mezclarConOpciones(poolLeccion).slice(0, Math.min(8, poolLeccion.length));
-                    setPreguntas(mezcladasLeccion);
-                        setIdx(0); setSeleccion(null); setMostrarExp(false);
-                            setRespuestas([]); setSegundos(0); setPausado(false);
-                                setRachaActual(0); setRachaMax(0);
-                                    setModoExamen(false);
-                                        setModoLeccion(g.codigo);
-                                            tiemposPorPregunta.current = [];
-                                                tiempoInicioP.current = Date.now();
-                                                    setVista("simulacro");
-                                                        setSimulacroPantalla("simulacro");
-                                                          };
-
-  const responder = (key) => {
-    if (seleccion) return;
-    setSeleccion(key);
-    setMostrarExp(true);
-    const esCorrecta = key === preguntas[idx].correcta;
-    const nuevaRacha = esCorrecta ? rachaActual + 1 : 0;
-    setRachaActual(nuevaRacha);
-    setRachaMax((prev) => Math.max(prev, nuevaRacha));
-  };
-
-  const siguiente = () => {
-    const p = preguntas[idx];
-    const tiempoP = Math.round((Date.now() - tiempoInicioP.current) / 1000);
-    tiemposPorPregunta.current.push(tiempoP);
-    tiempoInicioP.current = Date.now();
-    const nuevaResp = {
-      preguntaId: p.id, dominio: p.dominio, textoP: p.texto,
-      opcionElegida: seleccion, opcionCorrecta: p.correcta,
-      correcta: seleccion === p.correcta, explicacion: p.explicacion, opciones: p.opciones,
-    };
-    const todasRespuestas = [...respuestas, nuevaResp];
-    setRespuestas(todasRespuestas);
-    if (idx + 1 < preguntas.length) {
-      setIdx((i) => i + 1); setSeleccion(null); setMostrarExp(false);
-    } else {
-if (modoLeccion) { completarLeccion(modoLeccion, todasRespuestas); } else { guardarSesion(todasRespuestas); }
-      setSimulacroPantalla("resultado");
-    }
-  };
-
-  const calcResultados = () => {
-    const dominios = [1, 2, 3].map((d) => {
-      const deD = respuestas.filter((r) => r.dominio === d);
-      const correctas = deD.filter((r) => r.correcta).length;
-      return { dominio: d, total: deD.length, correctas, pct: deD.length ? Math.round((correctas / deD.length) * 100) : null };
-    });
-    const totalCorrectas = respuestas.filter((r) => r.correcta).length;
-    const pctTotal = Math.round((totalCorrectas / respuestas.length) * 100);
-    const tiempoPromedio = tiemposPorPregunta.current.length
-      ? Math.round(tiemposPorPregunta.current.reduce((a, b) => a + b, 0) / tiemposPorPregunta.current.length)
-      : 0;
-    return { dominios, totalCorrectas, total: respuestas.length, pctTotal, tiempoPromedio };
-  };
-
-    const LECCION_APROBACION = 70;
-      const estadoLeccion = (g) => {
-          const subtemaId = subtemasMap[g.codigo];
-              const prog = subtemaId ? progresoSubtemaMap[subtemaId] : null;
-                  if (prog && prog.pct_dominio >= LECCION_APROBACION) return "completado";
-                      const idxG = GUIA.findIndex((x) => x.codigo === g.codigo);
-                          if (idxG === 0) return "disponible";
-                              const anterior = GUIA[idxG - 1];
-                                  const anteriorId = subtemasMap[anterior.codigo];
-                                      const progAnterior = anteriorId ? progresoSubtemaMap[anteriorId] : null;
-                                          return progAnterior && progAnterior.pct_dominio >= LECCION_APROBACION ? "disponible" : "bloqueado";
-                                            };
-                                              const progresoCurso = () => {
-                                                  const completados = GUIA.filter((g) => estadoLeccion(g) === "completado").length;
-                                                      return { completados, total: GUIA.length, pct: Math.round((completados / GUIA.length) * 100) };
-                                                        };
-
-  // ── PROGRESO CALCULADO ────────────────────────────────────────────────────
-  const calcProgreso = () => {
-    if (!historialUsuario.length) return { global: 0, sesiones: 0, mejor: 0, ultimo: null, racha: 0, porDominio: {} };
-    const sesiones = historialUsuario.length;
-    const mejor = Math.max(...historialUsuario.map((s) => s.porcentaje || 0));
-    const ultimo = historialUsuario[0];
-    const global = Math.round(historialUsuario.reduce((a, s) => a + (s.porcentaje || 0), 0) / sesiones);
-    // Racha de dias consecutivos
-    const diasUnicos = [...new Set(historialUsuario.map((s) => s.created_at?.slice(0, 10)))].sort().reverse();
-    let racha = 0;
-    const hoy = new Date().toISOString().slice(0, 10);
-    let fechaCheck = hoy;
-    for (const dia of diasUnicos) {
-      if (dia === fechaCheck) {
-        racha++;
-        const d = new Date(fechaCheck);
-        d.setDate(d.getDate() - 1);
-        fechaCheck = d.toISOString().slice(0, 10);
-      } else break;
-    }
-    // Promedio por dominio — incluye sesiones mixtas (filtro 0 = Todos)
-    const porDominio = {};
-    [1, 2, 3].forEach((d) => {
-      // Sesiones especificas de ese dominio + sesiones mixtas
-      const sesEspecificas = historialUsuario.filter((s) => s.dominio_filtro === d);
-      const sesMixtas = historialUsuario.filter((s) => s.dominio_filtro === null || s.dominio_filtro === 0);
-      const valores = [...sesEspecificas.map((s) => s.porcentaje || 0), ...sesMixtas.map((s) => { const rd = Array.isArray(s.resultado_dominios) ? s.resultado_dominios.find((x) => x.dominio === d) : null; return rd && rd.total > 0 ? rd.pct : (s.porcentaje || 0); })].slice(0, 10);
-              porDominio[d] = valores.length ? Math.round(valores.reduce((a, b) => a + b, 0) / valores.length) : null;
-    });
-    return { global, sesiones, mejor, ultimo, racha, porDominio };
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // PANTALLA: LOGIN
-  // ─────────────────────────────────────────────────────────────────────────
   if (!session) {
     return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-        <div style={{ width: "100%", maxWidth: 400 }}>
-          {/* Logo */}
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: C.gold }}>
-              Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
-              <span style={{ color: C.muted, fontSize: 14, fontWeight: 400, marginLeft: 8 }}>PSP</span>
-            </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.25em", marginTop: 6 }}>
-              PLATAFORMA DE PREPARACIÓN PSP®
-            </div>
-          </div>
+      <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div style={{ width: "100%", maxWidth: 420, background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
+          <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath <span style={{ color: C.white, fontWeight: 400 }}>PSP</span></h2>
+          <p style={{ color: C.muted, marginBottom: 24, fontSize: 14 }}>Plataforma de preparación oficial</p>
+          <input type="email" placeholder="Correo electrónico" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
+          <input type="password" placeholder="Contraseña" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 16, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
+          {authError && <div style={{ color: C.red, marginBottom: 16, fontSize: 13 }}>{authError}</div>}
+          <button onClick={handleAuth} style={{ width: "100%", padding: 14, background: C.gold, border: "none", fontWeight: "bold", color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 16 }}>Iniciar sesión</button>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Tabs */}
-          <div style={{ display: "flex", marginBottom: 28, borderBottom: `1px solid ${C.border}` }}>
-            {[["login", "Iniciar sesión"]].map(([m, l]) => (
-              <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); }}
-                style={{ flex: 1, padding: "12px 0", background: "none", border: "none", borderBottom: `2px solid ${authMode === m ? C.gold : "transparent"}`, color: authMode === m ? C.gold : C.muted, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                {l}
-              </button>
-            ))}
-          </div>
+  // Métricas globales para el Dashboard
+  const totalSimulacros = historial.length;
+  const promedioGlobal = totalSimulacros > 0 ? Math.round(historial.reduce((acc, s) => acc + (s.puntaje_porcentaje || 0), 0) / totalSimulacros) : 0;
+  const mejorNota = totalSimulacros > 0 ? Math.max(...historial.map(s => s.puntaje_porcentaje || 0)) : 0;
 
-          {/* Form */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CORREO ELECTRÓNICO</div>
-              <input
-                type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-                placeholder="tu@correo.com"
-                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.1em", marginBottom: 6 }}>CONTRASEÑA</div>
-              <input
-                type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAuth()}
-                placeholder="••••••••"
-                style={{ width: "100%", padding: "12px 14px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
-
-            {authError && (
-              <div style={{ padding: "10px 14px", background: C.redD, border: `1px solid ${C.redB}`, fontSize: 12, color: "#ff9494", fontFamily: "'IBM Plex Mono', monospace" }}>
-                {authError}
-              </div>
-            )}
-
-            <button onClick={handleAuth} disabled={authLoading || !authEmail || !authPassword}
-              style={{ padding: "14px", background: authLoading ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: (!authEmail || !authPassword) ? 0.5 : 1, transition: "all 0.2s" }}>
-              {authLoading ? "Cargando..." : "Entrar →"}
+  return (
+    <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "sans-serif", paddingBottom: 40 }}>
+      {/* ── NAV HEADER RESPONSIVE ── */}
+      <nav style={{ background: C.dark, borderBottom: `1px solid ${C.border}`, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, flexWrap: "wrap", gap: 12 }}>
+        <span onClick={() => setVista("dashboard")} style={{ fontFamily: "sans-serif", fontSize: 20, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
+          Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
+        </span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["curso", "Curso"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
+            <button key={v} onClick={() => setVista(v)}
+              style={{ padding: "8px 14px", background: vista === v ? C.goldD : "transparent", border: `1px solid ${vista === v ? C.goldB : "transparent"}`, color: vista === v ? C.gold : C.muted, borderRadius: 6, fontSize: 14, cursor: "pointer", fontWeight: 600 }}>
+              {l}
             </button>
-          </div>
-
-          <div style={{ marginTop: 28, padding: "14px", background: C.goldD, borderLeft: `3px solid ${C.gold}`, fontSize: 11, color: "#b8ccd6", lineHeight: 1.7 }}>
-            <strong style={{ color: C.gold }}>400 preguntas</strong> cubren los 3 dominios del examen PSP® con explicaciones completas y referencias ASIS.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // NAV HEADER (visible en todas las vistas autenticadas)
-  // ─────────────────────────────────────────────────────────────────────────
-  const NavHeader = () => (
-    <div style={{ background: C.dark, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20 }}>
-      <button onClick={() => { setVista("dashboard"); setSimulacroPantalla("inicio"); }}
-        style={{ background: "none", border: "none", fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 16, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
-        Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
-      </button>
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["guia", "Curso"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
-          <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
-            style={{ padding: "6px 12px", background: vista === v ? C.goldD : "none", border: `1px solid ${vista === v ? C.goldB : "transparent"}`, color: vista === v ? C.gold : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", letterSpacing: "0.08em" }}>
-            {l}
+          ))}
+          <button onClick={handleLogout} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 6, fontSize: 14, cursor: "pointer", marginLeft: 8 }}>
+            Salir
           </button>
-        ))}
-        <button onClick={handleLogout}
-          style={{ padding: "6px 12px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", marginLeft: 8 }}>
-          Salir
-        </button>
-      </div>
-    </div>
-  );
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // VISTA: DASHBOARD
-  // ─────────────────────────────────────────────────────────────────────────
-  if (vista === "dashboard") {
-    const prog = calcProgreso();
-    const email = session.user?.email || "";
-    const nombreMostrado = perfil?.nombre || (session.user?.email || "").split("@")[0];
-        const msgIdx = new Date().getDay();
-    const diasEstudio = new Set(historialUsuario.map((s) => s.created_at?.slice(0, 10))).size;
-
-    return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-        <NavHeader />
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 20px 80px" }}>
-          {/* Saludo */}
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 8 }}>BIENVENIDO</div>
-            <h1 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(22px,4vw,32px)", fontWeight: 800, marginBottom: 10, lineHeight: 1.15 }}>
-              {nombreMostrado}
-            </h1>
-            <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, maxWidth: 500, padding: "12px 16px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>
-              {MENSAJES_DIA[msgIdx]}
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
-            {[
-              [cargandoBanco ? "..." : totalPorDominio[0], "Preguntas"],
-              [prog.sesiones, "Simulacros"],
-              [prog.racha > 0 ? `${prog.racha}🔥` : diasEstudio, prog.racha > 0 ? "Racha días" : "Días estudio"],
-              [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
-            ].map(([n, l]) => (
-              <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 24, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{l}</div>
-              </div>
-            ))}
-          </div>
-<div style={{ marginBottom: 28 }}>
-  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>RESUMEN GENERAL</div>
-  <div style={{ background: C.dark, border: "1px solid " + C.border, padding: "20px 24px" }}>
-  <div style={{ fontSize: 15, color: C.white, marginBottom: 14, lineHeight: 1.6 }}>
-  {"Llevas " + progresoCurso().completados + " de " + progresoCurso().total + " lecciones del curso" + (prog.sesiones > 0 ? ", con " + prog.global + "% de promedio en " + prog.sesiones + " simulacros" : "") + "."}
-  </div>
-  <div style={{ width: "100%", height: 8, background: C.border, borderRadius: 4, overflow: "hidden" }}>
-  <div style={{ width: progresoCurso().pct + "%", height: "100%", background: C.green, borderRadius: 4 }}></div>
-  </div>
-  </div>
-  </div>
-          {/* Progreso por dominio */}
-          {Object.keys(prog.porDominio).length > 0 && (
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TU NIVEL POR DOMINIO</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1,2,3].map((d) => {
-                  const pct = prog.porDominio[d];
-                  if (!pct) return null;
-                  const color = d === 1 ? C.gold : d === 2 ? C.blue : C.purple;
-                  const nombre = d === 1 ? "Assessment" : d === 2 ? "Design" : "Implementation";
-                  const colorPct = pct >= 75 ? C.green : pct >= 55 ? C.gold : C.red;
-                  return (
-                    <div key={d} style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "12px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color }}> D{d} · {nombre}</div>
-                        <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 18, fontWeight: 800, color: colorPct }}>{pct}%</div>
-                      </div>
-                      <div style={{ height: 4, background: C.border }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: colorPct, transition: "width 0.6s" }} />
-                      </div>
-                      {pct < 60 && <div style={{ marginTop: 6, fontSize: 10, color: C.red, fontFamily: "'IBM Plex Mono', monospace" }}>⚠ Dominio débil — refuerza antes del examen</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Progreso por dominio */}
-          {prog.sesiones > 0 && (
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>PROMEDIO GLOBAL</div>
-              <div style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "20px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 52, fontWeight: 800, color: prog.global >= 75 ? C.green : prog.global >= 55 ? C.gold : C.red, lineHeight: 1 }}>{prog.global}%</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, marginTop: 6 }}>sobre {prog.sesiones} simulacros completados</div>
-              </div>
-            </div>
-          )}
-
-          {/* Recomendacion automatica */}
-          {Object.keys(prog.porDominio).length > 0 && (() => {
-            const debil = [1,2,3].reduce((min, d) => {
-              if (!prog.porDominio[d]) return min;
-              return (!min || prog.porDominio[d] < prog.porDominio[min]) ? d : min;
-            }, null);
-            if (!debil || prog.porDominio[debil] >= 70) return null;
-            const nombres = { 1: "Assessment", 2: "Design", 3: "Implementation" };
-            const colores = { 1: C.gold, 2: C.blue, 3: C.purple };
-            return (
-              <div style={{ marginBottom: 20, padding: "14px 18px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderLeft: `3px solid ${C.red}` }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.red, letterSpacing: "0.15em", marginBottom: 6 }}>RECOMENDACIÓN</div>
-                <div style={{ fontSize: 15, color: C.white, lineHeight: 1.6 }}>
-                  Tu dominio más débil es <span style={{ color: colores[debil], fontWeight: 700 }}>D{debil} · {nombres[debil]}</span> con {prog.porDominio[debil]}%.{" "}
-                  <button onClick={() => { setFiltroDominio(debil); setVista("simulacro"); setSimulacroPantalla("inicio"); }}
-                    style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline" }}>
-                    Practicar D{debil} ahora →
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Accesos rápidos */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
-            {[
-              ["Simulacro", "Practica con preguntas del banco real", "simulacro", C.gold],
-              ["Curso", progresoCurso().completados + "/" + progresoCurso().total + " lecciones completadas", "guia", C.blue],
-              ["Mi Progreso", "Historial y tendencias de estudio", "progreso", C.purple],
-            ].map(([titulo, desc, v, color]) => (
-              <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
-                style={{ padding: "20px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", transition: "border-color 0.2s", gridColumn: titulo === "Mi Progreso" ? "1 / -1" : "auto" }}>
-                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 15, fontWeight: 700, color, marginBottom: 4 }}>{titulo}</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{desc}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* Último simulacro */}
-          {prog.ultimo && (
-            <div style={{ padding: "14px 18px", background: C.card, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>ÚLTIMO SIMULACRO</div>
-                <div style={{ fontSize: 12, color: C.white, marginTop: 2 }}>{prog.ultimo.total_preguntas} preguntas · {fmtTiempo(prog.ultimo.tiempo_segundos || 0)}</div>
-              </div>
-              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: (prog.ultimo.porcentaje || 0) >= 75 ? C.green : (prog.ultimo.porcentaje || 0) >= 55 ? C.gold : C.red }}>
-                {prog.ultimo.porcentaje}%
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    );
-  }
+      </nav>
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // VISTA: SIMULACRO
-  // ─────────────────────────────────────────────────────────────────────────
-  if (vista === "simulacro") {
+      {/* ── CONTENEDOR PRINCIPAL FLUIDO ── */}
+      <div style={{ maxWidth: 1200, margin: "30px auto", padding: "0 20px" }}>
+        
+        {/* 1. VISTA DASHBOARD (INICIO) */}
+        {vista === "dashboard" && (
+          <div>
+            <div style={{ marginBottom: 30 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Panel Ejecutivo de Preparación</h1>
+              <p style={{ color: C.muted, fontSize: 16 }}>Resumen de rendimiento y accesos rápidos para tu certificación PSP®.</p>
+            </div>
 
-    // ── PANTALLA INICIO SIMULACRO ─────────────────────────────────────────
-    if (simulacroPantalla === "inicio") {
-      return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-          <NavHeader />
-          <div style={{ maxWidth: 560, margin: "0 auto", padding: "32px 20px 80px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>SIMULACRO PSP®</div>
-            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24, lineHeight: 1.1 }}>
-              Elige tu sesión de hoy
-            </h2>
-
-            {cargandoBanco && (
-              <div style={{ padding: "10px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, fontSize: 11, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 16 }}>
-                ⟳ Cargando banco de preguntas...
+            {/* Tarjetas de Métricas (Informativas, sin aspecto de botón) */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 40 }}>
+              <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Simulacros Realizados</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.gold }}>{totalSimulacros}</div>
               </div>
-            )}
+              <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Promedio Global</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.blue }}>{promedioGlobal}%</div>
+              </div>
+              <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Mejor Nota</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{mejorNota}%</div>
+              </div>
+            </div>
 
-            {/* Filtro dominio */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>FILTRAR POR DOMINIO</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {[[0, "Todos", C.gold], [1, "D1 · Assessment", C.gold], [2, "D2 · Design", C.blue], [3, "D3 · Implementation", C.purple]].map(([d, label, color]) => (
-                  <button key={d} onClick={() => setFiltroDominio(d)}
-                    style={{ padding: "6px 14px", background: filtroDominio === d ? `${color}20` : "transparent", border: `1px solid ${filtroDominio === d ? color : C.border}`, color: filtroDominio === d ? color : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
-                    {label}
-                    {!cargandoBanco && <span style={{ marginLeft: 6, opacity: 0.5 }}>({totalPorDominio[d]})</span>}
-                  </button>
+            {/* Accesos Rápidos (Acciones claras) */}
+            <h3 style={{ fontSize: 20, marginBottom: 16 }}>Accesos Rápidos</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+              <button onClick={() => setVista("simulacro")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.gold, marginBottom: 6 }}>Ir a Simulacros</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Practica con preguntas cronometradas por dominio.</div>
+              </button>
+              <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Revisa los 20 subtemas en bloques estructurados.</div>
+              </button>
+              <button onClick={() => setVista("tutor")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Tutor IA</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Resuelve dudas y genera práctica guiada al instante.</div>
+              </button>
+              <button onClick={() => setVista("progreso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Ver Progreso</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Analiza tus estadísticas y desglose por subtemas.</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2. VISTA PROGRESO Y DESGLOSE POR SUBTEMAS */}
+        {vista === "progreso" && (
+          <div>
+            <h2 style={{ fontSize: 26, marginBottom: 8 }}>Historial y Desglose de Rendimiento</h2>
+            <p style={{ color: C.muted, marginBottom: 30 }}>Revisa tus simulacros pasados y analiza tus áreas de mejora detalladas.</p>
+
+            <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
+              <h3 style={{ fontSize: 18, marginBottom: 16, color: C.gold }}>Desglose Teórico por Subtemas</h3>
+              <p style={{ fontSize: 14, color: C.muted, marginBottom: 16 }}>Basado en tus respuestas, aquí puedes identificar qué subtemas específicos requieren mayor repaso en la Guía Teórica.</p>
+              {/* Bloque resumido de subtemas clave */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {["D1 - Análisis de Riesgos y Activos", "D1 - Evaluación de Amenazas", "D2 - Contramedidas Físicas", "D3 - Gestión y Cumplimiento"].map((sub, idx) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, padding: "12px 16px", borderRadius: 8 }}>
+                    <span style={{ fontSize: 15 }}>{sub}</span>
+                    <span style={{ fontSize: 14, fontWeight: "bold", color: C.blue }}>Estado: En consolidación</span>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Tip longest answer */}
-            <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.2)", borderLeft: "3px solid " + C.gold }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.gold, letterSpacing: "0.15em", marginBottom: 4 }}>TIP EXAMEN</div>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>La respuesta más larga no siempre es la correcta. Analiza el concepto, no la extensión de la opción.</div>
-            </div>
-
-            {/* Botones de sesión */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-              {[[10, "Sesión rápida", "10 preguntas · ~12 minutos", false],
-                [25, "Simulacro estándar", "25 preguntas · ~30 minutos", true],
-                [50, "Simulacro extendido", "50 preguntas · ~60 minutos", false],
-              ].map(([n, titulo, desc, principal]) => {
-                const disponible = totalPorDominio[filtroDominio] || 0;
-                const disabled = cargandoBanco || n > disponible;
-                return (
-                  <button key={n} onClick={() => !disabled && iniciarSimulacro(n)} disabled={disabled}
-                    style={{ padding: "16px 20px", background: disabled ? "transparent" : principal ? C.gold : C.goldD, border: `1px solid ${disabled ? C.border : principal ? C.gold : C.goldB}`, color: disabled ? C.muted : principal ? C.black : C.gold, textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
-                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700 }}>{titulo}</div>
-                    <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{desc}</div>
-                  </button>
-                );
-              })}
-              {/* Modo examen Prometric */}
-              {(() => {
-                const disponible = totalPorDominio[0] || 0;
-                const disabled = cargandoBanco || disponible < 50;
-                return (
-                  <button onClick={() => !disabled && iniciarSimulacro(50, true)} disabled={disabled}
-                    style={{ padding: "16px 20px", background: disabled ? "transparent" : "rgba(157,122,255,0.12)", border: `1px solid ${disabled ? C.border : "rgba(157,122,255,0.4)"}`, color: disabled ? C.muted : "#9d7aff", textAlign: "left", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
-                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700 }}>🎯 Modo Examen Prometric</div>
-                    <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>50 preguntas · sin ver respuestas hasta el final · igual al examen real</div>
-                  </button>
-                );
-              })()}
-            </div>
-
-            {/* Historial reciente */}
-            {historialUsuario.length > 0 && (
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.15em", marginBottom: 10 }}>SESIONES RECIENTES</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {historialUsuario.slice(0, 5).map((h, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 12 }}>
-                      <span style={{ color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}>{h.created_at?.slice(0, 10)}</span>
-                      <span style={{ color: C.muted }}>{h.total_preguntas}q · {fmtTiempo(h.tiempo_segundos || 0)}</span>
-                      <span style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontWeight: 700, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
-                        {h.porcentaje}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // ── PANTALLA SIMULACRO ACTIVO ─────────────────────────────────────────
-    if (simulacroPantalla === "simulacro") {
-      const p = preguntas[idx];
-      const progreso = Math.round((idx / preguntas.length) * 100);
-      return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-          <div style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, padding: "10px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 15, fontWeight: 800, color: C.gold, flexShrink: 0 }}>
-              Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 3 }}>
-                <span style={{ color: C.white }}>{idx + 1}/{preguntas.length}</span>
-                <span style={{ color: colorDominio(p.dominio) }}>D{p.dominio} · {nombreDominio(p.dominio)}</span>
-              </div>
-              <div style={{ height: 3, background: C.border }}>
-                <div style={{ height: "100%", width: `${progreso}%`, background: C.gold, transition: "width 0.3s" }} />
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-              {rachaActual >= 3 && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>{rachaActual} 🔥</span>}
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: C.muted }}>{fmtTiempo(segundos)}</span>
-            </div>
-          </div>
-
-          <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(p.dominio), letterSpacing: "0.2em", marginBottom: 16 }}>PREGUNTA {idx + 1}</div>
-            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(15px,2.5vw,19px)", fontWeight: 700, lineHeight: 1.45, marginBottom: 28, color: C.white }}>
-              {p.texto}
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {p.opciones.map((op) => {
-                const esElegida = seleccion === op.key;
-                const esCorrecta = op.key === p.correcta;
-                const mostrar = seleccion !== null;
-                let bg = "transparent", border = C.border, color = C.white;
-                if (mostrar && esCorrecta) { bg = C.greenD; border = C.green; color = C.green; }
-                else if (mostrar && esElegida && !esCorrecta) { bg = C.redD; border = C.red; color = C.red; }
-                else if (esElegida) { bg = C.goldD; border = C.gold; color = C.gold; }
-                return (
-                  <button key={op.key} onClick={() => responder(op.key)} disabled={!!seleccion}
-                    style={{ padding: "14px 18px", background: bg, border: `1px solid ${border}`, borderLeft: mostrar && (esCorrecta || esElegida) ? `3px solid ${border}` : `1px solid ${border}`, color, textAlign: "left", cursor: seleccion ? "default" : "pointer", display: "flex", gap: 12, alignItems: "flex-start", transition: "all 0.15s" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, opacity: 0.6, flexShrink: 0, marginTop: 1 }}>{op.key}</span>
-                    <span style={{ fontSize: 15, lineHeight: 1.55 }}>{op.texto}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {mostrarExp && !modoExamen && (
-              <div style={{ marginTop: 20, padding: "16px 18px", background: seleccion === p.correcta ? C.greenD : C.redD, border: `1px solid ${seleccion === p.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${seleccion === p.correcta ? C.green : C.red}` }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: seleccion === p.correcta ? C.green : C.red, letterSpacing: "0.1em", marginBottom: 8 }}>
-                  {seleccion === p.correcta ? "\u2713 CORRECTO" : `\u2717 INCORRECTO \u2014 LA CORRECTA ERA ${p.correcta}`}
-                </div>
-                <p style={{ fontSize: 15, color: "#b8ccd6", lineHeight: 1.7, margin: 0 }}>{p.explicacion}</p>
-              </div>
-            )}
-            {mostrarExp && modoExamen && (
-              <div style={{ marginTop: 20, padding: "12px 16px", background: C.goldD, border: `1px solid ${C.goldB}`, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>
-                Respuesta registrada. Modo examen activo — verás las explicaciones al finalizar.
-              </div>
-            )}
-            {seleccion && (
-              <button onClick={siguiente}
-                style={{ marginTop: 20, width: "100%", padding: "14px", background: C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                {idx + 1 < preguntas.length ? "Siguiente pregunta →" : "Ver resultados →"}
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // ── PANTALLA RESULTADO ────────────────────────────────────────────────
-    if (simulacroPantalla === "resultado") {
-      if (modoRevision) {
-        const resp = respuestas[idxRevision];
-        return (
-          <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            <NavHeader />
-            <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>REVISIÓN {idxRevision + 1}/{respuestas.length}</div>
-                <button onClick={() => setModoRevision(false)}
-                  style={{ padding: "6px 14px", background: "none", border: `1px solid ${C.border}`, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
-                  ← Resultado
-                </button>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(resp.dominio), letterSpacing: "0.2em", marginBottom: 12 }}>D{resp.dominio}</div>
-              <h3 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1.45, marginBottom: 20 }}>{resp.textoP}</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-                {resp.opciones.map((op) => {
-                  const esCorrecta = op.key === resp.opcionCorrecta;
-                  const esElegida = op.key === resp.opcionElegida;
-                  let bg = "transparent", border = C.border, color = C.muted;
-                  if (esCorrecta) { bg = C.greenD; border = C.green; color = C.green; }
-                  else if (esElegida) { bg = C.redD; border = C.red; color = C.red; }
-                  return (
-                    <div key={op.key} style={{ padding: "12px 16px", background: bg, border: `1px solid ${border}`, color, display: "flex", gap: 10 }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, opacity: 0.7 }}>{op.key}</span>
-                      <span style={{ fontSize: 13, lineHeight: 1.5 }}>{op.texto}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ padding: "14px 18px", background: resp.correcta ? C.greenD : C.redD, border: `1px solid ${resp.correcta ? C.greenB : C.redB}`, borderLeft: `3px solid ${resp.correcta ? C.green : C.red}`, fontSize: 13, color: "#b8ccd6", lineHeight: 1.7 }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: resp.correcta ? C.green : C.red, marginBottom: 8 }}>
-                  {resp.correcta ? "✓ CORRECTO" : `✗ RESPONDISTE ${resp.opcionElegida} — CORRECTA ERA ${resp.opcionCorrecta}`}
-                </div>
-                {resp.explicacion}
-              </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-                <button onClick={() => setIdxRevision((i) => Math.max(0, i - 1))} disabled={idxRevision === 0}
-                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === 0 ? C.muted : C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === 0 ? "not-allowed" : "pointer", opacity: idxRevision === 0 ? 0.4 : 1 }}>
-                  ← Anterior
-                </button>
-                <button onClick={() => setIdxRevision((i) => Math.min(respuestas.length - 1, i + 1))} disabled={idxRevision === respuestas.length - 1}
-                  style={{ padding: "11px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: idxRevision === respuestas.length - 1 ? C.muted : C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: idxRevision === respuestas.length - 1 ? "not-allowed" : "pointer", opacity: idxRevision === respuestas.length - 1 ? 0.4 : 1 }}>
-                  Siguiente →
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      const r = calcResultados();
-      const nivel = r.pctTotal >= 75 ? { color: C.green, label: "APROBADO", msg: "Nivel PSP alcanzado. Mantén esta consistencia." }
-        : r.pctTotal >= 55 ? { color: C.gold, label: "EN PROCESO", msg: "Vas por buen camino. Refuerza los dominios débiles." }
-        : { color: C.red, label: "REFORZAR", msg: "Revisa la guía teórica de los dominios con menor puntaje." };
-
-      return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-          <NavHeader />
-          <div style={{ maxWidth: 680, margin: "0 auto", padding: "36px 20px 80px" }}>
-            <div style={{ textAlign: "center", marginBottom: 36 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.25em", marginBottom: 12 }}>RESULTADO</div>
-              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(56px,12vw,88px)", fontWeight: 800, color: nivel.color, lineHeight: 1 }}>{r.pctTotal}%</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.muted, marginBottom: 12 }}>{r.totalCorrectas} correctas de {r.total} · Racha máx: {rachaMax} 🔥</div>
-              <div style={{ display: "inline-block", padding: "5px 18px", background: `${nivel.color}15`, border: `1px solid ${nivel.color}40`, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: nivel.color, letterSpacing: "0.15em", marginBottom: 10 }}>{nivel.label}</div>
-              <p style={{ fontSize: 13, color: C.muted, maxWidth: 380, margin: "0 auto", lineHeight: 1.65 }}>{nivel.msg}</p>
-            </div>
-
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>POR DOMINIO</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {r.dominios.filter((d) => d.total > 0).map((d) => (
-                  <div key={d.dominio} style={{ background: C.dark, border: `1px solid ${C.border}`, padding: "16px 20px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h3 style={{ fontSize: 20, marginBottom: 16 }}>Historial de Simulacros Realizados</h3>
+            {historial.length === 0 ? (
+              <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {historial.map((sim, index) => (
+                  <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                       <div>
-                        <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700 }}>D{d.dominio} — {nombreDominio(d.dominio)}</div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, marginTop: 2 }}>{d.correctas}/{d.total} correctas</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{historial.length - index} · Dominio: {sim.dominio || "General"}</div>
+                        <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                       </div>
-                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 26, fontWeight: 800, color: colorDominio(d.dominio) }}>{d.pct}%</div>
-                    </div>
-                    <div style={{ height: 5, background: C.border }}>
-                      <div style={{ height: "100%", width: `${d.pct}%`, background: colorDominio(d.dominio), transition: "width 0.6s" }} />
-                    </div>
-                    {d.pct < 60 && (
-                      <div style={{ marginTop: 8, fontSize: 11, color: C.muted }}>
-                        → Dominio débil.{" "}
-                        <button onClick={() => { setVista("guia"); }} style={{ background: "none", border: "none", color: colorDominio(d.dominio), cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline" }}>
-                          Ver guía teórica →
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: (sim.puntaje_porcentaje || 0) >= 80 ? C.green : C.gold }}>
+                          {sim.puntaje_porcentaje}%
+                        </span>
+                        <button onClick={() => setDesplegadoSim(desplegadoSim === index ? null : index)}
+                          style={{ padding: "6px 12px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+                          {desplegadoSim === index ? "Ocultar errores" : "Ver detalle de errores"}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Menú desplegable para ver errores (Acordeón) */}
+                    {desplegadoSim === index && (
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+                        <h4 style={{ fontSize: 14, color: C.red, marginBottom: 8 }}>Retroalimentación de preguntas fallidas:</h4>
+                        <p style={{ fontSize: 13, color: C.muted }}>
+                          {sim.detalle_errores ? JSON.stringify(sim.detalle_errores) : "No hay errores registrados en este intento o la sesión se completó de forma perfecta. ¡Excelente trabajo!"}
+                        </p>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={() => { setModoRevision(false); setSimulacroPantalla("inicio"); }}
-                style={{ padding: "13px 24px", background: C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                Nuevo simulacro →
-              </button>
-              <button onClick={() => { setIdxRevision(0); setModoRevision(true); }}
-                style={{ padding: "13px 24px", background: C.blueD, border: `1px solid ${C.blueB}`, color: C.blue, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                Revisar respuestas
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-      );
-    }
-  }
+        )}
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // VISTA: GUÍA TEÓRICA
-  // ─────────────────────────────────────────────────────────────────────────
-  if (vista === "guia") {
-    // Calcular subtemas practicados por el usuario
-    const subtemasPracticados = new Set(
-      historialUsuario.flatMap((s) => []) // extensible en el futuro con respuestas_sesion
-    );
-
-    if (subtemaSeleccionado) {
-      const g = subtemaSeleccionado;
-      return (
-        <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-          <NavHeader />
-          <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-            <button onClick={() => setSubtemaSeleccionado(null)}
-              style={{ background: "none", border: "none", color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", marginBottom: 20, letterSpacing: "0.1em" }}>
-              ← VOLVER A LA GUÍA
-            </button>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: colorDominio(g.dominio), letterSpacing: "0.2em", marginBottom: 8 }}>{g.codigo}</div>
-            <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: "clamp(20px,4vw,30px)", fontWeight: 800, marginBottom: 16, lineHeight: 1.15 }}>{g.titulo}</h2>
-            <p style={{ fontSize: 14, color: "#b8ccd6", lineHeight: 1.75, marginBottom: 28, padding: "14px 18px", background: C.goldD, borderLeft: `3px solid ${C.gold}` }}>{g.resumen}</p>
-
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 16 }}>CONCEPTOS CLAVE</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {g.conceptos.map((c) => (
-                  <div key={c.term} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, borderLeft: `3px solid ${colorDominio(g.dominio)}` }}>
-                    <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, color: C.white, marginBottom: 4 }}>{c.term}</div>
-                    <div style={{ fontSize: 13, color: "#8aa3b3", lineHeight: 1.6 }}>{c.def}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>REGLAS QUE DEBES DOMINAR</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {g.reglas.map((r, i) => (
-                  <div key={i} style={{ padding: "12px 16px", background: C.card, border: `1px solid ${C.border}`, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, flexShrink: 0, marginTop: 1 }}>→</span>
-                    <span style={{ fontSize: 13, color: "#b8ccd6", lineHeight: 1.6 }}>{r}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ padding: "12px 16px", background: C.dark, border: `1px solid ${C.border}`, fontSize: 11, color: C.muted, fontFamily: "'IBM Plex Mono', monospace" }}>
-              REF: {g.referencia}
-            </div>
-            <button onClick={() => { iniciarLeccionQuiz(g); }} disabled={estadoLeccion(g) === "bloqueado"}
-            style={{ marginTop: 12, width: "100%", padding: "13px", background: estadoLeccion(g) === "bloqueado" ? C.border : C.green, color: estadoLeccion(g) === "bloqueado" ? C.muted : C.black, border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: estadoLeccion(g) === "bloqueado" ? "not-allowed" : "pointer" }}>
-            {estadoLeccion(g) === "completado" ? "Repasar quiz de la leccion" : estadoLeccion(g) === "bloqueado" ? "Bloqueado - completa la leccion anterior" : "Iniciar quiz de la leccion"}
-            </button>
-
-            <button onClick={() => { setVista("simulacro"); setFiltroDominio(g.dominio); setSimulacroPantalla("inicio"); }}
-              style={{ marginTop: 24, width: "100%", padding: "13px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              Practicar preguntas del D{g.dominio} →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-        <NavHeader />
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>GUÍA TEÓRICA</div>
-          <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 8 }}>20 Subtemas PSP®</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 28, lineHeight: 1.6 }}>
-            Conceptos clave, reglas y referencias ASIS para cada subtema del examen.
-          </p>
-          <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "16px 18px", marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>Progreso del curso</div>
-          <div style={{ fontSize: 13, color: C.muted }}>{progresoCurso().completados + "/" + progresoCurso().total + " lecciones"}</div>
-          </div>
-          <div style={{ width: "100%", height: 8, background: C.border, borderRadius: 4, overflow: "hidden" }}>
-          <div style={{ width: progresoCurso().pct + "%", height: "100%", background: C.green, borderRadius: 4 }}></div>
-          </div>
-          </div>
-
-          {[1, 2, 3].map((d) => (
-            <div key={d} style={{ marginBottom: 28 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ width: 3, height: 20, background: colorDominio(d) }} />
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: colorDominio(d), letterSpacing: "0.2em" }}>DOMINIO {d}</div>
-                  <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, color: C.white }}>{nombreDominio(d)}</div>
+        {/* 3. VISTA TUTOR IA */}
+        {vista === "tutor" && (
+          <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
+            <p style={{ color: C.muted, marginBottom: 20, fontSize: 14 }}>Consulta tus dudas o pídele al tutor que te genere preguntas tipo examen con explicación inmediata.</p>
+            
+            <div style={{ height: 400, overflowY: "auto", marginBottom: 20, padding: 12, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 12 }}>
+              {mensajesTutor.map((m, i) => (
+                <div key={i} style={{ padding: 12, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%" }}>
+                  <div style={{ fontSize: 12, color: C.gold, marginBottom: 4, fontWeight: "bold" }}>{m.role === "user" ? "Tú" : "Tutor PSP"}</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.4 }}>{m.content}</div>
                 </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {GUIA.filter((g) => g.dominio === d).map((g) => (
-                  <button key={g.codigo} onClick={() => { if (estadoLeccion(g) === "bloqueado") return; setSubtemaSeleccionado(g); marcarSubtemaVisto(g.codigo); }}
-                    style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, color: C.white, textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s" }}>
-                    <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: colorDominio(d), letterSpacing: "0.15em", marginBottom: 4 }}>{g.codigo}</div>
-                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700 }}>{g.titulo}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{g.conceptos.length} conceptos · {g.reglas.length} reglas</div>
-                    </div>
-                    <span style={{ color: C.muted, fontSize: 18 }}>›</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // VISTA: PROGRESO
-  // ─────────────────────────────────────────────────────────────────────────
-  if (vista === "progreso") {
-    const prog = calcProgreso();
-    return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-        <NavHeader />
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 80px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted, letterSpacing: "0.2em", marginBottom: 12 }}>MI PROGRESO</div>
-          <h2 style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, marginBottom: 24 }}>Historial de estudio</h2>
-
-          {/* Resumen */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 1, background: C.border, border: `1px solid ${C.border}`, marginBottom: 28 }}>
-            {[
-              [prog.sesiones, "Simulacros"],
-              [prog.global ? `${prog.global}%` : "--", "Promedio"],
-              [prog.mejor ? `${prog.mejor}%` : "--", "Mejor nota"],
-            ].map(([n, l]) => (
-              <div key={l} style={{ background: C.dark, padding: "16px 10px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 28, fontWeight: 800, color: C.gold, lineHeight: 1 }}>{n}</div>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{l}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Historial completo */}
-          {historialUsuario.length === 0 ? (
-            <div style={{ padding: "32px", textAlign: "center", color: C.muted, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 24, marginBottom: 10 }}>📊</div>
-              <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Sin simulacros todavía</div>
-              <div style={{ fontSize: 12, lineHeight: 1.6 }}>Completa tu primer simulacro para ver tu progreso aquí.</div>
-              <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }}
-                style={{ marginTop: 16, padding: "10px 20px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                Ir al simulacro →
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 14 }}>TODAS LAS SESIONES</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {historialUsuario.map((h, i) => (
-                  <div key={i} style={{ padding: "14px 18px", background: C.dark, border: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.created_at?.slice(0, 10)} · D{(h.dominio_filtro === 0 || h.dominio_filtro === null) ? "1+2+3" : h.dominio_filtro}</div>
-                      <div style={{ fontSize: 12, color: C.white, marginTop: 3 }}>{h.total_preguntas} preguntas · {fmtTiempo(h.tiempo_segundos || 0)}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: (h.porcentaje || 0) >= 75 ? C.green : (h.porcentaje || 0) >= 55 ? C.gold : C.red }}>
-                        {h.porcentaje}%
-                      </div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.muted }}>{h.correctas}/{h.total_preguntas}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Tendencia visual simple */}
-              {historialUsuario.length >= 3 && (
-                <div style={{ marginTop: 24, padding: "16px 18px", background: C.dark, border: `1px solid ${C.border}` }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>TENDENCIA (últimas {Math.min(10, historialUsuario.length)} sesiones)</div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
-                    {historialUsuario.slice(0, 10).reverse().map((h, i) => {
-                      const pct = h.porcentaje || 0;
-                      const color = pct >= 75 ? C.green : pct >= 55 ? C.gold : C.red;
-                      return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color }}>
-                            {pct}
-                          </div>
-                          <div style={{ width: "100%", background: color, height: `${Math.max(4, pct * 0.48)}px`, opacity: 0.8 }} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginTop: 8 }}>
-                    {(() => {
-                      const recent = historialUsuario.slice(0, 5);
-                      const older = historialUsuario.slice(5, 10);
-                      if (older.length === 0) return "Sigue practicando para ver tu tendencia.";
-                      const avgRecent = recent.reduce((a, s) => a + (s.porcentaje || 0), 0) / recent.length;
-                      const avgOlder = older.reduce((a, s) => a + (s.porcentaje || 0), 0) / older.length;
-                      const diff = Math.round(avgRecent - avgOlder);
-                      return diff > 0 ? `📈 Mejoraste ${diff} puntos en tus últimas 5 sesiones.` : diff < 0 ? `📉 Bajaste ${Math.abs(diff)} puntos. Revisa la guía teórica.` : "Rendimiento estable. Apunta al 75% para aprobar.";
-                    })()}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // VISTA: TUTOR IA
-  // ─────────────────────────────────────────────────────────────────────────
-  if (vista === "tutor") {
-    const dominiosColor = { 0: C.gold, 1: C.gold, 2: C.blue, 3: C.purple };
-
-    const systemPrompt = "Eres un tutor experto en la certificación PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en español." +
-      " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas físicas y electrónicas), D3 Implementation (gestión, auditoría, cumplimiento)." +
-      " Cuando el usuario pida una pregunta: genera una pregunta de opción múltiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por qué las otras son incorrectas." +
-      " Cuando el usuario haga pregunta libre, responde de forma clara con ejemplos prácticos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en español." +
-      (tutorDominio > 0 ? " Enfocate en el Dominio " + tutorDominio + " del examen PSP." : "");
-
-
-
-    const acciones = [
-      { label: "Generar pregunta", prompt: "Genera una pregunta de practica PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : " de cualquier dominio") },
-      { label: "Pregunta dificil", prompt: "Genera una pregunta dificil nivel avanzado PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
-      { label: "Pregunta trampa", prompt: "Genera una pregunta trampa tipica del examen PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
-      { label: "Explica un concepto", prompt: "Explicame un concepto clave para el PSP" + (tutorDominio > 0 ? " del Dominio " + tutorDominio : "") },
-    ];
-
-    return (
-      <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", flexDirection: "column" }}>
-        <NavHeader />
-        <div style={{ background: C.dark, borderBottom: "1px solid " + C.border, padding: "12px 20px" }}>
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.gold, letterSpacing: "0.2em", marginBottom: 8 }}>TUTOR IA — BETA FUNDADORES</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {[0,1,2,3].map((d) => (
-                <button key={d} onClick={() => setTutorDominio(d)}
-                  style={{ padding: "5px 12px", background: tutorDominio === d ? dominiosColor[d] + "20" : "transparent", border: "1px solid " + (tutorDominio === d ? dominiosColor[d] : C.border), color: tutorDominio === d ? dominiosColor[d] : C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer" }}>
-                  {d === 0 ? "Todos" : "D" + d}
-                </button>
               ))}
-              {tutorMensajes.length > 0 && (
-                <button onClick={() => { limpiarHistorialTutor() }}
-                  style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.border, color: C.muted, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer", marginLeft: "auto" }}>
-                  Limpiar
-                </button>
-              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <input value={inputTutor} onChange={(e) => setInputTutor(e.target.value)} onKeyDown={(e) => e.key === "Enter" && enviarTutor()} placeholder="Escribe tu consulta o pide un caso práctico..." style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
+              <button onClick={enviarTutor} disabled={loadingTutor} style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                {loadingTutor ? "Pensando..." : "Enviar"}
+              </button>
             </div>
           </div>
-        </div>
-<div style={{ borderTop: "1px solid " + C.border, padding: "12px 20px", background: C.dark }}><div style={{ maxWidth: 680, margin: "0 auto", display: "flex", gap: 10 }}><input value={tutorInput} onChange={(e) => setTutorInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleEnviarTutor(tutorInput)} placeholder="Escribe tu respuesta o pregunta sobre el PSP..." style={{ flex: 1, padding: "12px 14px", background: C.black, border: "1px solid " + C.border, color: C.white, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, outline: "none" }} /><button onClick={() => handleEnviarTutor(tutorInput)} disabled={tutorCargando || !tutorInput.trim()} style={{ padding: "12px 20px", background: tutorCargando ? C.goldD : C.gold, border: "none", color: C.black, fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 13, fontWeight: 700, cursor: tutorCargando ? "not-allowed" : "pointer", opacity: !tutorInput.trim() ? 0.5 : 1 }}>→</button></div></div>
+        )}
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            {tutorMensajes.length === 0 && (
-              <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                <div style={{ fontFamily: "'Big Shoulders Display', sans-serif", fontSize: 22, fontWeight: 800, color: C.gold, marginBottom: 8 }}>Tutor PSP</div>
-                <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7, marginBottom: 28 }}>
-                  Practica con preguntas infinitas generadas por IA o consulta cualquier concepto del examen PSP.
-                </p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {acciones.map((a) => (
-                    <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
-                      style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, cursor: "pointer", textAlign: "left", lineHeight: 1.5 }}>
-                      {a.label} →
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tutorMensajes.map((m, i) => (
-              <div key={i} style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: m.rol === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: C.muted, marginBottom: 4 }}>
-                  {m.rol === "user" ? "TU" : "TUTOR PSP"}
-                </div>
-                <div style={{ maxWidth: "85%", padding: "12px 16px", background: m.rol === "user" ? C.goldD : C.dark, border: "1px solid " + (m.rol === "user" ? C.goldB : C.border), borderLeft: m.rol === "tutor" ? "3px solid " + C.gold : undefined, fontSize: 15, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                  {m.texto}
-                </div>
-              </div>
-            ))}
-
-            {tutorCargando && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ padding: "12px 16px", background: C.dark, border: "1px solid " + C.border, borderLeft: "3px solid " + C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.gold }}>
-                  Pensando...
-                </div>
-              </div>
-            )}
-
-            {tutorMensajes.length > 0 && !tutorCargando && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-                {acciones.slice(0,2).map((a) => (
-                  <button key={a.label} onClick={() => handleEnviarTutor(a.prompt)}
-                    style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + C.goldB, color: C.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, cursor: "pointer" }}>
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div ref={tutorEndRef} />
+        {/* 4. VISTA SIMULACRO Y CURSO (Placeholders funcionales) */}
+        {vista === "simulacro" && (
+          <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <h2 style={{ fontSize: 24, marginBottom: 12 }}>Módulo de Simulacros</h2>
+            <p style={{ color: C.muted, marginBottom: 20 }}>Selecciona un dominio para iniciar tu práctica cronometrada bajo condiciones del examen real.</p>
+            <button onClick={() => alert("Simulacro iniciado")} style={{ padding: "12px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Comenzar Simulacro Rápido (10 preguntas)</button>
           </div>
-        </div>
+        )}
+
+        {vista === "curso" && (
+          <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <h2 style={{ fontSize: 24, marginBottom: 12 }}>Guía Teórica de 20 Subtemas</h2>
+            <p style={{ color: C.muted, marginBottom: 20 }}>Accede a los bloques de estudio estructurados para optimizar tu carga cognitiva.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+              {["Dominio 1: Physical Security Assessment", "Dominio 2: Application & Design", "Dominio 3: Implementation"].map((dom, i) => (
+                <div key={i} style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>{dom}</div>
+                  <div style={{ fontSize: 13, color: C.muted }}>Subtemas listos para lectura rápida.</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
