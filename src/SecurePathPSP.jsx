@@ -33,7 +33,7 @@ const dbGet = (table, query, token) =>
 const dbPost = (table, body, token) =>
   sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
-// ─── ESTILOS Y PALETA ────────────────────────────────────────────────────────
+// ─── PALETA Y ESTILOS ────────────────────────────────────────────────────────
 const C = {
   black: "#0b1d2a", dark: "#132c3f", card: "#1b3a52",
   border: "rgba(216,232,240,0.12)", gold: "#ff5a1f", goldD: "rgba(255,90,31,0.12)", goldB: "rgba(255,90,31,0.35)",
@@ -50,6 +50,16 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opciones: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
+const SUBTEMAS_LISTA = [
+  "1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", 
+  "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos", "6. Principios de Diseño de Seguridad Física", 
+  "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", 
+  "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física",
+  "13. Protección de Ejecutivos y Personal", "14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias",
+  "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo",
+  "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"
+];
+
 export default function SecurePathPSP() {
   const [session, setSession] = useState(null);
   const [authEmail, setAuthEmail] = useState("");
@@ -62,12 +72,16 @@ export default function SecurePathPSP() {
 
   // Simulacro states
   const [simulacroPantalla, setSimulacroPantalla] = useState("inicio");
-  const [modoConfig, setModoConfig] = useState({ tipo: "rapido", cantidad: 10, dominio: 0 });
+  const [modoConfig, setModoConfig] = useState({ tipo: "rapido", cantidad: 10, dominio: 0, prometric: false });
   const [preguntasSimulacro, setPreguntasSimulacro] = useState([]);
   const [indiceActual, setIndiceActual] = useState(0);
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
+
+  // Curso states
+  const [subtemaActivo, setSubtemaActivo] = useState(null);
+  const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
 
   // Tutor IA states
   const [mensajesTutor, setMensajesTutor] = useState([
@@ -124,27 +138,32 @@ export default function SecurePathPSP() {
     }
   };
 
-  // Iniciar Simulacro con verificación robusta
-  const iniciarSimulacro = (tipo, cantidad, dominio = 0) => {
+  const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
     let filtradas = [...banco];
     if (dominio > 0) {
       filtradas = filtradas.filter(p => Number(p.dominio) === Number(dominio));
     }
-    // Si el banco cargó vacío, intentamos usar un respaldo o avisar
-    if (filtradas.length === 0) {
-      filtradas = [...banco]; // fallback a todo el banco si el filtro no devuelve nada
-    }
+    if (filtradas.length === 0) filtradas = [...banco];
     const seleccionadas = mezclarConOpciones(filtradas).slice(0, cantidad);
     if (seleccionadas.length === 0) {
-      alert("No hay preguntas disponibles en la base de datos para iniciar el simulacro.");
+      alert("No hay preguntas disponibles en la base de datos.");
       return;
     }
-    setModoConfig({ tipo, cantidad, dominio });
+    setModoConfig({ tipo, cantidad, dominio, prometric });
     setPreguntasSimulacro(seleccionadas);
     setIndiceActual(0);
     setRespuestasUsuario({});
     setResultadoFinal(null);
     setSimulacroPantalla("activo");
+  };
+
+  const marcarSubtemaCompletado = (idx) => {
+    if (!subtemasCompletados.includes(idx)) {
+      const nuevo = [...subtemasCompletados, idx];
+      setSubtemasCompletados(nuevo);
+      localStorage.setItem("sp_subtemas", JSON.stringify(nuevo));
+    }
+    setSubtemaActivo(null);
   };
 
   const enviarTutorConPrompt = async (textoPrompt) => {
@@ -188,11 +207,11 @@ export default function SecurePathPSP() {
 
   const totalSims = historialUsuario.length;
   const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + (s.puntaje_porcentaje || 0), 0) / totalSims) : 0;
-  const mejorNota = totalSims > 0 ? Math.max(...historialUsuario.map(s => s.puntaje_porcentaje || 0)) : 0;
+  const avanceSubtemas = `${subtemasCompletados.length}/${SUBTEMAS_LISTA.length}`;
 
   return (
     <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "sans-serif", paddingBottom: 40 }}>
-      {/* ── NAV HEADER RESPONSIVE ── */}
+      {/* ── NAV HEADER ── */}
       <nav style={{ background: C.dark, borderBottom: `1px solid ${C.border}`, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, flexWrap: "wrap", gap: 12 }}>
         <span onClick={() => { setVista("dashboard"); setSimulacroPantalla("inicio"); }} style={{ fontSize: 20, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
           Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
@@ -230,8 +249,8 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: C.blue }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Mejor Nota</div>
-                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{mejorNota}%</div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance de Subtareas</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{avanceSubtemas}</div>
               </div>
             </div>
 
@@ -239,40 +258,48 @@ export default function SecurePathPSP() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
               <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.gold, marginBottom: 6 }}>Ir a Simulacros</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Práctica rápida (10), estándar (25) o por dominio.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Prometric.</div>
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Accede a los 20 subtemas oficiales estructurados.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Accede a los 20 subtemas con control de avance.</div>
               </button>
               <button onClick={() => setVista("tutor")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Tutor IA</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Genera preguntas guiadas por dominio al instante.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Genera práctica guiada por dominio al instante.</div>
               </button>
               <button onClick={() => setVista("progreso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Ver Progreso</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Revisa historial completo y desglose por subtemas.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Revisa historial completo y retroalimentación.</div>
               </button>
             </div>
           </div>
         )}
 
-        {/* 2. MÓDULO DE SIMULACROS COMPLETO */}
+        {/* 2. MÓDULO DE SIMULACROS */}
         {vista === "simulacro" && (
           <div>
             {simulacroPantalla === "inicio" && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <h2 style={{ fontSize: 24, marginBottom: 8 }}>Módulo de Simulacros</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona el formato de tu práctica para evaluar tus conocimientos bajo estándares ASIS. (Preguntas cargadas: {banco.length})</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona el formato de tu práctica (Preguntas cargadas: {banco.length})</p>
                 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 24 }}>
-                  <button onClick={() => iniciarSimulacro("rapido", 10, 0)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
+                  <button onClick={() => iniciarSimulacro("rapido", 10, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.gold, marginBottom: 6 }}>Simulacro Rápido</div>
-                    <div style={{ fontSize: 13, color: C.muted }}>10 preguntas aleatorias ideales para repasos cortos diarios.</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>10 preguntas con retroalimentación inmediata.</div>
                   </button>
-                  <button onClick={() => iniciarSimulacro("estandar", 25, 0)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                  <button onClick={() => iniciarSimulacro("estandar", 25, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Simulacro Estándar</div>
-                    <div style={{ fontSize: 13, color: C.muted }}>25 preguntas mezcladas de todos los dominios.</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>25 preguntas mezcladas.</div>
+                  </button>
+                  <button onClick={() => iniciarSimulacro("largo", 50, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Simulacro Largo</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>50 preguntas de práctica intensiva.</div>
+                  </button>
+                  <button onClick={() => iniciarSimulacro("prometric", 25, 0, true)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Modo Prometric</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>Examen real sin respuestas inmediatas hasta el final.</div>
                   </button>
                 </div>
 
@@ -280,7 +307,7 @@ export default function SecurePathPSP() {
                   <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     {[[1, "Dominio 1: Assessment"], [2, "Dominio 2: Design"], [3, "Dominio 3: Implementation"]].map(([d, label]) => (
-                      <button key={d} onClick={() => iniciarSimulacro("dominio", 15, d)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+                      <button key={d} onClick={() => iniciarSimulacro("dominio", 15, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
                         {label} (15 preg.)
                       </button>
                     ))}
@@ -292,11 +319,11 @@ export default function SecurePathPSP() {
             {simulacroPantalla === "activo" && preguntasSimulacro.length > 0 && !resultadoFinal && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, color: C.muted, fontSize: 14 }}>
-                  <span>Pregunta {indiceActual + 1} de {preguntasSimulacro.length}</span>
+                  <span>Pregunta {indiceActual + 1} de {preguntasSimulacro.length} {modoConfig.prometric ? "· [Modo Prometric]" : ""}</span>
                   <button onClick={() => setSimulacroPantalla("inicio")} style={{ background: "none", border: "none", color: C.red, cursor: "pointer" }}>Abandonar</button>
                 </div>
 
-                <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>{preguntasSimulacro[indiceActual].pregunta}</h3>
+                <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>{preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado}</h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                   {preguntasSimulacro[indiceActual].opciones.map((op) => {
@@ -318,16 +345,23 @@ export default function SecurePathPSP() {
                   ) : (
                     <button onClick={async () => {
                       let correctas = 0;
+                      let erroresDetalle = [];
                       preguntasSimulacro.forEach((p, idx) => {
-                        if (respuestasUsuario[idx] === p.respuesta_correcta) correctas++;
+                        const respUsr = respuestasUsuario[idx];
+                        const respCorr = p.respuesta_correcta || p.correcta;
+                        if (respUsr === respCorr) {
+                          correctas++;
+                        } else {
+                          erroresDetalle.push({ pregunta: p.pregunta || p.enunciado, tu_respuesta: respUsr || "Sin responder", correcta: respCorr, explicacion: p.explicacion || "Sin explicación disponible." });
+                        }
                       });
                       const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
-                      const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0 };
+                      const payload = { usuario_id: session.user.id, puntaje_porcentaje: pct, total_preguntas: preguntasSimulacro.length, dominio: modoConfig.dominio || 0, detalle_errores: erroresDetalle };
                       try {
                         await dbPost("sesiones_simulacro", payload, session.access_token);
                         cargarHistorial(session.user.id, session.access_token);
                       } catch {}
-                      setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct });
+                      setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                     }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar y Ver Resultado</button>
                   )}
                 </div>
@@ -345,32 +379,47 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS */}
+        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (INTERACTIVA) */}
         {vista === "curso" && (
-          <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-            <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica de 20 Subtemas</h2>
-            <p style={{ color: C.muted, marginBottom: 24 }}>Bloques autocontenidos diseñados bajo la teoría de carga cognitiva (chunking) para tu preparación.</p>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-              {[
-                "1. Fundamentos de Gestión de Riesgos", "2. Análisis y Evaluación de Activos", "3. Identificación y Análisis de Amenazas", 
-                "4. Análisis de Vulnerabilidades", "5. Metodologías de Cuantificación de Riesgos", "6. Principios de Diseño de Seguridad Física", 
-                "7. Contramedidas Perimetrales y Barreras", "8. Sistemas de Control de Acceso (PACS)", "9. Sistemas de Detección de Intrusos y Alarmas", 
-                "10. Videovigilancia (CCTV) y Analítica", "11. Iluminación y Criterios Visuales", "12. Seguridad de la Información y Ciberseguridad Física",
-                "13. Protección de Ejecutivos y Personal", "14. Gestión de Crisis y Continuidad de Negocio", "15. Planificación de Respuesta a Emergencias",
-                "16. Investigaciones Corporativas y Entrevistas", "17. Gestión de Contratistas y Proveedores", "18. Auditoría y Cumplimiento Normativo",
-                "19. Arquitectura de Seguridad Integrada", "20. Liderazgo y Gestión de Operaciones de Seguridad"
-              ].map((subtema, idx) => (
-                <div key={idx} style={{ background: C.card, padding: 18, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6, color: C.gold }}>{subtema}</div>
-                  <div style={{ fontSize: 13, color: C.muted }}>Conceptos clave, definiciones normativas y reglas críticas para el examen PSP.</div>
+          <div>
+            {subtemaActivo === null ? (
+              <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica de 20 Subtemas</h2>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Haz clic en cualquier subtema para leer su contenido y completar su quiz de avance.</p>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+                  {SUBTEMAS_LISTA.map((subtema, idx) => {
+                    const completado = subtemasCompletados.includes(idx);
+                    return (
+                      <div key={idx} onClick={() => setSubtemaActivo(idx)} style={{ background: C.card, padding: 18, borderRadius: 8, border: `1px solid ${completado ? C.greenB : C.border}`, cursor: "pointer" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontWeight: 700, fontSize: 16, color: C.gold }}>{subtema}</span>
+                          <span style={{ fontSize: 12, padding: "2px 8px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
+                            {completado ? "Completado" : "Pendiente"}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 13, color: C.muted }}>Conceptos clave, definiciones normativas y reglas críticas para el examen PSP.</div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
+                <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16, fontSize: 14 }}>← Volver a la lista de subtemas</button>
+                <h2 style={{ fontSize: 24, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
+                <div style={{ background: C.black, padding: 20, borderRadius: 8, marginBottom: 24, lineHeight: 1.6, fontSize: 15 }}>
+                  <p>Aquí se detallan los conceptos teóricos fundamentales, marcos normativos de ASIS International, directrices de aplicación y ejemplos prácticos correspondientes a este bloque de estudio.</p>
+                </div>
+                <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                  Completar Quiz y Desbloquear Subtema
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* 4. PROGRESO Y DESGLOSE POR SUBTEMAS */}
+        {/* 4. PROGRESO E HISTORIAL */}
         {vista === "progreso" && (
           <div>
             <h2 style={{ fontSize: 26, marginBottom: 8 }}>Historial y Desglose de Rendimiento</h2>
@@ -378,7 +427,7 @@ export default function SecurePathPSP() {
 
             <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
               <h3 style={{ fontSize: 18, marginBottom: 12, color: C.gold }}>Desglose Teórico por Subtemas</h3>
-              <p style={{ fontSize: 14, color: C.muted, marginBottom: 16 }}>Identifica qué áreas requieren repaso directo en la Guía Teórica.</p>
+              <p style={{ fontSize: 14, color: C.muted, marginBottom: 16 }}>Avance general: {avanceSubtemas} subtemas completados.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {["D1 - Análisis de Riesgos y Activos", "D1 - Evaluación de Amenazas", "D2 - Contramedidas Físicas y Electrónicas", "D3 - Gestión, Auditoría y Cumplimiento"].map((sub, idx) => (
                   <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: C.card, padding: "12px 16px", borderRadius: 8 }}>
@@ -415,9 +464,19 @@ export default function SecurePathPSP() {
                     {desplegadoSim === index && (
                       <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
                         <h4 style={{ fontSize: 14, color: C.red, marginBottom: 8 }}>Retroalimentación de preguntas fallidas:</h4>
-                        <p style={{ fontSize: 13, color: C.muted }}>
-                          {sim.detalle_errores ? JSON.stringify(sim.detalle_errores) : "No hay errores registrados en este intento. ¡Excelente ejecución!"}
-                        </p>
+                        {sim.detalle_errores && Array.isArray(sim.detalle_errores) && sim.detalle_errores.length > 0 ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {sim.detalle_errores.map((err, errIdx) => (
+                              <div key={errIdx} style={{ background: C.black, padding: 12, borderRadius: 6, fontSize: 13 }}>
+                                <div style={{ fontWeight: "bold", marginBottom: 4 }}>{err.pregunta}</div>
+                                <div style={{ color: C.red }}>Tu respuesta: {err.tu_respuesta} | Correcta: {err.correcta}</div>
+                                <div style={{ color: C.muted, marginTop: 4 }}>Explicación: {err.explicacion}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 13, color: C.muted }}>No hay errores registrados en este intento o se completó perfectamente.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -427,7 +486,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 5. TUTOR IA CON FORMATO ORDENADO (whiteSpace: pre-wrap) */}
+        {/* 5. TUTOR IA */}
         {vista === "tutor" && (
           <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
@@ -443,7 +502,6 @@ export default function SecurePathPSP() {
               {mensajesTutor.map((m, i) => (
                 <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
                   <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>{m.role === "user" ? "Tú" : "Tutor PSP"}</div>
-                  {/* whiteSpace pre-wrap para respetar los saltos de línea y formateo limpio */}
                   <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.content}</div>
                 </div>
               ))}
