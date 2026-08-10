@@ -33,7 +33,7 @@ const dbGet = (table, query, token) =>
 const dbPost = (table, body, token) =>
   sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
 
-// ─── UTILS: BUSCADORES DE COLUMNAS A PRUEBA DE FALLOS EXTREMOS ──────────────
+// ─── UTILS: BUSCADORES A PRUEBA DE FALLOS ──────────────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
   if (!obj) return null;
   const keys = Object.keys(obj);
@@ -79,7 +79,7 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opcionesExtraidas: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
-// ─── DOMINIOS Y SUBTEMAS (SECUENCIALES) Y TEORÍA ──────────────────────────────
+// ─── DOMINIOS Y SUBTEMAS (20 SUBTAREAS OFICIALES) ───────────────────────────
 const DOMINIOS_CURSO = [
   {
     id: 1, nombre: "Dominio 1: Physical Security Assessment",
@@ -138,7 +138,8 @@ export default function SecurePathPSP() {
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
-  const [desplegadoPromedios, setDesplegadoPromedios] = useState(false); // Para la sección de promedios por dominio
+  const [desplegadoPromedios, setDesplegadoPromedios] = useState(false);
+  const [desplegadoSubtemasProgreso, setDesplegadoSubtemasProgreso] = useState(false);
   const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
   const [feedbackInmediato, setFeedbackInmediato] = useState(null);
 
@@ -152,7 +153,7 @@ export default function SecurePathPSP() {
   });
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
 
-  // Tutor IA (Totalmente blindado)
+  // Tutor IA
   const [mensajesTutor, setMensajesTutor] = useState(() => {
     try {
       const saved = localStorage.getItem("sp_tutor_history");
@@ -215,17 +216,35 @@ export default function SecurePathPSP() {
     } catch (err) { console.error("Error cargando banco:", err); }
   };
 
+  // 🛡️ CARGA BLINDADA DE HISTORIAL (Supabase + Fallback Local)
   const cargarHistorial = async (userId, token) => {
     try {
-      const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      setHistorialUsuario(Array.isArray(data) ? data : []);
-    } catch (err) { console.error("Error cargando historial:", err); }
+      let dbData = [];
+      try {
+        const data = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
+        dbData = Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error("Fallo obteniendo datos de Supabase", e);
+      }
+
+      const localData = JSON.parse(localStorage.getItem("sp_historial_fallback") || "[]");
+      const merged = [...dbData];
+
+      localData.forEach(ld => {
+        if (!merged.find(md => md.id === ld.id || md.created_at === ld.created_at)) {
+          merged.push(ld);
+        }
+      });
+
+      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setHistorialUsuario(merged);
+    } catch (err) {
+      console.error("Error crítico cargando historial:", err);
+    }
   };
 
-  // Motor Inteligente de Búsqueda de Dominios (Soporta múltiples nomenclaturas)
   const getPreguntasPorDominio = (d) => {
     return banco.filter(p => {
-      // 1. Verificación en llaves conocidas
       const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
       if (valDom !== null && valDom !== undefined) {
         const strVal = String(valDom).toLowerCase();
@@ -233,19 +252,34 @@ export default function SecurePathPSP() {
         if (d === 2 && (strVal.includes('2') || strVal.includes('design'))) return true;
         if (d === 3 && (strVal.includes('3') || strVal.includes('implementation'))) return true;
       }
-      
-      // 2. Verificación inteligente en valores cortos de la fila (evita confundir con texto de preguntas)
       return Object.values(p).some(v => {
         if (v === null || v === undefined) return false;
         const str = String(v).toLowerCase().trim();
-        if (str.length > 50) return false; // Ignoramos párrafos largos
-        
+        if (str.length > 50) return false; 
         if (d === 1 && (str === '1' || str.includes('assessment') || str === 'dominio 1' || str === 'domain 1')) return true;
         if (d === 2 && (str === '2' || str.includes('design') || str === 'dominio 2' || str === 'domain 2')) return true;
         if (d === 3 && (str === '3' || str.includes('implementation') || str === 'dominio 3' || str === 'domain 3')) return true;
         return false;
       });
     });
+  };
+
+  // Detector inteligente de subtarea en una pregunta
+  const obtenerSubtemaDePregunta = (p) => {
+    const subVal = obtenerValorBD(p, ['subtema', 'sub_tema', 'subtask', 'tema', 'subdomain']);
+    if (subVal) {
+      const match = SUBTEMAS_LISTA.find(s => s.toLowerCase().includes(String(subVal).toLowerCase()));
+      if (match) return match;
+    }
+    // Si no tiene etiqueta explícita, se asigna por dominio detectado
+    const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
+    if (valDom !== null) {
+      const str = String(valDom);
+      if (str.includes('1')) return SUBTEMAS_LISTA[0];
+      if (str.includes('2')) return SUBTEMAS_LISTA[5];
+      if (str.includes('3')) return SUBTEMAS_LISTA[13];
+    }
+    return SUBTEMAS_LISTA[0]; // Default
   };
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
@@ -307,11 +341,41 @@ export default function SecurePathPSP() {
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
   
+  // Cálculo Inteligente por Dominio (Incluso si el simulacro fue general, evalúa sus preguntas mapeadas)
   const getPromedioPorDominio = (domNum) => {
-    const simsDom = safeHistorial.filter(s => Number(s.dominio) === domNum);
+    const simsDom = safeHistorial.filter(s => {
+      const domStr = String(s.dominio || s.domain || "").toLowerCase();
+      if (domStr === String(domNum) || domStr.includes(`dominio ${domNum}`) || domStr.includes(`domain ${domNum}`)) return true;
+      // Si el simulacro fue general, evaluamos si sus preguntas pertenecían a este dominio
+      if ((!s.dominio || s.dominio === 0 || s.dominio === "0") && s.detalle_preguntas_subtemas) {
+        return s.detalle_preguntas_subtemas.some(sub => {
+          const idx = SUBTEMAS_LISTA.indexOf(sub);
+          if (domNum === 1) return idx >= 0 && idx <= 4;
+          if (domNum === 2) return idx >= 5 && idx <= 12;
+          if (domNum === 3) return idx >= 13;
+          return false;
+        });
+      }
+      return false;
+    });
+
     if (simsDom.length === 0) return { prom: 0, cant: 0 };
     const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
     return { prom, cant: simsDom.length };
+  };
+
+  // Cálculo por Subtarea
+  const getPromedioPorSubtema = (subNombre) => {
+    let totalPreg = 0;
+    let totalAcertadas = 0;
+    safeHistorial.forEach(s => {
+      if (s.desglose_subtemas && s.desglose_subtemas[subNombre]) {
+        totalPreg += s.desglose_subtemas[subNombre].total;
+        totalAcertadas += s.desglose_subtemas[subNombre].correctas;
+      }
+    });
+    if (totalPreg === 0) return { prom: 0, cant: 0 };
+    return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
   };
   
   let colorPromedio = C.blue;
@@ -485,11 +549,21 @@ export default function SecurePathPSP() {
                       <button onClick={async () => {
                         let correctas = 0;
                         let erroresDetalle = [];
+                        let desgloseSubtemas = {};
+                        let listaSubtemasPreguntas = [];
+
                         preguntasSimulacro.forEach((p, idx) => {
                           const respUsr = respuestasUsuario[idx];
                           const respCorr = obtenerValorBD(p, ['respuesta_correcta', 'correcta', 'answer', 'respuesta']);
                           const textoPreguntaFinal = getTextoPregunta(p);
                           const expFinal = obtenerValorBD(p, ['explicacion', 'explanation', 'justificacion']) || "Sin explicación.";
+                          const subName = obtenerSubtemaDePregunta(p);
+
+                          listaSubtemasPreguntas.push(subName);
+                          if (!desgloseSubtemas[subName]) {
+                            desgloseSubtemas[subName] = { total: 0, correctas: 0 };
+                          }
+                          desgloseSubtemas[subName].total++;
 
                           const opcionesArray = p.opcionesExtraidas || [];
                           const textoUsr = opcionesArray.find(o => o.key === respUsr)?.texto || "Sin responder";
@@ -497,6 +571,7 @@ export default function SecurePathPSP() {
 
                           if (respUsr === respCorr) {
                             correctas++;
+                            desgloseSubtemas[subName].correctas++;
                           } else {
                             erroresDetalle.push({ 
                               pregunta: textoPreguntaFinal, 
@@ -510,21 +585,35 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
                         const nuevoIntento = {
+                          id: Date.now(),
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
                           detalle_errores: erroresDetalle,
+                          detalle_preguntas_subtemas: listaSubtemasPreguntas,
+                          desglose_subtemas: desgloseSubtemas,
+                          created_at: new Date().toISOString()
                         };
                         
+                        // 🛡️ Guardado blindado
                         try {
-                          await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
-                          await cargarHistorial(session.user.id, session.access_token);
+                          await dbPost("sesiones_simulacro", {
+                            usuario_id: nuevoIntento.usuario_id,
+                            puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
+                            total_preguntas: nuevoIntento.total_preguntas,
+                            dominio: nuevoIntento.dominio,
+                            detalle_errores: nuevoIntento.detalle_errores,
+                            detalle_preguntas_subtemas: nuevoIntento.detalle_preguntas_subtemas,
+                            desglose_subtemas: nuevoIntento.desglose_subtemas
+                          }, session.access_token);
                         } catch (err) { 
-                          console.error("Aviso: Fallo guardando en remoto.", err); 
-                          setHistorialUsuario(prev => [{...nuevoIntento, created_at: new Date().toISOString(), id: Date.now()}, ...prev]);
+                          console.error("Supabase rechazó el guardado. Pasando a caché local.", err); 
+                          const local = JSON.parse(localStorage.getItem("sp_historial_fallback") || "[]");
+                          localStorage.setItem("sp_historial_fallback", JSON.stringify([nuevoIntento, ...local]));
                         }
                         
+                        await cargarHistorial(session.user.id, session.access_token);
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
@@ -636,7 +725,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* 4. PROGRESO E HISTORIAL CON DESGLOSE POR DOMINIO */}
+        {/* 4. PROGRESO E HISTORIAL CON DESGLOSE POR DOMINIO Y SUBTEMA */}
         {vista === "progreso" && (
           <div>
             <h2 style={{ fontSize: 26, marginBottom: 8 }}>Desglose de Rendimiento</h2>
@@ -656,8 +745,8 @@ export default function SecurePathPSP() {
               </div>
             </div>
 
-            {/* SECCIÓN NUEVA: Promedios Específicos por Dominio */}
-            <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
+            {/* Promedios por Dominio */}
+            <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoPromedios(!desplegadoPromedios)}>
                 <h3 style={{ fontSize: 18, color: C.gold, margin: 0 }}>Ver promedios por Dominio</h3>
                 <span style={{ color: C.white, fontWeight: "bold" }}>{desplegadoPromedios ? "▲" : "▼"}</span>
@@ -681,6 +770,31 @@ export default function SecurePathPSP() {
               )}
             </div>
 
+            {/* Desplegable por Subtarea */}
+            <div style={{ background: C.black, padding: 20, borderRadius: 12, border: `1px solid ${C.border}`, marginBottom: 30 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setDesplegadoSubtemasProgreso(!desplegadoSubtemasProgreso)}>
+                <h3 style={{ fontSize: 18, color: C.blue, margin: 0 }}>Desglose de Rendimiento por Subtarea (20 Subtemas)</h3>
+                <span style={{ color: C.white, fontWeight: "bold" }}>{desplegadoSubtemasProgreso ? "▲" : "▼"}</span>
+              </div>
+              
+              {desplegadoSubtemasProgreso && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 20 }}>
+                  {SUBTEMAS_LISTA.map((sub, idx) => {
+                    const stats = getPromedioPorSubtema(sub);
+                    return (
+                      <div key={idx} style={{ background: C.card, padding: 14, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{sub}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.muted }}>
+                          <span>Acierto: <strong style={{ color: stats.cant > 0 ? C.green : C.white }}>{stats.cant > 0 ? `${stats.prom}%` : "Sin evaluar"}</strong></span>
+                          <span>Preguntas testeadas: {stats.cant}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <h3 style={{ fontSize: 20, marginBottom: 16 }}>Historial Detallado de Simulacros</h3>
             {safeHistorial.length === 0 ? (
               <p style={{ color: C.muted }}>Aún no tienes simulacros registrados.</p>
@@ -688,11 +802,12 @@ export default function SecurePathPSP() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {safeHistorial.map((sim, index) => {
                   const notaSim = Number(sim.puntaje_porcentaje || sim.porcentaje || sim.puntaje || 0);
+                  const isEspecial = sim.dominio && sim.dominio !== 0 && sim.dominio !== "0";
                   return (
                     <div key={sim.id || index} style={{ background: C.dark, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {sim.dominio || "General"}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacros #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General (Mapeado por Subtareas)"}</div>
                           <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
