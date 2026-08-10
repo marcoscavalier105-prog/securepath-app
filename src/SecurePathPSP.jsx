@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "4.7"; 
+const APP_VERSION = "4.8"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -236,17 +236,31 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
+  // SISTEMA BLINDADO: Fusiona los datos locales con los de Supabase sin sobrescribir ni borrar nada
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
       setBanco(Array.isArray(bancoRes) ? bancoRes : []);
 
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      if (Array.isArray(histRes) && histRes.length > 0) {
-        setHistorialUsuario(histRes);
-        localStorage.setItem("sp_historial_local", JSON.stringify(histRes));
+      
+      const localHist = JSON.parse(localStorage.getItem("sp_historial_local") || "[]");
+      
+      if (Array.isArray(histRes)) {
+        // Combinamos sin duplicar usando ID o created_at como llave única
+        const map = new Map();
+        [...localHist, ...histRes].forEach(item => {
+          const key = item.id || item.created_at;
+          if (key) map.set(key, item);
+        });
+        const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        setHistorialUsuario(merged);
+        localStorage.setItem("sp_historial_local", JSON.stringify(merged));
       }
-    } catch (err) { console.error("Error cargando datos:", err); }
+    } catch (err) { 
+      console.error("Error cargando datos:", err); 
+    }
   };
 
   const getPreguntasPorDominio = (d) => {
@@ -325,8 +339,6 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
-  // ACTUALIZACIÓN CLAVE: Ahora los simulacros generales (dominio 0 o "General") 
-  // también alimentan los promedios de cada dominio para evitar el estado N/A.
   const getPromedioPorDominio = (domNum) => {
     const simsDom = safeHistorial.filter(s => {
       const d = String(s.dominio || s.domain || "").trim();
@@ -528,6 +540,7 @@ export default function SecurePathPSP() {
                           created_at: new Date().toISOString()
                         };
                         
+                        // Guardado seguro y permanente inmediato en memoria y localStorage
                         const actualizado = [nuevoIntento, ...historialUsuario];
                         setHistorialUsuario(actualizado);
                         localStorage.setItem("sp_historial_local", JSON.stringify(actualizado));
