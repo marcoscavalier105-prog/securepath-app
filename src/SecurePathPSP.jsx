@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "4.9"; 
+const APP_VERSION = "5.0"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -147,13 +147,7 @@ export default function SecurePathPSP() {
   
   const [vista, setVista] = useState("dashboard");
   const [banco, setBanco] = useState([]);
-  const [historialUsuario, setHistorialUsuario] = useState(() => {
-    try {
-      const localHist = localStorage.getItem("sp_historial_local");
-      if (localHist) return JSON.parse(localHist);
-    } catch (e) {}
-    return [];
-  });
+  const [historialUsuario, setHistorialUsuario] = useState([]);
   const [subtemasCompletados, setSubtemasCompletados] = useState([]);
 
   // Simulacro states
@@ -240,22 +234,44 @@ export default function SecurePathPSP() {
       const bancoRes = await dbGet("preguntas", "select=*", token);
       setBanco(Array.isArray(bancoRes) ? bancoRes : []);
 
+      const localKey = `sp_historial_detallado_${userId}`;
+      const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
+
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
-      const localHist = JSON.parse(localStorage.getItem("sp_historial_local") || "[]");
       
       if (Array.isArray(histRes)) {
+        // Mapeamos los datos de Supabase combinándolos con el caché local enriquecido (que guarda errores y desgloses de subtareas)
         const map = new Map();
-        // Priorizamos el historial local para mantener los desgloses completos y errores detallados
-        [...histRes, ...localHist].forEach(item => {
+        [...localHist, ...histRes].forEach(item => {
           const key = item.id || item.created_at;
-          if (key) map.set(key, item);
+          if (key) {
+            if (!map.has(key)) {
+              map.set(key, item);
+            } else {
+              // Fusionamos para conservar el desglose de subtareas y errores si vinieron de localStorage
+              const existing = map.get(key);
+              map.set(key, {
+                ...existing,
+                ...item,
+                detalle_errores: item.detalle_errores || existing.detalle_errores || [],
+                desglose_subtemas: item.desglose_subtemas || existing.desglose_subtemas || {}
+              });
+            }
+          }
         });
         const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         
         setHistorialUsuario(merged);
-        localStorage.setItem("sp_historial_local", JSON.stringify(merged));
+        localStorage.setItem(localKey, JSON.stringify(merged));
+      } else if (localHist.length > 0) {
+        setHistorialUsuario(localHist);
       }
-    } catch (err) { console.error("Error cargando datos:", err); }
+    } catch (err) { 
+      console.error("Error cargando datos:", err);
+      const localKey = `sp_historial_detallado_${userId}`;
+      const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
+      if (localHist.length > 0) setHistorialUsuario(localHist);
+    }
   };
 
   const getPreguntasPorDominio = (d) => {
@@ -285,7 +301,6 @@ export default function SecurePathPSP() {
       const match = SUBTEMAS_LISTA.find(s => s.toLowerCase().includes(String(subVal).toLowerCase()));
       if (match) return match;
     }
-    // Asignación cíclica robusta basada en el índice para asegurar distribución en el desglose
     return SUBTEMAS_LISTA[index % SUBTEMAS_LISTA.length];
   };
 
@@ -344,14 +359,32 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
+  // CÁLCULO PRECISO DE DOMINIOS BASADO EN SUS SUBTAREAS (D1-, D2-, D3-)
   const getPromedioPorDominio = (domNum) => {
-    const simsDom = safeHistorial.filter(s => {
-      const d = String(s.dominio || s.domain || "").trim();
-      return d === String(domNum) || d === "0" || d === "" || d.toLowerCase().includes("general");
+    let totalPreg = 0; 
+    let totalAcertadas = 0;
+    const prefijo = `D${domNum}-`;
+
+    safeHistorial.forEach(s => {
+      if (s.desglose_subtemas) {
+        Object.entries(s.desglose_subtemas).forEach(([subNombre, data]) => {
+          if (subNombre.startsWith(prefijo)) {
+            totalPreg += data.total || 0;
+            totalAcertadas += data.correctas || 0;
+          }
+        });
+      }
     });
-    if (simsDom.length === 0) return { prom: 0, cant: 0 };
-    const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / simsDom.length);
-    return { prom, cant: simsDom.length };
+
+    if (totalPreg === 0) {
+      // Fallback por si algún simulacro antiguo no tiene desglose guardado
+      const simsDom = safeHistorial.filter(s => String(s.dominio || "").trim() === String(domNum));
+      if (simsDom.length === 0) return { prom: 0, cant: 0 };
+      const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
+      return { prom, cant: simsDom.length };
+    }
+
+    return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
   };
 
   const getPromedioPorSubtema = (subNombre) => {
@@ -583,7 +616,9 @@ export default function SecurePathPSP() {
                         
                         const actualizado = [nuevoIntento, ...historialUsuario];
                         setHistorialUsuario(actualizado);
-                        localStorage.setItem("sp_historial_local", JSON.stringify(actualizado));
+                        
+                        const localKey = `sp_historial_detallado_${session.user.id}`;
+                        localStorage.setItem(localKey, JSON.stringify(actualizado));
 
                         try {
                           await dbPost("sesiones_simulacro", {
@@ -723,7 +758,7 @@ export default function SecurePathPSP() {
                         <div style={{ color: C.muted, fontSize: 13, marginBottom: 6 }}>Dominio {d}</div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                           <span style={{ fontSize: 24, fontWeight: "bold", color: stats.prom >= 80 ? C.green : (stats.prom >= 60 ? C.gold : C.red) }}>{stats.cant > 0 ? `${stats.prom}%` : "N/A"}</span>
-                          <span style={{ fontSize: 12, color: C.white }}>{stats.cant} intentos</span>
+                          <span style={{ fontSize: 12, color: C.white }}>{stats.cant} preg. testeadas</span>
                         </div>
                       </div>
                     )
