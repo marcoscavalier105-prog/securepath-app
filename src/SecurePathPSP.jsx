@@ -78,6 +78,7 @@ export default function SecurePathPSP() {
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
   const [resultadoFinal, setResultadoFinal] = useState(null);
   const [desplegadoSim, setDesplegadoSim] = useState(null);
+  const [segundosTranscurridos, setSegundosTranscurridos] = useState(0);
 
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null);
@@ -85,7 +86,7 @@ export default function SecurePathPSP() {
 
   // Tutor IA states
   const [mensajesTutor, setMensajesTutor] = useState([
-    { role: "assistant", content: "Hola, soy tu tutor experto en la certificación PSP de ASIS International. Selecciona un dominio abajo o escribe tu consulta libre." }
+    { role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }
   ]);
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
@@ -100,6 +101,17 @@ export default function SecurePathPSP() {
       }
     } catch {}
   }, []);
+
+  // Temporizador para simulacros activos
+  useEffect(() => {
+    let timer = null;
+    if (simulacroPantalla === "activo" && !resultadoFinal) {
+      timer = setInterval(() => {
+        setSegundosTranscurridos(s => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [simulacroPantalla, resultadoFinal]);
 
   const handleAuth = async () => {
     setAuthError("");
@@ -144,16 +156,20 @@ export default function SecurePathPSP() {
       filtradas = filtradas.filter(p => Number(p.dominio) === Number(dominio));
     }
     if (filtradas.length === 0) filtradas = [...banco];
-    const seleccionadas = mezclarConOpciones(filtradas).slice(0, cantidad);
+    // Si se pide una cantidad mayor a las disponibles, se toman todas las disponibles
+    const totalAUsar = Math.min(cantidad, filtradas.length);
+    const seleccionadas = mezclarConOpciones(filtradas).slice(0, totalAUsar);
+    
     if (seleccionadas.length === 0) {
       alert("No hay preguntas disponibles en la base de datos.");
       return;
     }
-    setModoConfig({ tipo, cantidad, dominio, prometric });
+    setModoConfig({ tipo, cantidad: seleccionadas.length, dominio, prometric });
     setPreguntasSimulacro(seleccionadas);
     setIndiceActual(0);
     setRespuestasUsuario({});
     setResultadoFinal(null);
+    setSegundosTranscurridos(0);
     setSimulacroPantalla("activo");
   };
 
@@ -195,7 +211,7 @@ export default function SecurePathPSP() {
       <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <div style={{ width: "100%", maxWidth: 420, background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
           <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath <span style={{ color: C.white, fontWeight: 400 }}>PSP</span></h2>
-          <p style={{ color: C.muted, marginBottom: 24, fontSize: 14 }}>Plataforma de preparación oficial</p>
+          <p style={{ color: C.muted, marginBottom: 24, fontSize: 14 }}>Plataforma de preparación para la certificación</p>
           <input type="email" placeholder="Correo electrónico" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
           <input type="password" placeholder="Contraseña" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 16, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
           {authError && <div style={{ color: C.red, marginBottom: 16, fontSize: 13 }}>{authError}</div>}
@@ -208,6 +224,12 @@ export default function SecurePathPSP() {
   const totalSims = historialUsuario.length;
   const promedioGral = totalSims > 0 ? Math.round(historialUsuario.reduce((acc, s) => acc + (s.puntaje_porcentaje || 0), 0) / totalSims) : 0;
   const avanceSubtemas = `${subtemasCompletados.length}/${SUBTEMAS_LISTA.length}`;
+
+  const formatearTiempo = (seg) => {
+    const mins = Math.floor(seg / 60);
+    const secs = seg % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: C.black, color: C.white, fontFamily: "sans-serif", paddingBottom: 40 }}>
@@ -258,7 +280,7 @@ export default function SecurePathPSP() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
               <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.gold, marginBottom: 6 }}>Ir a Simulacros</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Prometric.</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Prometric (50).</div>
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
@@ -282,7 +304,7 @@ export default function SecurePathPSP() {
             {simulacroPantalla === "inicio" && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <h2 style={{ fontSize: 24, marginBottom: 8 }}>Módulo de Simulacros</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona el formato de tu práctica (Preguntas cargadas: {banco.length})</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona el formato de tu práctica (Banco total: {banco.length} preguntas)</p>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
                   <button onClick={() => iniciarSimulacro("rapido", 10, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
@@ -297,20 +319,27 @@ export default function SecurePathPSP() {
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Simulacro Largo</div>
                     <div style={{ fontSize: 13, color: C.muted }}>50 preguntas de práctica intensiva.</div>
                   </button>
-                  <button onClick={() => iniciarSimulacro("prometric", 25, 0, true)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
+                  <button onClick={() => iniciarSimulacro("prometric", 50, 0, true)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                     <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Modo Prometric</div>
-                    <div style={{ fontSize: 13, color: C.muted }}>Examen real sin respuestas inmediatas hasta el final.</div>
+                    <div style={{ fontSize: 13, color: C.muted }}>50 preguntas estilo examen real sin retroalimentación hasta el final.</div>
                   </button>
                 </div>
 
                 <div style={{ background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico:</h4>
+                  <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico (Todas las disponibles):</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {[[1, "Dominio 1: Assessment"], [2, "Dominio 2: Design"], [3, "Dominio 3: Implementation"]].map(([d, label]) => (
-                      <button key={d} onClick={() => iniciarSimulacro("dominio", 15, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-                        {label} (15 preg.)
-                      </button>
-                    ))}
+                    {[
+                      [1, "Dominio 1: Assessment"], 
+                      [2, "Dominio 2: Design"], 
+                      [3, "Dominio 3: Implementation"]
+                    ].map(([d, label]) => {
+                      const cantDominio = banco.filter(p => Number(p.dominio) === Number(d)).length;
+                      return (
+                        <button key={d} onClick={() => iniciarSimulacro("dominio", cantDominio || 50, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+                          {label} ({cantDominio} preg.)
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -318,9 +347,12 @@ export default function SecurePathPSP() {
 
             {simulacroPantalla === "activo" && preguntasSimulacro.length > 0 && !resultadoFinal && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, color: C.muted, fontSize: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, color: C.muted, fontSize: 14 }}>
                   <span>Pregunta {indiceActual + 1} de {preguntasSimulacro.length} {modoConfig.prometric ? "· [Modo Prometric]" : ""}</span>
-                  <button onClick={() => setSimulacroPantalla("inicio")} style={{ background: "none", border: "none", color: C.red, cursor: "pointer" }}>Abandonar</button>
+                  <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                    <span style={{ background: C.black, padding: "4px 10px", borderRadius: 4, fontFamily: "monospace", color: C.gold }}>⏱ {formatearTiempo(segundosTranscurridos)}</span>
+                    <button onClick={() => setSimulacroPantalla("inicio")} style={{ background: "none", border: "none", color: C.red, cursor: "pointer" }}>Abandonar</button>
+                  </div>
                 </div>
 
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>{preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado}</h3>
@@ -352,7 +384,12 @@ export default function SecurePathPSP() {
                         if (respUsr === respCorr) {
                           correctas++;
                         } else {
-                          erroresDetalle.push({ pregunta: p.pregunta || p.enunciado, tu_respuesta: respUsr || "Sin responder", correcta: respCorr, explicacion: p.explicacion || "Sin explicación disponible." });
+                          erroresDetalle.push({ 
+                            pregunta: p.pregunta || p.enunciado, 
+                            tu_respuesta: respUsr || "Sin responder", 
+                            correcta: respCorr, 
+                            explicacion: p.explicacion || "Sin explicación disponible." 
+                          });
                         }
                       });
                       const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
@@ -372,33 +409,49 @@ export default function SecurePathPSP() {
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}`, textAlign: "center" }}>
                 <h2 style={{ fontSize: 28, marginBottom: 10 }}>¡Simulacro Completado!</h2>
                 <div style={{ fontSize: 48, fontWeight: 800, color: resultadoFinal.pct >= 80 ? C.green : C.gold, margin: "20px 0" }}>{resultadoFinal.pct}%</div>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Acertaste {resultadoFinal.correctas} de {resultadoFinal.total} preguntas.</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Acertaste {resultadoFinal.correctas} de {resultadoFinal.total} preguntas en un tiempo de {formatearTiempo(segundosTranscurridos)}.</p>
+                
+                {resultadoFinal.erroresDetalle && resultadoFinal.erroresDetalle.length > 0 && (
+                  <div style={{ textAlign: "left", marginBottom: 24, background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                    <h4 style={{ color: C.red, marginBottom: 12 }}>Retroalimentación de errores cometidos:</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>
+                      {resultadoFinal.erroresDetalle.map((err, eIdx) => (
+                        <div key={eIdx} style={{ background: C.card, padding: 12, borderRadius: 6, fontSize: 13 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>{err.pregunta}</div>
+                          <div style={{ color: C.red }}>Tu respuesta: {err.tu_respuesta} | Respuesta correcta: {err.correcta}</div>
+                          <div style={{ color: C.muted, marginTop: 4 }}>Explicación: {err.explicacion}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button onClick={() => setSimulacroPantalla("inicio")} style={{ padding: "12px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Volver al Menú de Simulacros</button>
               </div>
             )}
           </div>
         )}
 
-        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (INTERACTIVA) */}
+        {/* 3. GUÍA TEÓRICA DE 20 SUBTEMAS (UDEMY STYLE) */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica de 20 Subtemas</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Haz clic en cualquier subtema para leer su contenido y completar su quiz de avance.</p>
+                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Guía Teórica Estructurada</h2>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Selecciona un subtema para acceder a la teoría detallada y completar tu avance.</p>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
                   {SUBTEMAS_LISTA.map((subtema, idx) => {
                     const completado = subtemasCompletados.includes(idx);
                     return (
-                      <div key={idx} onClick={() => setSubtemaActivo(idx)} style={{ background: C.card, padding: 18, borderRadius: 8, border: `1px solid ${completado ? C.greenB : C.border}`, cursor: "pointer" }}>
+                      <div key={idx} onClick={() => setSubtemaActivo(idx)} style={{ background: C.card, padding: 18, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <span style={{ fontWeight: 700, fontSize: 16, color: C.gold }}>{subtema}</span>
                           <span style={{ fontSize: 12, padding: "2px 8px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
                             {completado ? "Completado" : "Pendiente"}
                           </span>
                         </div>
-                        <div style={{ fontSize: 13, color: C.muted }}>Conceptos clave, definiciones normativas y reglas críticas para el examen PSP.</div>
+                        <div style={{ fontSize: 13, color: C.muted }}>Teoría oficial, marcos normativos y recursos de estudio.</div>
                       </div>
                     );
                   })}
@@ -408,9 +461,18 @@ export default function SecurePathPSP() {
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16, fontSize: 14 }}>← Volver a la lista de subtemas</button>
                 <h2 style={{ fontSize: 24, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
-                <div style={{ background: C.black, padding: 20, borderRadius: 8, marginBottom: 24, lineHeight: 1.6, fontSize: 15 }}>
-                  <p>Aquí se detallan los conceptos teóricos fundamentales, marcos normativos de ASIS International, directrices de aplicación y ejemplos prácticos correspondientes a este bloque de estudio.</p>
+                
+                <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.7, fontSize: 15 }}>
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>1. Marco Teórico y Conceptos Clave</h3>
+                  <p style={{ marginBottom: 16 }}>Este subtema abarca los principios fundamentales requeridos para la gestión de riesgos y seguridad física. Es vital comprender las definiciones normativas y la aplicación práctica de cada directriz.</p>
+                  
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>2. Directrices de Aplicación</h3>
+                  <p style={{ marginBottom: 16 }}>Los profesionales de la protección deben evaluar la integración de controles técnicos, humanos y operativos para mitigar las vulnerabilidades identificadas en el entorno corporativo.</p>
+                  
+                  <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>3. Actividad y Evaluación</h3>
+                  <p style={{ color: C.muted }}>Revisa la teoría anterior, comprende los puntos críticos de examen y completa el quiz para registrar tu avance oficial en el sistema.</p>
                 </div>
+
                 <button onClick={() => marcarSubtemaCompletado(subtemaActivo)} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
                   Completar Quiz y Desbloquear Subtema
                 </button>
