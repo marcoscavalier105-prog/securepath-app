@@ -141,7 +141,7 @@ export default function SecurePathPSP() {
   // Curso / Udemy / Subtareas states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [subtemasCompletados, setSubtemasCompletados] = useState(JSON.parse(localStorage.getItem("sp_subtemas") || "[]"));
-  const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria"); // "teoria", "video", "quiz"
+  const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
 
   // Tutor IA states
   const [mensajesTutor, setMensajesTutor] = useState(() => {
@@ -411,7 +411,7 @@ export default function SecurePathPSP() {
                       [2, "Dominio 2: Design"], 
                       [3, "Dominio 3: Implementation"]
                     ].map(([d, label]) => {
-                      const cantDominio = banco.filter(p => Number(p.dominio) === Number(d)).length;
+                      const cantDominio = banco.filter(p => Number(p.dominio) === Number(d) || Number(p.domain) === Number(d)).length;
                       return (
                         <button key={d} onClick={() => iniciarSimulacro("dominio", cantDominio || 50, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
                           {label} ({cantDominio} preg.)
@@ -433,8 +433,9 @@ export default function SecurePathPSP() {
                   </div>
                 </div>
 
+                {/* Enunciado de pregunta mapeando correctamente todas las posibles columnas de la BD */}
                 <h3 style={{ fontSize: 18, marginBottom: 20, lineHeight: 1.5 }}>
-                  {preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].text || preguntasSimulacro[indiceActual].question || "Pregunta sin texto"}
+                  {preguntasSimulacro[indiceActual].enunciado || preguntasSimulacro[indiceActual].pregunta || preguntasSimulacro[indiceActual].text || preguntasSimulacro[indiceActual].question || "Pregunta sin texto"}
                 </h3>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
@@ -499,7 +500,7 @@ export default function SecurePathPSP() {
                             correctas++;
                           } else {
                             erroresDetalle.push({ 
-                              pregunta: p.pregunta || p.enunciado || p.text || p.question || "Pregunta", 
+                              pregunta: p.enunciado || p.pregunta || p.text || p.question || "Pregunta", 
                               tu_respuesta: respUsr || "Sin responder", 
                               correcta: respCorr, 
                               explicacion: p.explicacion || p.explanation || "Sin explicación disponible." 
