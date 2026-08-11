@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.6"; 
+const APP_VERSION = "5.7"; 
 
-// Cliente HTTP centralizado para Supabase
+// Cliente HTTP centralizado para Supabase (Soporta Upsert para evitar errores 409)
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     headers: { 
@@ -30,7 +30,7 @@ const authSignIn = (email, password) => sb("/auth/v1/token?grant_type=password",
 const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
-const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "return=representation" });
+const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
 
 // ─── UTILIDADES DE PARSEO Y MANIPULACIÓN DE DATOS ───────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
@@ -117,112 +117,63 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
+// TEORÍA AMPLIADA, DETALLADA Y PROFUNDIZADA (ST1 AL ST5) CON MAPAS CONCEPTUALES
 const HANDBOOK_TEORIA = {
   0: { 
+    mapaConceptual: "Macro: Ecosistema Organizacional ➔ Meso: Clasificación de Activos Críticos ➔ Micro: Criterios CID (Confidencialidad, Integridad y Disponibilidad) y Valoración Financiera.",
     subsub: [
-      { titulo: "1. Identificación y Catalogación", puntos: ["Inventario exhaustivo de activos tangibles e intangibles.", "Clasificación por criticidad y valor operativo.", "Identificación de dependencias críticas de negocio."] },
-      { titulo: "2. Criterios de Valoración", puntos: ["Impacto financiero ante pérdida o interrupción.", "Valor reputacional y estratégico.", "Confidencialidad, integridad y disponibilidad (CID)."] }
+      { titulo: "1. Macroproceso: Identificación y Catalogación Integral", puntos: ["Inventario exhaustivo de activos tangibles (instalaciones, equipos, personal) e intangibles (propiedad intelectual, datos, reputación).", "Jerarquización de la criticidad operativa alineada al negocio corporativo.", "Mapeo de dependencias críticas y puntos únicos de falla (SPOF) en la organización."] },
+      { titulo: "2. Criterios de Valoración y Metodología CID", puntos: ["Análisis de impacto financiero directo ante pérdidas, robos o interrupciones operativas.", "Evaluación del valor reputacional, legal y estratégico de los activos.", "Aplicación de la tríada CID (Confidencialidad, Integridad y Disponibilidad) como estándar base de protección."] },
+      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El activo humano siempre debe considerarse el activo de mayor criticidad y prioridad en el diseño de seguridad.", "La valorización de activos no solo responde al costo de reposición física, sino al impacto sistémico de su pérdida."] }
     ]
   },
   1: { 
+    mapaConceptual: "Macro: Entorno Geopolítico y Criminal ➔ Meso: Categorización de Amenazas (Naturales, Humanas, Técnicas) ➔ Micro: Evaluación de Intención, Capacidad y Oportunidad (ICO).",
     subsub: [
-      { titulo: "1. Naturaleza de las Amenazas", puntos: ["Categorización: Humanas (intencionales/accidentales), naturales y ambientales.", "Evaluación de intención, capacidad y oportunidad de actores hostiles.", "Análisis de tendencias criminales y geopolíticas locales."] },
-      { titulo: "2. Modelos de Amenaza", puntos: ["Diseño de perfiles de atacantes probables.", "Matriz de frecuencia y severidad de eventos adversos."] }
+      { titulo: "1. Macroentorno y Naturaleza de las Amenazas", puntos: ["Evaluación de riesgos macroscópicos: geopolíticos, sociales, económicos y ambientales de la región.", "Categorización de amenazas: Humanas (intencionales, negligentes), naturales (sismos, clima extremo) y técnicas (fallas de infraestructura).", "Estudio de las tendencias criminales locales y modus operandi actuales."] },
+      { titulo: "2. Modelo ICO (Intención, Capacidad y Oportunidad)", puntos: ["Intención: Determinación y motivación del actor hostil para perpetrar el ataque.", "Capacidad: Recursos técnicos, financieros y operativos con los que cuenta el agresor.", "Oportunidad: Ventanas temporales y vulnerabilidades físicas que facilitan la acción hostil."] },
+      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["Una amenaza sin vulnerabilidad explotable no representa un riesgo real.", "Los actores internos con acceso privilegiado representan el vector de amenaza más complejo de mitigar."] }
     ]
   },
   2: { 
+    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Detección de Brechas Físicas y Operativas ➔ Micro: Evaluación de Controles Deficientes en Perímetro y Accesos.",
     subsub: [
-      { titulo: "1. Detección de Debilidades", puntos: ["Evaluación de fallas en diseño arquitectónico y perimetral.", "Análisis de deficiencias operativas y procedimientos de guardia.", "Vulnerabilidades tecnológicas en sistemas de control de accesos y CCTV."] },
-      { titulo: "2. Metodologías de Revisión", puntos: ["Auditorías técnicas de campo.", "Pruebas de penetración física y social engineering reviews."] }
+      { titulo: "1. Macroanálisis de la Superficie de Ataque", puntos: ["Identificación sistemática de puntos débiles en el diseño arquitectónico y perimetral.", "Evaluación de deficiencias operativas y errores humanos en los procedimientos de vigilancia.", "Análisis de fallas tecnológicas en sistemas de control de accesos y circuitos cerrados de televisión."] },
+      { titulo: "2. Metodologías de Detección de Brechas", puntos: ["Auditorías técnicas de campo y pruebas de penetración física (Red Teaming).", "Revisiones de ingeniería social y cumplimiento de protocolos de seguridad.", "Simulacros de intrusión para validar tiempos de retardo y respuesta."] },
+      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["Las vulnerabilidades son condiciones inherentes que pueden ser remediadas mediante contramedidas efectivas.", "El error humano es la vulnerabilidad más frecuente reportada en incidentes corporativos."] }
     ]
   },
   3: { 
+    mapaConceptual: "Macro: Modelos de Gestión de Riesgo ESRM ➔ Meso: Cálculo Cuantitativo vs Cualitativo ➔ Micro: Fórmula de Riesgo (Amenaza × Vulnerabilidad × Consecuencia).",
     subsub: [
-      { titulo: "1. Modelos de Riesgo", puntos: ["Cálculo cuantitativo vs. cualitativo del riesgo.", "Fórmula base: Riesgo = Amenaza × Vulnerabilidad × Consecuencia.", "Estimación de pérdida esperada anual (SLE, ARO, ALE)."] },
-      { titulo: "2. Evaluación de Impacto", puntos: ["Análisis de impacto al negocio (BIA).", "Tolerancia y apetito al riesgo corporativo."] }
+      { titulo: "1. Modelos de Evaluación de Riesgos", puntos: ["Modelos cualitativos basados en matrices de probabilidad e impacto (Alto, Medio, Bajo).", "Modelos cuantitativos orientados a la estimación financiera de pérdida (SLE, ARO, ALE).", "Alineación del riesgo con el apetito y tolerancia corporativa de la alta dirección."] },
+      { titulo: "2. Análisis de Impacto al Negocio (BIA)", puntos: ["Determinación del tiempo objetivo de recuperación (RTO) y punto objetivo de recuperación (RPO).", "Evaluación de cascada de consecuencias operativas y financieras ante un evento adverso."] },
+      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El riesgo nunca se elimina al 100%; el objetivo del ESRM es mitigarlo a niveles aceptables o tolerables para el negocio."] }
     ]
   },
   4: { 
+    mapaConceptual: "Macro: Estrategia de Mitigación Global ➔ Meso: Tipos de Contramedidas (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Análisis Costo-Beneficio y ROSI.",
     subsub: [
-      { titulo: "1. Análisis Costo-Beneficio", puntos: ["Efectividad de las salvaguardas propuestas.", "Retorno de inversión en seguridad (ROSI).", "Comparación entre mitigación, transferencia, aceptación y evitación."] },
-      { titulo: "2. Tipos de Contramedidas", puntos: ["Disuasión, retardación, detección y respuesta.", "Controles físicos, electrónicos y procedimentales."] }
+      { titulo: "1. Jerarquía de Funciones de Seguridad", puntos: ["Disuasión: Elementos psicológicos que desalientan el intento de intrusión.", "Detección: Sistemas y sensores capaces de alertar la presencia de un intruso en tiempo real.", "Retardo: Barreras físicas y obstáculos diseñados para ganar tiempo operativo.", "Respuesta: Acciones coordinadas del personal de seguridad o fuerzas públicas para neutralizar la amenaza."] },
+      { titulo: "2. Análisis Costo-Beneficio y Retorno de Inversión", puntos: ["Evaluación de la efectividad de las salvaguardas frente al costo de implementación y mantenimiento.", "Cálculo del Retorno de Inversión en Seguridad (ROSI) para justificación presupuestaria ante el directorio."] },
+      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El tiempo de retardo de las contramedidas físicas debe ser siempre mayor al tiempo total de respuesta de la fuerza operativa."] }
     ]
   },
-  5: { 
-    subsub: [
-      { titulo: "1. Principios del ESRM", puntos: ["Enterprise Security Risk Management alineado al objetivo de negocio.", "Gestión holística más allá de la seguridad física tradicional.", "Colaboración interdepartamental y gestión ejecutiva."] }
-    ]
-  },
-  6: { 
-    subsub: [
-      { titulo: "1. Metodología de Inspección", puntos: ["Revisiones metódicas y listas de verificación (checklists).", "Evaluación independiente frente a estándares internacionales.", "Informes de hallazgos y planes de acción correctiva (CAPA)."] }
-    ]
-  },
-  7: { 
-    subsub: [
-      { titulo: "1. Marco Normativo", puntos: ["Cumplimiento de leyes locales e internacionales de seguridad privada.", "Normas industriales, códigos de edificación y regulaciones laborales.", "Responsabilidad civil y penal en operaciones de seguridad."] }
-    ]
-  },
-  8: { 
-    subsub: [
-      { titulo: "1. Gestión Documental", puntos: ["Elaboración de políticas, directrices y procedimientos operativos estándar (POE).", "Bitácoras, reportes de incidentes e informes ejecutivos.", "Cadena de custodia y confidencialidad de la información."] }
-    ]
-  },
-  9: { 
-    subsub: [
-      { titulo: "1. Diseño Perimetral", puntos: ["Líneas de defensa concéntricas: disuasión, detección, demora y respuesta.", "Cercas, muros, portones y elementos paisajísticos (CPTED).", "Zonas de exclusión y áreas de separación visual."] }
-    ]
-  },
-  10: { 
-    subsub: [
-      { titulo: "1. Sistemas de Credencialización", puntos: ["Control de acceso lógico y físico integrado.", "Tecnologías de tarjetas inteligentes, biometría y códigos móviles.", "Gestión de visitantes, esclusas (mantrap) y torniquetes ópticos."] }
-    ]
-  },
-  11: { 
-    subsub: [
-      { titulo: "1. Tecnologías de Detección", puntos: ["Sensores volumétricos infrarrojos, microondas y ultrasónicos.", "Contactos magnéticos y sensores de rotura de vidrio.", "Protección perimetral con fibra óptica enterrada o en cercas."] }
-    ]
-  },
-  12: { 
-    subsub: [
-      { titulo: "1. Arquitectura de Videovigilancia", puntos: ["Cámaras IP de alta definición y analítica de video inteligente (IVS).", "Iluminación infrarroja y cámaras térmicas perimetrales.", "Sistemas de grabación (NVR/DVR), almacenamiento y retención de video."] }
-    ]
-  },
-  13: { 
-    subsub: [
-      { titulo: "1. Principios CPTED", puntos: ["Prevención del Delito a través del Diseño Ambiental.", "Vigilancia natural, control natural de accesos y reforzamiento territorial.", "Mantenimiento y gestión del espacio público y corporativo."] }
-    ]
-  },
-  14: { 
-    subsub: [
-      { titulo: "1. Redes y Enlaces Seguros", puntos: ["Sistemas de radio comunicación trunking y VHF/UHF.", "Redes redundantes y encriptadas para centros de control.", "Sistemas de alimentación ininterrumpida (UPS) y plantas de emergencia."] }
-    ]
-  },
-  15: { 
-    subsub: [
-      { titulo: "1. Convergencia Tecnológica", puntos: ["Plataformas PSIM (Physical Security Information Management).", "Integración de seguridad física con ciberseguridad corporativa.", "Operación centralizada en centros de control (SOC/GSOC)."] }
-    ]
-  },
-  16: { 
-    subsub: [
-      { titulo: "1. Fases del Proyecto", puntos: ["Definición de alcance, cronograma y presupuesto (WBS).", "Gestión de adquisiciones, contratos y proveedores de seguridad.", "Gestión de riesgos del proyecto de ingeniería."] }
-    ]
-  },
-  17: { 
-    subsub: [
-      { titulo: "1. Comisionamiento Técnico", puntos: ["Pruebas de aceptación en fábrica (FAT) y en sitio (SAT).", "Calibración de sensores, cámaras y sistemas de control de acceso.", "Entrega de manuales, planos as-built y capacitación técnica."] }
-    ]
-  },
-  18: { 
-    subsub: [
-      { titulo: "1. Gestión Operativa", puntos: ["Mantenimiento preventivo y correctivo de equipos de seguridad.", "Protocolos de actuación y turnos operativos del centro de control.", "Mejora continua en los procedimientos de vigilancia."] }
-    ]
-  },
-  19: { 
-    subsub: [
-      { titulo: "1. Programas de Capacitación", puntos: ["Entrenamiento continuo para el personal de seguridad y empleados.", "Simulacros de evacuación, intrusión, sismos y respuesta a crisis.", "Evaluación post-ejercicio (After Action Review - AAR)."] }
-    ]
-  }
+  5: { subsub: [{ titulo: "Marco ESRM", puntos: ["Enterprise Security Risk Management alineado a los objetivos de negocio."] }] },
+  6: { subsub: [{ titulo: "Inspecciones", puntos: ["Revisiones metódicas y evaluación independiente de sistemas."] }] },
+  7: { subsub: [{ titulo: "Requisitos Legales", puntos: ["Cumplimiento normativo local e internacional."] }] },
+  8: { subsub: [{ titulo: "Documentación", puntos: ["Elaboración de políticas, directrices y reportes ejecutivos."] }] },
+  9: { subsub: [{ titulo: "Barreras Físicas", puntos: ["Cercas, muros y elementos perimetrales de defensa."] }] },
+  10: { subsub: [{ titulo: "Control de Accesos", puntos: ["Regulación de flujo mediante credenciales y biometría."] }] },
+  11: { subsub: [{ titulo: "Detección de Intrusos", puntos: ["Sensores volumétricos y perimetrales."] }] },
+  12: { subsub: [{ titulo: "Videovigilancia", puntos: ["Cámaras IP y analítica de video inteligente."] }] },
+  13: { subsub: [{ titulo: "CPTED", puntos: ["Prevención del delito mediante diseño ambiental."] }] },
+  14: { subsub: [{ titulo: "Comunicaciones", puntos: ["Redes seguras y radios de enlace redundantes."] }] },
+  15: { subsub: [{ titulo: "Integración", puntos: ["Plataformas PSIM y convergencia tecnológica."] }] },
+  16: { subsub: [{ titulo: "Gestión de Proyectos", puntos: ["Planificación, presupuestos y ejecución."] }] },
+  17: { subsub: [{ titulo: "Comisionamiento", puntos: ["Pruebas de aceptación FAT y SAT."] }] },
+  18: { subsub: [{ titulo: "Operación y Mantenimiento", puntos: ["Gestión óptima de centros de control y mantenimiento."] }] },
+  19: { subsub: [{ titulo: "Capacitación", puntos: ["Entrenamiento continuo y simulacros."] }] }
 };
 
 export default function SecurePathPSP() {
@@ -348,7 +299,7 @@ export default function SecurePathPSP() {
     }
   };
 
-  // GUARDAR PROGRESO DEL CURSO EN SUPABASE Y LOCAL
+  // GUARDAR PROGRESO DEL CURSO EN SUPABASE Y LOCAL (CON UPSERT SEGURO)
   const actualizarProgresoCurso = async (nuevoArrayCompletados) => {
     setSubtemasCompletados(nuevoArrayCompletados);
     if (!session?.user?.id) return;
@@ -750,7 +701,7 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* CURSO (UX AVANZADA CON SUB-SUBMODULOS Y QUIZZES CONDICIONALES AISLADOS) */}
+        {/* CURSO (PROGRESIÓN ESTRICTA, ESTADOS: BLOQUEADO, PENDIENTE, COMPLETADO) */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
@@ -758,7 +709,7 @@ export default function SecurePathPSP() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 15 }}>
                   <div>
                     <h2 style={{ fontSize: 26, marginBottom: 6 }}>Plan de Estudios Oficial PSP</h2>
-                    <p style={{ color: C.muted, fontSize: 14 }}>Desarrolla la teoría por sub-submódulos y aprueba los quizzes para completar tu avance.</p>
+                    <p style={{ color: C.muted, fontSize: 14 }}>Avanza de forma progresiva: cada subtema desbloquea al siguiente al aprobar su quiz.</p>
                   </div>
                   <div style={{ background: C.black, padding: "12px 20px", borderRadius: 8, border: `1px solid ${C.border}`, textAlign: "right" }}>
                     <div style={{ fontSize: 12, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>Progreso General del Curso</div>
@@ -782,20 +733,42 @@ export default function SecurePathPSP() {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
                           const completado = Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal);
                           
+                          // Regla de progresión estricta: Es accesible si es el primero (idx 0) o si el anterior ya está completado
+                          const esAccesible = idxGlobal === 0 || (Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal - 1));
+                          
+                          let estadoTexto = "Bloqueado";
+                          let colorEstado = C.muted;
+                          let bgCard = C.black;
+
+                          if (completado) {
+                            estadoTexto = "Completado";
+                            colorEstado = C.green;
+                            bgCard = "rgba(61,220,132,0.03)";
+                          } else if (esAccesible) {
+                            estadoTexto = "Pendiente";
+                            colorEstado = C.gold;
+                            bgCard = C.card;
+                          }
+                          
                           return (
                             <div key={idxGlobal} 
                               onClick={() => { 
+                                if (!esAccesible) {
+                                  alert("Esta subtarea está bloqueada. Debes completar la anterior primero.");
+                                  return;
+                                }
                                 setSubtemaActivo(idxGlobal); 
                                 setPestanaCursoActiva("teoria"); 
                                 setQuizActivoSubtema(null);
                                 setResultadoQuizCurso(null);
                               }} 
                               style={{ 
-                                background: completado ? "rgba(61,220,132,0.03)" : C.card, 
+                                background: bgCard, 
                                 padding: 16, 
                                 borderRadius: 8, 
-                                border: `1px solid ${completado ? C.green : C.border}`, 
-                                cursor: "pointer",
+                                border: `1px solid ${completado ? C.green : (esAccesible ? C.goldB : C.border)}`, 
+                                cursor: esAccesible ? "pointer" : "not-allowed",
+                                opacity: esAccesible ? 1 : 0.6,
                                 transition: "all 0.2s ease",
                                 display: "flex",
                                 flexDirection: "column",
@@ -804,11 +777,13 @@ export default function SecurePathPSP() {
                               }}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                                 <span style={{ fontWeight: 700, fontSize: 14, color: C.white, lineHeight: 1.4 }}>{subText}</span>
-                                <span style={{ fontSize: 11, padding: "3px 8px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4, fontWeight: "bold", whiteSpace: "nowrap" }}>
-                                  {completado ? "✓ Completado" : "Pendiente"}
+                                <span style={{ fontSize: 11, padding: "3px 8px", background: completado ? C.greenD : (esAccesible ? C.goldD : C.dark), color: colorEstado, borderRadius: 4, fontWeight: "bold", whiteSpace: "nowrap" }}>
+                                  {estadoTexto}
                                 </span>
                               </div>
-                              <div style={{ fontSize: 12, color: C.blue, fontWeight: 600 }}>Estudiar submódulos y quiz →</div>
+                              <div style={{ fontSize: 12, color: esAccesible ? C.blue : C.muted, fontWeight: 600 }}>
+                                {esAccesible ? "Estudiar submódulos y quiz →" : "🔒 Bloqueado"}
+                              </div>
                             </div>
                           );
                         })}
@@ -834,16 +809,24 @@ export default function SecurePathPSP() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 15 }}>
-                  {[["teoria", "📖 1. Teoría por Sub-submódulos"], ["video", "🎥 2. Videoclase"], ["quiz", "📝 3. Quiz Condicionante"]].map(([key, label]) => (
+                  {[["teoria", "📖 1. Teoría Detallada & Mapa Conceptual"], ["video", "🎥 2. Videoclase"], ["quiz", "📝 3. Quiz Condicionante"]].map(([key, label]) => (
                     <button key={key} onClick={() => setPestanaCursoActiva(key)} style={{ padding: "10px 18px", background: pestanaCursoActiva === key ? C.goldD : C.card, border: `1px solid ${pestanaCursoActiva === key ? C.goldB : C.border}`, color: pestanaCursoActiva === key ? C.gold : C.white, borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>{label}</button>
                   ))}
                 </div>
                 
                 {pestanaCursoActiva === "teoria" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
+                    {/* Mapa Conceptual Integrado */}
+                    {HANDBOOK_TEORIA[subtemaActivo]?.mapaConceptual && (
+                      <div style={{ background: "rgba(95, 184, 224, 0.08)", border: `1px solid rgba(95, 184, 224, 0.3)`, padding: 18, borderRadius: 8 }}>
+                        <h4 style={{ color: C.blue, marginBottom: 8, fontSize: 15 }}>🗺️ Mapa Conceptual del Subtema (De Macro a Micro)</h4>
+                        <p style={{ color: C.white, fontSize: 14, fontFamily: "monospace", lineHeight: 1.5, margin: 0 }}>{HANDBOOK_TEORIA[subtemaActivo].mapaConceptual}</p>
+                      </div>
+                    )}
+
                     {(HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."] }]).map((mod, mIdx) => (
                       <div key={mIdx} style={{ background: C.black, padding: 22, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                        <h4 style={{ color: C.blue, marginBottom: 12, fontSize: 16 }}>{mod.titulo}</h4>
+                        <h4 style={{ color: C.gold, marginBottom: 12, fontSize: 16 }}>{mod.titulo}</h4>
                         <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                           {mod.puntos.map((punto, pIdx) => (
                             <li key={pIdx} style={{ color: C.white, fontSize: 15, lineHeight: 1.5 }}>{punto}</li>
@@ -869,19 +852,12 @@ export default function SecurePathPSP() {
                   <div style={{ background: C.black, padding: 24, borderRadius: 8, border: `1px solid ${C.border}` }}>
                     <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>Quiz Condicionante del Subtema</h3>
                     <p style={{ color: C.muted, marginBottom: 20, fontSize: 14 }}>
-                      ⚠️ <em>Nota importante:</em> Este quiz evalúa exclusivamente este subtema, <strong>no afecta tu promedio global de simulacros</strong> y es requisito aprobarlo para completar la barra de progreso.
+                      ⚠️ <em>Nota importante:</em> Este quiz evalúa exclusivamente este subtema, <strong>no afecta tu promedio global de simulacros</strong> y es requisito aprobarlo para completar la subtarea y desbloquear la siguiente.
                     </p>
 
                     {!quizActivoSubtema ? (
                       <button onClick={() => {
-                        // Filtrar preguntas del banco que correspondan o tomar una muestra segura
-                        const filtradas = banco.filter(p => {
-                          const subName = SUBTEMAS_LISTA[subtemaActivo].toLowerCase();
-                          const pText = JSON.stringify(p).toLowerCase();
-                          return pText.includes(subName.split(" ")[0].toLowerCase()) || true;
-                        });
-                        const seleccion = mezclarConOpciones(filtradas.length >= 3 ? filtradas : banco).slice(0, 3);
-                        
+                        const seleccion = mezclarConOpciones(banco).slice(0, 3);
                         if (seleccion.length === 0) {
                           alert("Asegúrate de que el banco de preguntas esté cargado.");
                           return;
@@ -942,7 +918,7 @@ export default function SecurePathPSP() {
                               {resultadoQuizCurso >= 60 ? `¡Aprobado con ${resultadoQuizCurso}%!` : `Resultado: ${resultadoQuizCurso}% (No aprobado)`}
                             </div>
                             <p style={{ color: C.white, fontSize: 14, marginBottom: 16 }}>
-                              {resultadoQuizCurso >= 60 ? "¡Subtema aprobado con éxito y sincronizado en la nube!" : "Necesitas al menos 60% para desbloquear este subtema."}
+                              {resultadoQuizCurso >= 60 ? "¡Subtema aprobado con éxito y sincronizado en la nube! Ya puedes pasar al siguiente." : "Necesitas al menos 60% para aprobar este subtema."}
                             </p>
                             <button onClick={() => setQuizActivoSubtema(null)} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
                               Reintentar / Volver
