@@ -586,6 +586,7 @@ export default function SecurePathPSP() {
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
+                          modo: modoConfig.tipo || "general",
                           detalle_errores: erroresDetalle,
                           desglose_subtemas: desgloseSubtemas
                         };
@@ -604,7 +605,8 @@ export default function SecurePathPSP() {
                               usuario_id: nuevoIntento.usuario_id,
                               puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
                               total_preguntas: nuevoIntento.total_preguntas,
-                              dominio: nuevoIntento.dominio
+                              dominio: nuevoIntento.dominio,
+                              modo: modoConfig.tipo || "general"
                             }, session.access_token);
                           } catch (e2) {}
                         }
