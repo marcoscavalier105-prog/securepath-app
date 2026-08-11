@@ -117,6 +117,11 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
+// MAPA DE VIDEOS PARA CADA SUBTEMA (Soporta Google Drive / YouTube)
+const VIDEOS_MAP = {
+  0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/preview", // D1-T1 Caracterización de los Activos
+};
+
 // TEORÍA OFICIAL AMPLIADA Y DETALLADA (ST1 AL ST5) BASADA EN LA GUÍA MAESTRA PSP
 const HANDBOOK_TEORIA = {
   0: { 
@@ -618,6 +623,7 @@ export default function SecurePathPSP() {
         <span onClick={() => { setVista("dashboard"); setSimulacroPantalla("inicio"); }} style={{ fontSize: 20, fontWeight: 800, color: C.gold, cursor: "pointer" }}>
           Secure<span style={{ color: C.white, fontWeight: 400 }}>Path</span>
         </span>
+
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {[["dashboard", "Inicio"], ["simulacro", "Simulacro"], ["curso", "Curso"], ["progreso", "Progreso"], ["tutor", "Tutor IA"]].map(([v, l]) => (
             <button key={v} onClick={() => { setVista(v); if (v === "simulacro") setSimulacroPantalla("inicio"); }}
@@ -990,12 +996,23 @@ export default function SecurePathPSP() {
 
                 {pestanaCursoActiva === "video" && (
                   <div style={{ background: C.black, padding: 30, borderRadius: 8, marginBottom: 24, textAlign: "center", border: `1px solid ${C.border}` }}>
-                    <div style={{ fontSize: 48, marginBottom: 10 }}>🎥</div>
-                    <h3 style={{ fontSize: 18, marginBottom: 8, color: C.white }}>Videoclase del Subtema</h3>
-                    <p style={{ color: C.muted, marginBottom: 20, fontSize: 14 }}>Material audiovisual correspondiente al plan de estudios de la guía oficial.</p>
-                    <div style={{ padding: 16, background: C.card, borderRadius: 6, display: "inline-block", color: C.gold, fontSize: 14, border: `1px solid ${C.border}` }}>
-                      Reproductor vinculado correctamente.
-                    </div>
+                    <h3 style={{ fontSize: 18, marginBottom: 16, color: C.white }}>Videoclase del Subtema</h3>
+                    
+                    {VIDEOS_MAP[subtemaActivo] ? (
+                      <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                        <iframe 
+                          src={VIDEOS_MAP[subtemaActivo]} 
+                          title="Videoclase PSP" 
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ padding: 30, background: C.card, borderRadius: 6, color: C.muted, fontSize: 14, border: `1px solid ${C.border}` }}>
+                        🎥 Próximamente: El video para este subtema estará disponible muy pronto.
+                      </div>
+                    )}
                   </div>
                 )}
 
