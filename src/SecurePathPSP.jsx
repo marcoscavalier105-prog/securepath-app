@@ -223,20 +223,21 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // FUNCIÓN DE CARGA LIMPIA Y DIRECTA DESDE LA NUBE (Sin bucles de errores 400)
+  // FUNCIÓN DE CARGA PROTEGIDA (Respalda local si la nube está vacía)
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
       if (Array.isArray(bancoRes)) setBanco(bancoRes);
 
       const localKey = `sp_historial_detallado_${userId}`;
+      const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
+
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
       
-      if (Array.isArray(histRes)) {
+      if (Array.isArray(histRes) && histRes.length > 0) {
         setHistorialUsuario(histRes);
         localStorage.setItem(localKey, JSON.stringify(histRes));
       } else {
-        const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
         setHistorialUsuario(localHist);
       }
     } catch (err) { 
