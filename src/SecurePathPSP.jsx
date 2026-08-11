@@ -223,76 +223,20 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // FUNCIÓN DE CARGA Y EMPUJE (PUSH) AUTOMÁTICO DE LOCAL A NUBE
+  // FUNCIÓN DE CARGA LIMPIA Y DIRECTA DESDE LA NUBE (Sin bucles de errores 400)
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
       if (Array.isArray(bancoRes)) setBanco(bancoRes);
 
       const localKey = `sp_historial_detallado_${userId}`;
-      const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
-
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
       
       if (Array.isArray(histRes)) {
-        for (let itemLoc of localHist) {
-          const existeEnNube = histRes.some(h => 
-            (h.id && String(h.id) === String(itemLoc.id)) ||
-            (h.created_at && Math.abs(new Date(h.created_at) - new Date(itemLoc.created_at)) < 3000)
-          );
-
-          if (!existeEnNube && itemLoc.puntaje_porcentaje !== undefined) {
-            try {
-              await dbPost("sesiones_simulacro", {
-                usuario_id: userId,
-                puntaje_porcentaje: itemLoc.puntaje_porcentaje,
-                total_preguntas: itemLoc.total_preguntas || 10,
-                dominio: itemLoc.dominio || 0,
-                detalle_errores: itemLoc.detalle_errores || [],
-                desglose_subtemas: itemLoc.desglose_subtemas || {}
-              }, token);
-            } catch (e) {
-              try {
-                await dbPost("sesiones_simulacro", {
-                  usuario_id: userId,
-                  puntaje_porcentaje: itemLoc.puntaje_porcentaje,
-                  total_preguntas: itemLoc.total_preguntas || 10,
-                  dominio: itemLoc.dominio || 0
-                }, token);
-              } catch (e2) {}
-            }
-          }
-        }
-
-        const histResActualizado = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token) || histRes;
-
-        const map = new Map();
-        localHist.forEach(item => {
-          const key = item.id || item.created_at;
-          if (key) map.set(key, item);
-        });
-
-        histResActualizado.forEach(item => {
-          const key = item.id || item.created_at;
-          if (key) {
-            if (!map.has(key)) {
-              map.set(key, item);
-            } else {
-              const existing = map.get(key);
-              map.set(key, {
-                ...item,
-                detalle_errores: (existing.detalle_errores && existing.detalle_errores.length > 0) ? existing.detalle_errores : (item.detalle_errores || []),
-                desglose_subtemas: (existing.desglose_subtemas && Object.keys(existing.desglose_subtemas).length > 0) ? existing.desglose_subtemas : (item.desglose_subtemas || {})
-              });
-            }
-          }
-        });
-
-        const merged = Array.from(map.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        
-        setHistorialUsuario(merged);
-        localStorage.setItem(localKey, JSON.stringify(merged));
-      } else if (localHist.length > 0) {
+        setHistorialUsuario(histRes);
+        localStorage.setItem(localKey, JSON.stringify(histRes));
+      } else {
+        const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
         setHistorialUsuario(localHist);
       }
     } catch (err) { 
@@ -636,7 +580,6 @@ export default function SecurePathPSP() {
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
                         
                         const nuevoIntento = {
-                          id: Date.now(),
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
                           total_preguntas: preguntasSimulacro.length,
@@ -653,14 +596,7 @@ export default function SecurePathPSP() {
                         localStorage.setItem(localKey, JSON.stringify(actualizado));
 
                         try {
-                          await dbPost("sesiones_simulacro", {
-                            usuario_id: nuevoIntento.usuario_id,
-                            puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
-                            total_preguntas: nuevoIntento.total_preguntas,
-                            dominio: nuevoIntento.dominio,
-                            detalle_errores: nuevoIntento.detalle_errores,
-                            desglose_subtemas: nuevoIntento.desglose_subtemas
-                          }, session.access_token);
+                          await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
                         } catch (err) { 
                           try {
                             await dbPost("sesiones_simulacro", {
