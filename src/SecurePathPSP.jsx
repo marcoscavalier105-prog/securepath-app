@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "6.1"; 
+const APP_VERSION = "6.2"; 
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -160,7 +160,7 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opcionesExtraidas: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
-// ─── PLAN DE ESTUDIOS Y TEORÍA OFICIAL PSP (20 SUBTEMAS EXACTOS) ────────────
+// ─── PLAN DE ESTUDIOS Y TEORÍA OFICIAL PSP ──────────────────────────────────
 const DOMINIOS_CURSO = [
   { 
     id: 1, 
@@ -204,7 +204,7 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
-// MAPA DE VIDEOS (GOOGLE DRIVE RESTAURADO PARA D1-T1)
+// MAPA DE VIDEOS 
 const VIDEOS_MAP = {
   0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/preview", 
   1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/preview", 
@@ -229,7 +229,7 @@ const ACTIVIDADES_VIEW_MAP = {
   3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/view?usp=sharing",
 };
 
-// ─── TEORÍA OFICIAL ASIS PSP AMPLIADA, PROFUNDA Y ESTRUCTURADA ────────────────
+// ─── TEORÍA OFICIAL ASIS PSP AMPLIADA ───────────────────────────────────────
 const HANDBOOK_TEORIA = {
   0: { 
     mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración, Priorización, Gobernanza) ➔ Micro: Cuantificación de Impacto Operacional y Criterios CID.",
@@ -263,22 +263,6 @@ const HANDBOOK_TEORIA = {
           "Fase 3 y 4 (Valoración y Priorización): Jerarquización mediante Tiers (A, B, C) y análisis de dependencias críticas o Puntos Únicos de Falla (SPOF).",
           "Fase 5 (Gobernanza del Activo): Establecimiento formal de registros maestros, auditorías de inventario y separación estricta entre Propietario (Accountable) y Custodio (Responsible)."
         ] 
-      },
-      { 
-        titulo: "4. Integración Regulatoria y Marcos de Referencia", 
-        puntos: [
-          "Alineación con el Protection of Assets (POA) manual de referencia global de ASIS International.",
-          "Sincronización con marcos internacionales como ISO/IEC 27001 (Control de Activos) y el NIST Cybersecurity Framework (Función Identify).",
-          "Cumplimiento mandatorio con normativas de protección de datos personales y regulaciones locales de seguridad industrial."
-        ] 
-      },
-      { 
-        titulo: "5. Puntos Críticos de Examen (ASIS PSP) y Casuística", 
-        puntos: [
-          "Pregunta clásica de examen: La caracterización de activos es siempre el paso inicial ineludible de un Assessment; jamás se inicia diseñando contramedidas o evaluando amenazas aisladas.",
-          "El Propietario del Activo es el único con autoridad para definir su nivel de clasificación y aceptar el riesgo residual.",
-          "Error común de diseño: Proteger elementos secundarios (hardware de bajo costo) ignorando el impacto consecuencial en la interrupción de procesos primarios."
-        ] 
       }
     ]
   },
@@ -303,63 +287,54 @@ const HANDBOOK_TEORIA = {
           "Oportunidad (Opportunity): Ventanas temporales, fallas de supervisión, deficiencias perimetrales y condiciones que reducen el costo operativo del ataque.",
           "Ecuación del Amenazante: Un actor con alta intención y alta capacidad pero sin oportunidad operativa no puede concretar exitosamente el evento hostil."
         ] 
-      },
-      { 
-        titulo: "3. El Vector Crítico de la Amenaza Interna (Insider Threat)", 
-        puntos: [
-          "Complejidad de Mitigación: Considerado por ASIS como uno de los riesgos más desafiantes debido a que el actor interno posee privilegios legítimos de acceso.",
-          "Tipología de Insiders: Maliciosos (empleados descontentos, coaccionados por carteles o reclutados para espionaje) y Negligentes (víctimas de phishing, errores humanos).",
-          "Indicadores de Comportamiento (Red Flags): Cambios drásticos en el estilo de vida, interés inusual en áreas fuera de su competencia y violaciones recurrentes de protocolos."
-        ] 
-      },
-      { 
-        titulo: "4. Inteligencia de Amenazas y Fuentes de Información", 
-        puntos: [
-          "Uso de análisis estadístico criminal local, reportes de inteligencia de fuentes abiertas (OSINT) y evaluación de tendencias sectoriales.",
-          "Mapeo de riesgos geográficos y zonificación de criminalidad en los entornos operativos de la organización."
-        ] 
-      },
-      { 
-        titulo: "5. Puntos Clave para el Examen PSP", 
-        puntos: [
-          "Recuerde: Las amenazas son externas a los controles de seguridad directos y no se pueden eliminar, solo se pueden mitigar sus efectos mediante barreras adecuadas.",
-          "El análisis de amenazas debe actualizarse de manera dinámica ante cambios geopolíticos o reestructuraciones del negocio."
-        ] 
       }
     ]
   },
   2: { 
-    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Brechas Físicas, Tecnológicas y Procedimentales ➔ Micro: Pruebas de Penetración Física (Red Teaming).",
+    mapaConceptual: "Macro: Definición y Taxonomía (Física, Electrónica, Administrativa) ➔ Meso: Metodología ASIS de 6 Pasos (Desde Alcance hasta Recomendaciones) ➔ Micro: Cálculo de Severidad y Estrategias de Remediación.",
     subsub: [
       { 
-        titulo: "1. Fundamentos de Vulnerabilidad en Seguridad Física", 
+        titulo: "1. Definición Oficial y Conceptos Fundamentales", 
         puntos: [
-          "Definición ASIS: Condición, deficiencia o debilidad en el diseño, construcción, ubicación, operación o mantenimiento de un sistema de protección que puede ser aprovechada por una amenaza.",
-          "Control Absoluto: Las vulnerabilidades son las únicas variables de la ecuación de riesgo sobre las cuales la organización tiene control directo, total y absoluto.",
-          "Diferencia Conceptual: La amenaza es el peligro potencial incontrolable; la vulnerabilidad es la puerta de entrada interna corregible."
+          "Definición ASIS: Una vulnerabilidad es una debilidad, deficiencia o ausencia de control que permite que una amenaza explote un activo y cause daño.",
+          "Fórmula Clave: Vulnerabilidad = Deficiencia en Control (Físico, Electrónico o Administrativo). Sin vulnerabilidad, la amenaza no puede ejecutarse.",
+          "Diferencia Crítica: La Amenaza es el ACTOR (quien quiere atacar), mientras que la Vulnerabilidad es el DEFECTO (la puerta que permite el ataque).",
+          "Taxonomía de Deficiencias: Una 'Deficiencia' (ej. falta de política) genera una 'Debilidad' (patrón general), que a su vez crea 'Vulnerabilidades' específicas (ej. sistema sin autenticación)."
         ] 
       },
       { 
-        titulo: "2. Taxonomía Detallada de Vulnerabilidades", 
+        titulo: "2. Las 3 Familias de Vulnerabilidades (Tipología ASIS)", 
         puntos: [
-          "Vulnerabilidades Físicas y Arquitectónicas: Perímetros frágiles, ausencia de zonas de exclusas, iluminación deficiente y materiales constructivos vulnerables al reventón.",
-          "Vulnerabilidades Tecnológicas: Sistemas de control de acceso obsoletos con tarjetas clonables, cámaras CCTV con puntos ciegos y alarmas sin supervisión de línea.",
-          "Vulnerabilidades Procedimentales: Protocolos de registro de visitantes en papel sin verificación, falta de simulacros de emergencia y fatiga extrema en turnos de operadores."
+          "Vulnerabilidades Físicas: Deficiencias arquitectónicas o perimetrales. Ejemplos: cerraduras débiles, iluminación pobre, zonas muertas sin cobertura CCTV.",
+          "Vulnerabilidades Electrónicas: Fallas en sistemas y ciberseguridad. Ejemplos: sensores obsoletos, falta de autenticación 2FA, redes sin segmentar, backups sin pruebas.",
+          "Vulnerabilidades Administrativas: Vacíos en políticas y procedimientos. Representan el 70% de los incidentes. Ejemplos: falta de capacitación, ausencia de segregación de roles, auditorías infrecuentes."
         ] 
       },
       { 
-        titulo: "3. Metodologías de Detección de Brechas", 
+        titulo: "3. Metodología de Evaluación (Los 6 Pasos)", 
         puntos: [
-          "Listas de verificación normalizadas basadas en estándares de auditoría de seguridad física de ASIS.",
-          "Pruebas de Penetración Física Controlada (Physical Red Teaming): Simulación ética de ataques para medir la resistencia real de barreras y tiempos de reacción humana.",
-          "Cruces analíticos estrictos entre los activos Tier A (D1-T1) y los vectores de ataque (D1-T2)."
+          "Paso 1 (Alcance y Planificación): Definir qué se evaluará (perímetro, activos) y cómo (recorrido físico, escaneo técnico, análisis documental).",
+          "Paso 2 y 3 (Recolección y Documentación): Levantamiento de datos mediante entrevistas y pruebas. Cada vulnerabilidad debe documentarse con ID, tipo, activo afectado y evidencia.",
+          "Paso 4 (Clasificación): Agrupar los hallazgos por severidad, activo afectado o amenaza que la explota para facilitar la toma de decisiones.",
+          "Paso 5 y 6 (Severidad y Mapeo): Calcular el nivel de criticidad y establecer un plan de remediación con prioridades de inversión."
         ] 
       },
       { 
-        titulo: "4. Puntos Críticos de Examen PSP", 
+        titulo: "4. Severidad y Estrategias de Remediación", 
         puntos: [
-          "Una vulnerabilidad solo adquiere relevancia crítica si protege un activo de alto valor estratégico.",
-          "Priorizar la corrección de brechas en activos Tier A antes de invertir recursos en áreas de bajo impacto."
+          "Cálculo de Severidad: Severidad = (Facilidad de Explotación × 0.4) + (Impacto × 0.6). Define niveles del 1 (Mínima) al 10 (Crítica).",
+          "Opción 1 - Eliminación: Suprimir la vulnerabilidad por completo (ej. implementar 2FA biométrico). Es mandatorio para vulnerabilidades Críticas.",
+          "Opción 2 - Mitigación: Reducir la severidad agregando controles compensatorios (ej. monitoreo intensivo).",
+          "Opciones 3 y 4 - Transferencia y Aceptación: Transferir mediante seguros, o aceptar formalmente (solo aplicable y recomendado para vulnerabilidades de impacto mínimo)."
+        ] 
+      },
+      { 
+        titulo: "5. Puntos Clave y Trampas para el Examen PSP", 
+        puntos: [
+          "Estadística Crítica: El 80% de las brechas corporativas explotan vulnerabilidades CONOCIDAS, y la detección promedio de una brecha tarda más de 200 días.",
+          "Trampa de Examen 1: Pensar que Mitigación es igual a Eliminación. La mitigación solo reduce la severidad, no elimina la vulnerabilidad de raíz.",
+          "Trampa de Examen 2: Documentar solo vulnerabilidades técnicas (CCTV, alarmas). Las administrativas causan la gran mayoría de problemas reales.",
+          "Regla de Priorización: Las vulnerabilidades Críticas (Niveles 8-10) deben remediarse inmediatamente (0-7 días), sin importar si el costo es alto, ya que el riesgo empresarial lo justifica."
         ] 
       }
     ]
@@ -383,20 +358,6 @@ const HANDBOOK_TEORIA = {
           "Expectativa de Pérdida Anual (ALE = SLE × ARO): Métrica financiera clave para justificar presupuestos ante el directorio.",
           "Matrices Cualitativas (3x3 o 5x5): Herramientas basadas en escalas ancladas para evaluar escenarios complejos donde no existen datos estadísticos históricos."
         ] 
-      },
-      { 
-        titulo: "3. Análisis de Impacto al Negocio (BIA)", 
-        puntos: [
-          "Business Impact Analysis: Metodología para evaluar los efectos operativos y financieros de la interrupción de procesos críticos.",
-          "Métricas Temporales Clave: MTPD (Maximum Tolerable Period of Disruption), RTO (Recovery Time Objective) y RPO (Recovery Point Objective)."
-        ] 
-      },
-      { 
-        titulo: "4. Criterios de Aceptación del Riesgo", 
-        puntos: [
-          "Opciones de Tratamiento: Mitigar (controles), Transferir (seguros/contratos), Evitar (suspender actividad) o Aceptar formalmente.",
-          "La aceptación formal del riesgo residual corresponde exclusivamente al Propietario del Activo o Junta Directiva, nunca al gerente de seguridad."
-        ] 
       }
     ]
   },
@@ -417,19 +378,6 @@ const HANDBOOK_TEORIA = {
           "Detección (Detection): Sensores perimetrales y sistemas CCTV para alertar al centro de control sobre la intrusión en tiempo real.",
           "Retardo (Delay): Barreras físicas, rejas, puertas reforzadas y esclusas diseñadas para frenar físicamente el avance del intruso.",
           "Respuesta (Response): Acciones coordinadas de la fuerza de reacción para interceptar al agresor antes de que vulnere el activo."
-        ] 
-      },
-      { 
-        titulo: "3. La Regla de Oro Temporal del Diseño PSP", 
-        puntos: [
-          "Ecuación Crítica: Tiempo total de Retardo ($T_{retardo}$) > Tiempo total de Respuesta ($T_{respuesta}$).",
-          "Si el intruso puede romper las defensas antes de la llegada de la fuerza de reacción, el diseño físico habrá fracasado sin importar el costo de la tecnología instalada."
-        ] 
-      },
-      { 
-        titulo: "4. Análisis de Retorno de Inversión (ROSI)", 
-        puntos: [
-          "Return on Security Investment: Metodología para justificar el costo de las contramedidas en función de la reducción calculada en la ALE."
         ] 
       }
     ]
@@ -453,6 +401,7 @@ const HANDBOOK_TEORIA = {
 
 export default function SecurePathPSP() {
   const [session, setSession] = useState(null);
+  const [nombreUsuario, setNombreUsuario] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -489,10 +438,20 @@ export default function SecurePathPSP() {
       const saved = localStorage.getItem("sp_tutor_history");
       if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) return parsed; }
     } catch (e) {}
-    return [{ role: "assistant", content: "Hola Marcos, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }];
+    return [{ role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }];
   });
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
+
+  const extraerNombreUsuario = (user) => {
+    if (!user) return;
+    let nombre = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nombre;
+    if (!nombre && user.email) {
+      const parteLocal = user.email.split('@')[0];
+      nombre = parteLocal.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+    setNombreUsuario(nombre || "Usuario");
+  };
 
   useEffect(() => {
     const v = localStorage.getItem("sp_v");
@@ -502,6 +461,7 @@ export default function SecurePathPSP() {
       const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
       if (stored?.access_token) {
         setSession(stored);
+        extraerNombreUsuario(stored.user);
         cargarDatos(stored.user.id, stored.access_token);
       }
     } catch {}
@@ -525,6 +485,7 @@ export default function SecurePathPSP() {
       const data = await authSignIn(authEmail, authPassword);
       localStorage.setItem("sp_session", JSON.stringify(data));
       setSession(data);
+      extraerNombreUsuario(data.user);
       cargarDatos(data.user.id, data.access_token);
     } catch (err) {
       setAuthError("Correo o contraseña incorrectos.");
@@ -752,7 +713,7 @@ export default function SecurePathPSP() {
         {vista === "dashboard" && (
           <div>
             <div style={{ marginBottom: 30 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola Marcos</h1>
+              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola {nombreUsuario}</h1>
               <p style={{ color: C.muted, fontSize: 16 }}>Banco cargado: <strong>{banco.length > 0 ? banco.length : BANCO_MAESTRO_FALLBACK.length} preguntas</strong> en total.</p>
             </div>
 
