@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.7"; 
+const APP_VERSION = "5.8"; 
 
 // Cliente HTTP centralizado para Supabase (Soporta Upsert para evitar errores 409)
 const sb = async (path, opts = {}) => {
@@ -77,7 +77,7 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
 const DOMINIOS_CURSO = [
   { 
     id: 1, 
-    nombre: "DOMINIO 1 ASSESMENT (EVALUACIÓN)", 
+    nombre: "DOMINIO 1 ASSESSMENT (EVALUACIÓN)", 
     subtemas: [
       "D1-T1 Caracterización de los Activos",
       "D1-T2 Análisis de Amenazas",
@@ -117,46 +117,197 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
-// TEORÍA AMPLIADA, DETALLADA Y PROFUNDIZADA (ST1 AL ST5) CON MAPAS CONCEPTUALES
+// TEORÍA OFICIAL AMPLIADA Y DETALLADA (ST1 AL ST5) BASADA EN LA GUÍA MAESTRA PSP
 const HANDBOOK_TEORIA = {
   0: { 
-    mapaConceptual: "Macro: Ecosistema Organizacional ➔ Meso: Clasificación de Activos Críticos ➔ Micro: Criterios CID (Confidencialidad, Integridad y Disponibilidad) y Valoración Financiera.",
+    mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración, Priorización, Gobernanza) ➔ Micro: Cuantificación de Impacto Operacional, Criterios CID y Gestión de Propietarios (Asset Owner vs Custodian).",
     subsub: [
-      { titulo: "1. Macroproceso: Identificación y Catalogación Integral", puntos: ["Inventario exhaustivo de activos tangibles (instalaciones, equipos, personal) e intangibles (propiedad intelectual, datos, reputación).", "Jerarquización de la criticidad operativa alineada al negocio corporativo.", "Mapeo de dependencias críticas y puntos únicos de falla (SPOF) en la organización."] },
-      { titulo: "2. Criterios de Valoración y Metodología CID", puntos: ["Análisis de impacto financiero directo ante pérdidas, robos o interrupciones operativas.", "Evaluación del valor reputacional, legal y estratégico de los activos.", "Aplicación de la tríada CID (Confidencialidad, Integridad y Disponibilidad) como estándar base de protección."] },
-      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El activo humano siempre debe considerarse el activo de mayor criticidad y prioridad en el diseño de seguridad.", "La valorización de activos no solo responde al costo de reposición física, sino al impacto sistémico de su pérdida."] }
+      { 
+        titulo: "1. Fundamentos Teóricos y Modelo PPIR", 
+        puntos: [
+          "Definición ASIS de Activo: Persona, bien, información o capacidad con valor para la organización que requiere protección proporcional.",
+          "Modelo PPIR (People, Property, Information, Reputation): El universo de activos organizacionales organizados en cuatro grandes familias.",
+          "Prioridad absoluta del Activo Humano: La protección de la vida y la integridad física antecede siempre a la propiedad y los bienes materiales.",
+          "Razones clave para caracterizar: Delimitar el alcance, asegurar la proporcionalidad del costo de seguridad, priorizar recursos escasos y sustentar el estándar de diligencia debida (due diligence)."
+        ] 
+      },
+      { 
+        titulo: "2. Tipología Exhaustiva: Tangibles vs Intangibles", 
+        puntos: [
+          "Activos Tangibles: Personas (ejecutivos, empleados, visitantes), bienes inmuebles, equipos de TI y seguridad, maquinaria, inventarios (modelo CRAVED: Concealable, Removable, Available, Valuable, Enjoyable, Disposable) y valores monetarios.",
+          "Activos Intangibles: Información sensible (sujeta al esquema CIA: Confidencialidad, Integridad, Disponibilidad), propiedad intelectual, secretos comerciales y reputación de marca.",
+          "Diferencial clave de examen: Los intangibles representan entre el 70% y 90% del valor corporativo moderno y pueden perderse por divulgación o copia sin que el soporte físico desaparezca."
+        ] 
+      },
+      { 
+        titulo: "3. Metodología ASIS de las 5 Fases", 
+        puntos: [
+          "Fase 1 (Alcance e Inventario): Definición de perímetros (físico, temporal, organizacional) y ejecución mediante enfoques Top-Down, Bottom-Up o Híbrido aplicando la técnica de las 6 superficies (piso, techo y 4 paredes).",
+          "Fase 2 (Clasificación y Categorización): Esquemas de sensibilidad (Público, Interno, Confidencial, Restringido) y Tiers de criticidad (A/B/C) evaluando el impacto de pérdida.",
+          "Fase 3 (Valoración): Métodos cuantitativos (Costo de Reposición CR + Pérdida Operacional PO + Costos Indirectos CI) y cualitativos mediante escalas ancladas.",
+          "Fase 4 (Priorización y Dependencias): Análisis de SPOF (Single Points of Failure), herencia de criticidad hacia arriba en cadenas de soporte, y métricas temporales (MTPD, RTO, RPO).",
+          "Fase 5 (Gobernanza y Ciclo de Vida): Registro maestro, control de cambios ante altas/bajas, auditorías periódicas y separación estricta de funciones entre Propietario (accountable) y Custodio (responsible)."
+        ] 
+      },
+      { 
+        titulo: "4. Integración Regulatoria y Marcos de Referencia", 
+        puntos: [
+          "Alineación con el Protection of Assets (POA) de ASIS, el estándar Risk Assessment (RA) y el Enterprise Security Risk Management (ESRM).",
+          "Cumplimiento con ISO/IEC 27001 (Control 5.9 de inventario de activos y clasificación) y NIST CSF (Función Identify).",
+          "Gestión de datos personales y normativas de privacidad (GDPR, regulaciones locales de protección de datos personales)."
+        ] 
+      },
+      { 
+        titulo: "5. Puntos Críticos de Examen (ASIS PSP) y Errores Comunes", 
+        puntos: [
+          "La caracterización de activos es siempre el primer paso ineludible de cualquier evaluación de seguridad física (Assessment); nunca se empieza por amenazas o contramedidas.",
+          "El Propietario del activo decide la clasificación y acepta el riesgo; el custodio opera los controles técnicos.",
+          "Error frecuente: Valorar únicamente el hardware o los bienes tangibles ignorando el impacto consecuencial de la interrupción operacional."
+        ] 
+      }
     ]
   },
   1: { 
-    mapaConceptual: "Macro: Entorno Geopolítico y Criminal ➔ Meso: Categorización de Amenazas (Naturales, Humanas, Técnicas) ➔ Micro: Evaluación de Intención, Capacidad y Oportunidad (ICO).",
+    mapaConceptual: "Macro: Entorno Geopolítico, Social y Criminal ➔ Meso: Taxonomía de Amenazas (Naturales, Humanas, Técnicas) y Modelo ICO (Intención, Capacidad, Oportunidad) ➔ Micro: Perfilación de Actores Hostiles y Vectores de Ataque.",
     subsub: [
-      { titulo: "1. Macroentorno y Naturaleza de las Amenazas", puntos: ["Evaluación de riesgos macroscópicos: geopolíticos, sociales, económicos y ambientales de la región.", "Categorización de amenazas: Humanas (intencionales, negligentes), naturales (sismos, clima extremo) y técnicas (fallas de infraestructura).", "Estudio de las tendencias criminales locales y modus operandi actuales."] },
-      { titulo: "2. Modelo ICO (Intención, Capacidad y Oportunidad)", puntos: ["Intención: Determinación y motivación del actor hostil para perpetrar el ataque.", "Capacidad: Recursos técnicos, financieros y operativos con los que cuenta el agresor.", "Oportunidad: Ventanas temporales y vulnerabilidades físicas que facilitan la acción hostil."] },
-      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["Una amenaza sin vulnerabilidad explotable no representa un riesgo real.", "Los actores internos con acceso privilegiado representan el vector de amenaza más complejo de mitigar."] }
+      { 
+        titulo: "1. Naturaleza y Taxonomía de las Amenazas", 
+        puntos: [
+          "Definición ASIS: Una amenaza es cualquier evento, circunstancia o actor con el potencial de causar pérdida, daño o interrupción a un activo previamente caracterizado.",
+          "Amenazas Humanas: Intencionales (delincuencia común, crimen organizado, terrorismo, sabotaje, espionaje, insider threat) y negligentes (errores operativos, descuidos).",
+          "Amenazas Naturales: Sismos, inundaciones, fenómenos climáticos extremos, tormentas eléctricas y eventos geológicos.",
+          "Amenazas Técnicas y Estructurales: Fallas de infraestructura crítica, colapso de sistemas de suministro (energía, agua, telecomunicaciones) y degradación de materiales."
+        ] 
+      },
+      { 
+        titulo: "2. El Modelo ICO (Intención, Capacidad y Oportunidad)", 
+        puntos: [
+          "Intención: Motivación, determinación y objetivos específicos del actor hostil para perpetrar el ataque contra el activo objetivo.",
+          "Capacidad: Recursos financieros, tecnológicos, operativos, armamento y nivel de especialización con que cuenta el agresor.",
+          "Oportunidad: Ventanas temporales, fallas de vigilancia, accesos abiertos y vulnerabilidades físicas que facilitan y reducen el costo del ataque."
+        ] 
+      },
+      { 
+        titulo: "3. El Vector de Amenaza Interna (Insider Threat)", 
+        puntos: [
+          "Considerado por ASIS como uno de los vectores más complejos de mitigar debido a que el actor interno posee privilegios legítimos de acceso.",
+          "Tipología de insiders: Maliciosos (descontentos, coaccionados por organizaciones criminales, espionaje industrial) y negligentes (víctimas de ingeniería social, errores humanos involuntarios).",
+          "Controles mitigadores: Principio de mínimo privilegio, segregación de funciones, monitoreo de comportamiento y verificación rigurosa de antecedentes (due diligence laboral)."
+        ] 
+      },
+      { 
+        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
+        puntos: [
+          "Una amenaza sin vulnerabilidad explotable en el activo no constituye un riesgo real.",
+          "Los análisis de amenazas deben basarse en historiales estadísticos locales, inteligencia de fuentes abiertas (OSINT) y evaluación directa del atractivo del objetivo (modelo CRAVED)."
+        ] 
+      }
     ]
   },
   2: { 
-    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Detección de Brechas Físicas y Operativas ➔ Micro: Evaluación de Controles Deficientes en Perímetro y Accesos.",
+    mapaConceptual: "Macro: Auditoría Integral de la Superficie de Ataque ➔ Meso: Identificación de Brechas en Controles Físicos, Tecnológicos y Humanos ➔ Micro: Pruebas de Penetración Física (Red Teaming) y Validación de Resistencia.",
     subsub: [
-      { titulo: "1. Macroanálisis de la Superficie de Ataque", puntos: ["Identificación sistemática de puntos débiles en el diseño arquitectónico y perimetral.", "Evaluación de deficiencias operativas y errores humanos en los procedimientos de vigilancia.", "Análisis de fallas tecnológicas en sistemas de control de accesos y circuitos cerrados de televisión."] },
-      { titulo: "2. Metodologías de Detección de Brechas", puntos: ["Auditorías técnicas de campo y pruebas de penetración física (Red Teaming).", "Revisiones de ingeniería social y cumplimiento de protocolos de seguridad.", "Simulacros de intrusión para validar tiempos de retardo y respuesta."] },
-      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["Las vulnerabilidades son condiciones inherentes que pueden ser remediadas mediante contramedidas efectivas.", "El error humano es la vulnerabilidad más frecuente reportada en incidentes corporativos."] }
+      { 
+        titulo: "1. Fundamentos de Vulnerabilidad en Seguridad Física", 
+        puntos: [
+          "Definición ASIS: Condición o debilidad en el diseño, construcción, ubicación, operación o mantenimiento de los sistemas de protección que puede ser aprovechada por una amenaza para causar daño.",
+          "Las vulnerabilidades son las únicas variables del riesgo sobre las cuales la organización tiene control directo y absoluto para mitigar.",
+          "Diferencia fundamental: La amenaza es externa y no se puede controlar directamente; la vulnerabilidad es interna y sí se puede corregir."
+        ] 
+      },
+      { 
+        titulo: "2. Taxonomía de las Vulnerabilidades", 
+        puntos: [
+          "Vulnerabilidades Físicas y Arquitectónicas: Perímetros deficientes, ausencia de separación de zonas, iluminación insuficiente, puntos ciegos de CCTV y materiales de construcción frágiles.",
+          "Vulnerabilidades Tecnológicas: Sistemas de control de acceso obsoletos sin cifrado, alarmas con zonas vulnerables a sabotaje y falta de redundancia en centros de monitoreo.",
+          "Vulnerabilidades Procedimentales y Humanas: Protocolos de control laxos, falta de capacitación del personal, ausencia de simulacros, fatiga de operadores y laxitud en la gestión de credenciales de visitantes."
+        ] 
+      },
+      { 
+        titulo: "3. Metodologías de Evaluación de Vulnerabilidades", 
+        puntos: [
+          "Auditorías de campo y listas de verificación normalizadas aplicadas por evaluadores certificados (PSP).",
+          "Pruebas de penetración física controlada (Physical Red Teaming) para validar tiempos reales de retardo de las barreras y tiempos de reacción del personal.",
+          "Cruces analíticos entre el inventario de activos críticos (D1-ST1) y los vectores de ataque identificados en D1-ST2."
+        ] 
+      },
+      { 
+        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
+        puntos: [
+          "Las vulnerabilidades se evalúan siempre en función del nivel de criticidad del activo que protegen.",
+          "Un error común es corregir vulnerabilidades de baja prioridad mientras los activos Tier A permanecen expuestos a brechas severas."
+        ] 
+      }
     ]
   },
   3: { 
-    mapaConceptual: "Macro: Modelos de Gestión de Riesgo ESRM ➔ Meso: Cálculo Cuantitativo vs Cualitativo ➔ Micro: Fórmula de Riesgo (Amenaza × Vulnerabilidad × Consecuencia).",
+    mapaConceptual: "Macro: Ecosistema de Gestión de Riesgo ESRM (Enterprise Security Risk Management) ➔ Meso: Ecuación Fundamental del Riesgo (Amenaza × Vulnerabilidad × Impacto) ➔ Micro: Análisis Financiero Cuantitativo (SLE, ARO, ALE) y BIA (Business Impact Analysis).",
     subsub: [
-      { titulo: "1. Modelos de Evaluación de Riesgos", puntos: ["Modelos cualitativos basados en matrices de probabilidad e impacto (Alto, Medio, Bajo).", "Modelos cuantitativos orientados a la estimación financiera de pérdida (SLE, ARO, ALE).", "Alineación del riesgo con el apetito y tolerancia corporativa de la alta dirección."] },
-      { titulo: "2. Análisis de Impacto al Negocio (BIA)", puntos: ["Determinación del tiempo objetivo de recuperación (RTO) y punto objetivo de recuperación (RPO).", "Evaluación de cascada de consecuencias operativas y financieras ante un evento adverso."] },
-      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El riesgo nunca se elimina al 100%; el objetivo del ESRM es mitigarlo a niveles aceptables o tolerables para el negocio."] }
+      { 
+        titulo: "1. Marco ESRM y Filosofía de Gestión", 
+        puntos: [
+          "Enterprise Security Risk Management (ESRM): Alineación de la seguridad corporativa con los objetivos estratégicos de negocio y el apetito de riesgo de la alta dirección.",
+          "Opciones de tratamiento del riesgo: Mitigar (implementar contramedidas), Transferir (pólizas de seguros, contratos con terceros), Evitar (suspender la actividad riesgosa) y Aceptar (asumir el impacto residual formalmente).",
+          "Principio rector: La seguridad no existe como un fin en sí mismo, sino para habilitar y proteger la continuidad de los negocios de la organización."
+        ] 
+      },
+      { 
+        titulo: "2. La Ecuación del Riesgo y el Impacto", 
+        puntos: [
+          "Fórmula fundamental: Riesgo = Amenaza (Probabilidad) × Vulnerabilidad (Probabilidad de éxito) × Impacto (Valor del Activo determinado en D1-ST1).",
+          "El valor del activo (impacto) es la variable que traduce un incidente físico en una consecuencia financiera, operativa, legal o reputacional medible.",
+          "Riesgo residual vs Riesgo inherente: El riesgo inherente es el nivel de exposición sin controles; el riesgo residual es el remanente operativo tras aplicar las contramedidas."
+        ] 
+      },
+      { 
+        titulo: "3. Análisis Cuantitativo y Cualitativo de Pérdidas", 
+        puntos: [
+          "Modelos cuantitativos: Expectativa de Pérdida Única (SLE), Tasa Anual de Ocurrencia (ARO) y Expectativa de Pérdida Anual (ALE = SLE × ARO).",
+          "Modelos cualitativos: Matrices de probabilidad e impacto (3×3 o 5×5) con descriptores y criterios anclados para evaluar escenarios complejos donde los datos financieros exactos no están disponibles."
+        ] 
+      },
+      { 
+        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
+        puntos: [
+          "El riesgo cero no existe en seguridad física; el objetivo profesional es mitigar el riesgo a niveles tolerables y defendibles.",
+          "La aceptación formal del riesgo residual corresponde siempre al Propietario del Activo (Asset Owner) o a la Junta Directiva, nunca al departamento de seguridad."
+        ] 
+      }
     ]
   },
   4: { 
-    mapaConceptual: "Macro: Estrategia de Mitigación Global ➔ Meso: Tipos de Contramedidas (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Análisis Costo-Beneficio y ROSI.",
+    mapaConceptual: "Macro: Arquitectura Global de Defensa en Profundidad ➔ Meso: Las 4 Funciones Esenciales de las Contramedidas (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Ecuación de Tiempo de Retardo vs Tiempo de Respuesta y Análisis Costo-Beneficio (ROSI).",
     subsub: [
-      { titulo: "1. Jerarquía de Funciones de Seguridad", puntos: ["Disuasión: Elementos psicológicos que desalientan el intento de intrusión.", "Detección: Sistemas y sensores capaces de alertar la presencia de un intruso en tiempo real.", "Retardo: Barreras físicas y obstáculos diseñados para ganar tiempo operativo.", "Respuesta: Acciones coordinadas del personal de seguridad o fuerzas públicas para neutralizar la amenaza."] },
-      { titulo: "2. Análisis Costo-Beneficio y Retorno de Inversión", puntos: ["Evaluación de la efectividad de las salvaguardas frente al costo de implementación y mantenimiento.", "Cálculo del Retorno de Inversión en Seguridad (ROSI) para justificación presupuestaria ante el directorio."] },
-      { titulo: "3. Puntos Críticos de Examen (ASIS PSP)", puntos: ["El tiempo de retardo de las contramedidas físicas debe ser siempre mayor al tiempo total de respuesta de la fuerza operativa."] }
+      { 
+        titulo: "1. Principio de Defensa en Profundidad", 
+        puntos: [
+          "Implementación de múltiples anillos concéntricos de seguridad (Perímetro exterior, fachada del edificio, control de accesos internos, protección de recintos críticos y contenedores reforzados).",
+          "Objetivo: Obligar al agresor a superar sucesivas barreras, incrementando el tiempo acumulado de exposición y el esfuerzo operativo requerido para alcanzar el activo."
+        ] 
+      },
+      { 
+        titulo: "2. Las Cuatro Funciones Esenciales de la Seguridad Física", 
+        puntos: [
+          "Disuasión: Elementos psicológicos y físicos (señalización, iluminación, presencia visible) diseñados para desalentar el intento de intrusión antes de que comience.",
+          "Detección: Sensores perimetrales, volumétricos y sistemas CCTV capaces de alertar al centro de control sobre la presencia no autorizada en tiempo real.",
+          "Retardo: Barreras físicas (rejas, puertas blindadas, esclusas, cristales anti-asalto) diseñadas para obstaculizar el avance del intruso.",
+          "Respuesta: Acciones coordinadas del personal de seguridad privada o fuerzas públicas orientadas a interceptar y neutralizar al agresor antes de que vulnere el activo."
+        ] 
+      },
+      { 
+        titulo: "3. La Regla de Oro del Diseño de Seguridad", 
+        puntos: [
+          "Ecuación temporal crítica: Tiempo total de retardo ($T_{retardo}$) > Tiempo total de respuesta ($T_{respuesta}$).",
+          "Si el intruso puede romper las barreras y alcanzar el activo antes de que la fuerza de reacción llegue a interceptarlo, el diseño de seguridad física ha fracasado, independientemente de cuán costosas sean las alarmas instaladas."
+        ] 
+      },
+      { 
+        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
+        puntos: [
+          "Las contramedidas deben ser proporcionales al valor del activo y al nivel de riesgo evaluado.",
+          "El análisis del Retorno de Inversión en Seguridad (ROSI) justifica la asignación presupuestaria demostrando cuánta pérdida potencial se evita con la salvaguarda."
+        ] 
+      }
     ]
   },
   5: { subsub: [{ titulo: "Marco ESRM", puntos: ["Enterprise Security Risk Management alineado a los objetivos de negocio."] }] },
@@ -824,7 +975,7 @@ export default function SecurePathPSP() {
                       </div>
                     )}
 
-                    {(HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."] }]).map((mod, mIdx) => (
+                    {(HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."]}]).map((mod, mIdx) => (
                       <div key={mIdx} style={{ background: C.black, padding: 22, borderRadius: 8, border: `1px solid ${C.border}` }}>
                         <h4 style={{ color: C.gold, marginBottom: 12, fontSize: 16 }}>{mod.titulo}</h4>
                         <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
