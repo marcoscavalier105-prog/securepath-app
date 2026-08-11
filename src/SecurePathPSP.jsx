@@ -5,7 +5,7 @@ const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
 const APP_VERSION = "5.4"; 
 
-// Cliente HTTP centralizado para Supabase
+// Cliente HTTP centralizado para Supabase con depuración de errores detallada
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     headers: { 
@@ -20,6 +20,7 @@ const sb = async (path, opts = {}) => {
   });
   if (!res.ok) { 
     const err = await res.json().catch(() => ({})); 
+    console.error("Error detallado de Supabase:", err);
     throw new Error(err.message || err.error_description || `HTTP ${res.status}`); 
   }
   return res.status === 204 ? null : res.json();
@@ -223,7 +224,7 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // FUNCIÓN DE CARGA PROTEGIDA (Respalda local si la nube está vacía)
+  // FUNCIÓN DE CARGA PROTEGIDA
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
@@ -586,11 +587,10 @@ export default function SecurePathPSP() {
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
                           detalle_errores: erroresDetalle,
-                          desglose_subtemas: desgloseSubtemas,
-                          created_at: new Date().toISOString()
+                          desglose_subtemas: desgloseSubtemas
                         };
                         
-                        const actualizado = [nuevoIntento, ...historialUsuario];
+                        const actualizado = [{ ...nuevoIntento, created_at: new Date().toISOString() }, ...historialUsuario];
                         setHistorialUsuario(actualizado);
                         
                         const localKey = `sp_historial_detallado_${session.user.id}`;
@@ -782,7 +782,7 @@ export default function SecurePathPSP() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                         <div>
                           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Simulacro #{safeHistorial.length - index} · Dominio: {isEspecial ? sim.dominio : "General"}</div>
-                          <div style={{ fontSize: 13, color: C.muted }}>Fecha: {new Date(sim.created_at).toLocaleDateString()} | Preguntas: {sim.total_preguntas || 10}</div>
+                          <div style={{ fontSize: 13, color: C.muted }}>Fecha: {sim.created_at ? new Date(sim.created_at).toLocaleDateString() : "Reciente"} | Preguntas: {sim.total_preguntas || 10}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                           <span style={{ fontSize: 22, fontWeight: 800, color: notaSim >= 80 ? C.green : (notaSim >= 60 ? C.gold : C.red) }}>{notaSim}%</span>
