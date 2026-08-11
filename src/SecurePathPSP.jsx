@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.2"; 
+const APP_VERSION = "5.4"; 
 
 // Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
@@ -122,7 +122,7 @@ const HANDBOOK_TEORIA = {
   2: { teoria: "D1-T3 Análisis de Vulnerabilidades: Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
   3: { teoria: "D1-T4 Riesgo y Consecuencias: Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto financiero u operativo." },
   4: { teoria: "D1-T5 Análisis de Contramedidas: Evaluación de la efectividad y costo-beneficio de las salvaguardas implementadas." },
-  5: { teoria: "D1-T6 Marco ESRM: Enterprise Security Risk Management alineado con la estrategia y objetivos de negocio corporativo." },
+  5: { teoria: "D1-T6 Marco ESRM: Enterprise Security Risk Management alineado con la strategy y objetivos de negocio corporativo." },
   6: { teoria: "D1-T7 Inspecciones y Auditorías: Revisiones metódicas y evaluación independiente de los sistemas frente a normativas." },
   7: { teoria: "D1-T8 Requisitos Legales: Cumplimiento de normativas locales, internacionales y regulaciones industriales vigentes." },
   8: { teoria: "D1-T9 Documentación e Informes: Elaboración de reportes ejecutivos, políticas, bitácoras y registros de seguridad." },
@@ -223,7 +223,7 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // FUNCIÓN DE CARGA BLINDADA Y PROTEGIDA CONTRA SOBREESCRITURA VACÍA
+  // FUNCIÓN DE CARGA Y EMPUJE (PUSH) AUTOMÁTICO DE LOCAL A NUBE
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
@@ -235,16 +235,44 @@ export default function SecurePathPSP() {
       const histRes = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token);
       
       if (Array.isArray(histRes)) {
+        for (let itemLoc of localHist) {
+          const existeEnNube = histRes.some(h => 
+            (h.id && String(h.id) === String(itemLoc.id)) ||
+            (h.created_at && Math.abs(new Date(h.created_at) - new Date(itemLoc.created_at)) < 3000)
+          );
+
+          if (!existeEnNube && itemLoc.puntaje_porcentaje !== undefined) {
+            try {
+              await dbPost("sesiones_simulacro", {
+                usuario_id: userId,
+                puntaje_porcentaje: itemLoc.puntaje_porcentaje,
+                total_preguntas: itemLoc.total_preguntas || 10,
+                dominio: itemLoc.dominio || 0,
+                detalle_errores: itemLoc.detalle_errores || [],
+                desglose_subtemas: itemLoc.desglose_subtemas || {}
+              }, token);
+            } catch (e) {
+              try {
+                await dbPost("sesiones_simulacro", {
+                  usuario_id: userId,
+                  puntaje_porcentaje: itemLoc.puntaje_porcentaje,
+                  total_preguntas: itemLoc.total_preguntas || 10,
+                  dominio: itemLoc.dominio || 0
+                }, token);
+              } catch (e2) {}
+            }
+          }
+        }
+
+        const histResActualizado = await dbGet("sesiones_simulacro", `select=*&usuario_id=eq.${userId}&order=created_at.desc`, token) || histRes;
+
         const map = new Map();
-        
-        // 1. Priorizamos lo local para mantener errores y desgloses de subtareas intactos
         localHist.forEach(item => {
           const key = item.id || item.created_at;
           if (key) map.set(key, item);
         });
 
-        // 2. Integramos Supabase sin borrar detalles locales ricos
-        histRes.forEach(item => {
+        histResActualizado.forEach(item => {
           const key = item.id || item.created_at;
           if (key) {
             if (!map.has(key)) {
@@ -253,8 +281,8 @@ export default function SecurePathPSP() {
               const existing = map.get(key);
               map.set(key, {
                 ...item,
-                detalle_errores: existing.detalle_errores || item.detalle_errores || [],
-                desglose_subtemas: existing.desglose_subtemas || item.desglose_subtemas || {}
+                detalle_errores: (existing.detalle_errores && existing.detalle_errores.length > 0) ? existing.detalle_errores : (item.detalle_errores || []),
+                desglose_subtemas: (existing.desglose_subtemas && Object.keys(existing.desglose_subtemas).length > 0) ? existing.desglose_subtemas : (item.desglose_subtemas || {})
               });
             }
           }
@@ -352,7 +380,7 @@ export default function SecurePathPSP() {
     );
   }
 
-  // Cálculos globales
+  // CÁLCULOS GLOBALES
   const safeHistorial = Array.isArray(historialUsuario) ? historialUsuario : [];
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
@@ -629,10 +657,19 @@ export default function SecurePathPSP() {
                             usuario_id: nuevoIntento.usuario_id,
                             puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
                             total_preguntas: nuevoIntento.total_preguntas,
-                            dominio: nuevoIntento.dominio
+                            dominio: nuevoIntento.dominio,
+                            detalle_errores: nuevoIntento.detalle_errores,
+                            desglose_subtemas: nuevoIntento.desglose_subtemas
                           }, session.access_token);
                         } catch (err) { 
-                          console.error("Supabase sync warning:", err); 
+                          try {
+                            await dbPost("sesiones_simulacro", {
+                              usuario_id: nuevoIntento.usuario_id,
+                              puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
+                              total_preguntas: nuevoIntento.total_preguntas,
+                              dominio: nuevoIntento.dominio
+                            }, session.access_token);
+                          } catch (e2) {}
                         }
                         
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
@@ -844,26 +881,129 @@ export default function SecurePathPSP() {
         {vista === "tutor" && (
           <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
             <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
-            <p style={{ color: C.muted, marginBottom: 16, fontSize: 14 }}>Haz clic en un dominio para que el tutor te genere un caso o pregunta de práctica inmediata:</p>
+            <p style={{ color: C.muted, marginBottom: 16, fontSize: 14 }}>
+              Haz clic en un dominio para que el tutor te genere un caso o pregunta de práctica inmediata:
+            </p>
             
             <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D1</button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D2</button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>Generar Pregunta D3</button>
+              <button 
+                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} 
+                style={{ 
+                  padding: "8px 14px", 
+                  background: C.card, 
+                  border: `1px solid ${C.border}`, 
+                  color: C.gold, 
+                  borderRadius: 6, 
+                  cursor: "pointer", 
+                  fontSize: 13 
+                }}
+              >
+                Generar Pregunta D1
+              </button>
+              
+              <button 
+                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} 
+                style={{ 
+                  padding: "8px 14px", 
+                  background: C.card, 
+                  border: `1px solid ${C.border}`, 
+                  color: C.blue, 
+                  borderRadius: 6, 
+                  cursor: "pointer", 
+                  fontSize: 13 
+                }}
+              >
+                Generar Pregunta D2
+              </button>
+              
+              <button 
+                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} 
+                style={{ 
+                  padding: "8px 14px", 
+                  background: C.card, 
+                  border: `1px solid ${C.border}`, 
+                  color: C.purple, 
+                  borderRadius: 6, 
+                  cursor: "pointer", 
+                  fontSize: 13 
+                }}
+              >
+                Generar Pregunta D3
+              </button>
             </div>
 
-            <div style={{ height: 380, overflowY: "auto", marginBottom: 20, padding: 16, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ 
+              height: 380, 
+              overflowY: "auto", 
+              marginBottom: 20, 
+              padding: 16, 
+              background: C.black, 
+              borderRadius: 8, 
+              border: `1px solid ${C.border}`, 
+              display: "flex", 
+              flexDirection: "column", 
+              gap: 16 
+            }}>
               {(Array.isArray(mensajesTutor) ? mensajesTutor : []).map((m, i) => (
-                <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
-                  <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>{m.role === "user" ? "Tú" : "Tutor PSP"}</div>
-                  <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.content}</div>
+                <div 
+                  key={i} 
+                  style={{ 
+                    padding: 14, 
+                    borderRadius: 8, 
+                    background: m.role === "user" ? C.card : C.dark, 
+                    border: `1px solid ${C.border}`, 
+                    alignSelf: m.role === "user" ? "flex-end" : "flex-start", 
+                    maxWidth: "90%" 
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>
+                    {m.role === "user" ? "Tú" : "Tutor PSP"}
+                  </div>
+                  <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                    {m.content}
+                  </div>
                 </div>
               ))}
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
-              <input value={inputTutor || ""} onChange={(e) => setInputTutor(e.target.value)} onKeyDown={(e) => e.key === "Enter" && enviarTutorConPrompt(inputTutor)} placeholder="Escribe tu consulta o pide un caso práctico..." style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} />
-              <button onClick={() => { if (inputTutor.trim()) { enviarTutorConPrompt(inputTutor); setInputTutor(""); } }} disabled={loadingTutor} style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+              <input 
+                value={inputTutor || ""} 
+                onChange={(e) => setInputTutor(e.target.value)} 
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    enviarTutorConPrompt(inputTutor);
+                  }
+                }} 
+                placeholder="Escribe tu consulta o pide un caso práctico..." 
+                style={{ 
+                  flex: 1, 
+                  padding: 12, 
+                  background: C.black, 
+                  color: C.white, 
+                  border: `1px solid ${C.border}`, 
+                  borderRadius: 6, 
+                  fontSize: 15 
+                }} 
+              />
+              <button 
+                onClick={() => { 
+                  if (inputTutor.trim()) { 
+                    enviarTutorConPrompt(inputTutor); 
+                    setInputTutor(""); 
+                  } 
+                }} 
+                disabled={loadingTutor} 
+                style={{ 
+                  padding: "0 24px", 
+                  background: C.gold, 
+                  border: "none", 
+                  color: C.white, 
+                  fontWeight: "bold", 
+                  borderRadius: 6, 
+                  cursor: "pointer" 
+                }}
+              >
                 {loadingTutor ? "Pensando..." : "Enviar"}
               </button>
             </div>
