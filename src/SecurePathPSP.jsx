@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.8"; 
+const APP_VERSION = "5.9"; 
 
 // Cliente HTTP centralizado para Supabase (Soporta Upsert para evitar errores 409)
 const sb = async (path, opts = {}) => {
@@ -117,9 +117,18 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
-// MAPA DE VIDEOS PARA CADA SUBTEMA (Soporta Google Drive / YouTube)
+// MAPA DE VIDEOS DESDE GOOGLE DRIVE
 const VIDEOS_MAP = {
   0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/preview", // D1-T1 Caracterización de los Activos
+  1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/preview", // D1-T2 Análisis de Amenazas
+  2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/preview", // D1-T3 Análisis de Vulnerabilidades
+  3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/preview", // D1-T4 Riesgo y Consecuencias
+  4: "https://drive.google.com/file/d/1uRC7eRJrEVZtFGZ_e36aAWwGaL9KbmRm/preview", // D1-T5 Análisis de Contramedidas
+};
+
+// MAPA DE ACTIVIDADES / CASOS PRÁCTICOS (PDF / PPT)
+const ACTIVIDADES_MAP = {
+  3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/preview", // D1-T4 Actividad Evaluación de Riesgos
 };
 
 // TEORÍA OFICIAL AMPLIADA Y DETALLADA (ST1 AL ST5) BASADA EN LA GUÍA MAESTRA PSP
@@ -965,8 +974,13 @@ export default function SecurePathPSP() {
                   </button>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 15 }}>
-                  {[["teoria", "📖 1. Teoría Detallada & Mapa Conceptual"], ["video", "🎥 2. Videoclase"], ["quiz", "📝 3. Quiz Condicionante"]].map(([key, label]) => (
+                <div style={{ display: "flex", gap: 10, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 15, flexWrap: "wrap" }}>
+                  {[
+                    ["teoria", "📖 1. Teoría Detallada & Mapa Conceptual"], 
+                    ["video", "🎥 2. Videoclase"],
+                    ...(ACTIVIDADES_MAP[subtemaActivo] ? [["actividad", "📋 3. Actividad Práctica"]] : []),
+                    ["quiz", ACTIVIDADES_MAP[subtemaActivo] ? "📝 4. Quiz Condicionante" : "📝 3. Quiz Condicionante"]
+                  ].map(([key, label]) => (
                     <button key={key} onClick={() => setPestanaCursoActiva(key)} style={{ padding: "10px 18px", background: pestanaCursoActiva === key ? C.goldD : C.card, border: `1px solid ${pestanaCursoActiva === key ? C.goldB : C.border}`, color: pestanaCursoActiva === key ? C.gold : C.white, borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>{label}</button>
                   ))}
                 </div>
@@ -1013,6 +1027,20 @@ export default function SecurePathPSP() {
                         🎥 Próximamente: El video para este subtema estará disponible muy pronto.
                       </div>
                     )}
+                  </div>
+                )}
+
+                {pestanaCursoActiva === "actividad" && ACTIVIDADES_MAP[subtemaActivo] && (
+                  <div style={{ background: C.black, padding: 30, borderRadius: 8, marginBottom: 24, textAlign: "center", border: `1px solid ${C.border}` }}>
+                    <h3 style={{ fontSize: 18, marginBottom: 16, color: C.white }}>Actividad / Material Práctico (PDF / PPT)</h3>
+                    <div style={{ position: "relative", width: "100%", paddingBottom: "70%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                      <iframe 
+                        src={ACTIVIDADES_MAP[subtemaActivo]} 
+                        title="Actividad Práctica PSP" 
+                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                        allowFullScreen
+                      />
+                    </div>
                   </div>
                 )}
 
