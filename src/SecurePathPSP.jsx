@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "6.0"; 
+const APP_VERSION = "6.1"; 
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -31,7 +31,7 @@ const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
 
-// ─── BANCO MAESTRO DE RESPALDO PSP (GARANTIZA 0 ERRORES EN QUIZ Y SIMULACROS) ───
+// ─── BANCO MAESTRO DE RESPALDO PSP ──────────────────────────────────────────
 const BANCO_MAESTRO_FALLBACK = [
   {
     id: 1,
@@ -204,9 +204,9 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
-// MAPA DE VIDEOS (YOUTUBE / DRIVE)
+// MAPA DE VIDEOS (GOOGLE DRIVE RESTAURADO PARA D1-T1)
 const VIDEOS_MAP = {
-  0: "https://www.youtube.com/embed/dQw4w9WgXcQ", 
+  0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/preview", 
   1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/preview", 
   2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/preview", 
   3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/preview", 
@@ -218,7 +218,7 @@ const ACTIVIDADES_MAP = {
 };
 
 const VIDEOS_VIEW_MAP = {
-  0: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/view?usp=sharing",
   1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/view?usp=sharing",
   2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/view?usp=sharing",
   3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/view?usp=sharing",
@@ -229,74 +229,137 @@ const ACTIVIDADES_VIEW_MAP = {
   3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/view?usp=sharing",
 };
 
-// TEORÍA OFICIAL AMPLIADA, CORREGIDA Y ESTRUCTURADA POR MÓDULOS (ST1 AL ST5)
+// ─── TEORÍA OFICIAL ASIS PSP AMPLIADA, PROFUNDA Y ESTRUCTURADA ────────────────
 const HANDBOOK_TEORIA = {
   0: { 
-    mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración) ➔ Micro: Cuantificación de Impacto Operacional y Criterios CID.",
+    mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración, Priorización, Gobernanza) ➔ Micro: Cuantificación de Impacto Operacional y Criterios CID.",
     subsub: [
       { 
-        titulo: "1. Fundamentos Teóricos y Modelo PPIR", 
+        titulo: "1. Fundamentos Teóricos y Filosofía de Protección", 
         puntos: [
-          "Definición ASIS de Activo: Persona, bien, información o capacidad con valor para la organización que requiere protección proporcional.",
-          "Modelo PPIR (People, Property, Information, Reputation): El universo de activos organizacionales organizados en cuatro grandes familias.",
-          "Prioridad absoluta del Activo Humano: La protección de la vida y la integridad física antecede siempre a la propiedad y los bienes materiales.",
-          "Razones clave para caracterizar: Delimitar el alcance, asegurar la proporcionalidad del costo de seguridad y priorizar recursos escasos."
+          "Definición ASIS de Activo: Cualquier persona, bien tangible, información o capacidad intangible con valor para la organización que requiere un nivel de protección proporcional a su criticidad.",
+          "Modelo PPIR (People, Property, Information, Reputation): Marco fundamental de ASIS para clasificar todo el universo de activos corporativos.",
+          "Prioridad Absoluta del Activo Humano: La protección de la vida, la salud y la integridad física de empleados, contratistas y visitantes antecede siempre a cualquier bien material o propiedad intelectual.",
+          "Estándar de Diligencia Debida (Due Diligence): Obligación legal y ética corporativa de implementar salvaguardas razonables y probadas para mitigar exposiciones previsibles.",
+          "Proporcionalidad de la Seguridad: Los costos y restricciones de las contramedidas nunca deben superar el valor potencial de pérdida del activo protegido."
         ] 
       },
       { 
-        titulo: "2. Tipología Exhaustiva: Tangibles vs Intangibles", 
+        titulo: "2. Tipología Exhaustiva: Tangibles e Intangibles", 
         puntos: [
-          "Activos Tangibles: Personas, bienes inmuebles, equipos de TI, maquinaria, inventarios (modelo CRAVED) y valores monetarios.",
-          "Activos Intangibles: Información sensible (esquema CIA), propiedad intelectual, secretos comerciales y reputación de marca.",
-          "Diferencial clave: Los intangibles representan entre el 70% y 90% del valor corporativo moderno."
+          "Activos Tangibles Humanos: Personal ejecutivo, fuerza laboral general, personal de seguridad, visitantes y contratistas recurrentes.",
+          "Activos Tangibles Físicos: Inmuebles, plantas de producción, centros de datos, maquinaria crítica, inventarios y valores monetarios.",
+          "El Modelo CRAVED para Activos Físicos: Criterios que evalúan por qué un activo es blanco de robo (Concealable, Removable, Available, Valuable, Enjoyable, Disposable).",
+          "Activos Intangibles: Información corporativa confidencial, propiedad intelectual, secretos industriales, patentes, software propietario y reputación de marca.",
+          "Peso Económico Moderno: En las organizaciones actuales, los activos intangibles representan entre el 70% y el 90% del valor corporativo total."
         ] 
       },
       { 
-        titulo: "3. Metodología ASIS de las 5 Fases", 
+        titulo: "3. Metodología ASIS de las 5 Fases (Inventario y Alcance)", 
         puntos: [
-          "Fase 1 (Alcance e Inventario): Definición de perímetros y aplicación de la técnica de las 6 superficies.",
-          "Fase 2 (Clasificación y Tiers): Esquemas de sensibilidad (Público, Interno, Confidencial, Restringido) y criticidad (A/B/C).",
-          "Fase 3 a 5 (Valoración, Priorización y Gobernanza): Métodos cuantitativos y cualitativos, registro maestro y separación de roles."
+          "Fase 1 (Alcance e Inventario): Definición rigurosa de perímetros físicos, lógicos y temporales. Aplicación de la técnica de las 6 superficies (piso, techo y 4 paredes de un recinto).",
+          "Enfoques Metodológicos: Top-Down (desde la dirección estratégica hacia las operaciones) y Bottom-Up (desde las instalaciones hacia el corporativo).",
+          "Fase 2 (Clasificación por Sensibilidad): Niveles normalizados como Público, Interno, Confidencial y Restringido / Secret.",
+          "Fase 3 y 4 (Valoración y Priorización): Jerarquización mediante Tiers (A, B, C) y análisis de dependencias críticas o Puntos Únicos de Falla (SPOF).",
+          "Fase 5 (Gobernanza del Activo): Establecimiento formal de registros maestros, auditorías de inventario y separación estricta entre Propietario (Accountable) y Custodio (Responsible)."
+        ] 
+      },
+      { 
+        titulo: "4. Integración Regulatoria y Marcos de Referencia", 
+        puntos: [
+          "Alineación con el Protection of Assets (POA) manual de referencia global de ASIS International.",
+          "Sincronización con marcos internacionales como ISO/IEC 27001 (Control de Activos) y el NIST Cybersecurity Framework (Función Identify).",
+          "Cumplimiento mandatorio con normativas de protección de datos personales y regulaciones locales de seguridad industrial."
+        ] 
+      },
+      { 
+        titulo: "5. Puntos Críticos de Examen (ASIS PSP) y Casuística", 
+        puntos: [
+          "Pregunta clásica de examen: La caracterización de activos es siempre el paso inicial ineludible de un Assessment; jamás se inicia diseñando contramedidas o evaluando amenazas aisladas.",
+          "El Propietario del Activo es el único con autoridad para definir su nivel de clasificación y aceptar el riesgo residual.",
+          "Error común de diseño: Proteger elementos secundarios (hardware de bajo costo) ignorando el impacto consecuencial en la interrupción de procesos primarios."
         ] 
       }
     ]
   },
   1: { 
-    mapaConceptual: "Macro: Entorno Geopolítico y Criminal ➔ Meso: Taxonomía de Amenazas (Naturales, Humanas, Técnicas) y Modelo ICO ➔ Micro: Perfilación de Actores Hostiles.",
+    mapaConceptual: "Macro: Entorno Geopolítico, Social y Criminal ➔ Meso: Taxonomía de Amenazas (Naturales, Humanas, Técnicas) y Modelo ICO ➔ Micro: Perfilación de Actores Hostiles.",
     subsub: [
       { 
         titulo: "1. Naturaleza y Taxonomía de las Amenazas", 
         puntos: [
-          "Definición ASIS: Cualquier evento, circunstancia o actor con potencial de causar pérdida o daño al activo.",
-          "Amenazas Humanas: Intencionales (delincuencia, terrorismo, sabotaje, insider threat) y negligentes.",
-          "Amenazas Naturales y Técnicas: Sismos, fallas de infraestructura crítica y suministro."
+          "Definición ASIS: Una amenaza es cualquier evento, circunstancia, condición o actor hostil con el potencial de causar pérdida, daño, lesión o interrupción a un activo.",
+          "Amenazas Humanas Intencionales: Delincuencia común, crimen organizado, terrorismo, sabotaje industrial, espionaje corporativo y activismo radical.",
+          "Amenazas Humanas Negligentes: Errores operativos involuntarios, fallas de juicio y descuidos del personal interno.",
+          "Amenazas Naturales y Ambientales: Sismos, inundaciones, eventos climáticos extremos, tormentas eléctricas y deslizamientos geológicos.",
+          "Amenazas Técnicas y Estructurales: Colapsos de suministros críticos (energía eléctrica, agua, telecomunicaciones) y fallas de materiales de construcción."
         ] 
       },
       { 
         titulo: "2. El Modelo ICO (Intención, Capacidad y Oportunidad)", 
         puntos: [
-          "Intención: Motivación y objetivos específicos del actor hostil.",
-          "Capacidad: Recursos financieros, tecnológicos y armamento.",
-          "Oportunidad: Ventanas temporales y fallas de vigilancia física."
+          "Intención (Intent): Motivación psicológica, ideológica, financiera o geopolítica que impulsa al actor hostil a perpetrar un ataque.",
+          "Capacidad (Capability): Recursos financieros, equipamiento táctico, armamento, especialización técnica y redes de apoyo con que cuenta el agresor.",
+          "Oportunidad (Opportunity): Ventanas temporales, fallas de supervisión, deficiencias perimetrales y condiciones que reducen el costo operativo del ataque.",
+          "Ecuación del Amenazante: Un actor con alta intención y alta capacidad pero sin oportunidad operativa no puede concretar exitosamente el evento hostil."
+        ] 
+      },
+      { 
+        titulo: "3. El Vector Crítico de la Amenaza Interna (Insider Threat)", 
+        puntos: [
+          "Complejidad de Mitigación: Considerado por ASIS como uno de los riesgos más desafiantes debido a que el actor interno posee privilegios legítimos de acceso.",
+          "Tipología de Insiders: Maliciosos (empleados descontentos, coaccionados por carteles o reclutados para espionaje) y Negligentes (víctimas de phishing, errores humanos).",
+          "Indicadores de Comportamiento (Red Flags): Cambios drásticos en el estilo de vida, interés inusual en áreas fuera de su competencia y violaciones recurrentes de protocolos."
+        ] 
+      },
+      { 
+        titulo: "4. Inteligencia de Amenazas y Fuentes de Información", 
+        puntos: [
+          "Uso de análisis estadístico criminal local, reportes de inteligencia de fuentes abiertas (OSINT) y evaluación de tendencias sectoriales.",
+          "Mapeo de riesgos geográficos y zonificación de criminalidad en los entornos operativos de la organización."
+        ] 
+      },
+      { 
+        titulo: "5. Puntos Clave para el Examen PSP", 
+        puntos: [
+          "Recuerde: Las amenazas son externas a los controles de seguridad directos y no se pueden eliminar, solo se pueden mitigar sus efectos mediante barreras adecuadas.",
+          "El análisis de amenazas debe actualizarse de manera dinámica ante cambios geopolíticos o reestructuraciones del negocio."
         ] 
       }
     ]
   },
   2: { 
-    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Brechas Físicas y Tecnológicas ➔ Micro: Pruebas de Penetración Física (Red Teaming).",
+    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Brechas Físicas, Tecnológicas y Procedimentales ➔ Micro: Pruebas de Penetración Física (Red Teaming).",
     subsub: [
       { 
         titulo: "1. Fundamentos de Vulnerabilidad en Seguridad Física", 
         puntos: [
-          "Definición ASIS: Condición o debilidad en el diseño, ubicación u operación aprovechada por la amenaza.",
-          "Las vulnerabilidades son las únicas variables del riesgo sobre las cuales la organización tiene control absoluto."
+          "Definición ASIS: Condición, deficiencia o debilidad en el diseño, construcción, ubicación, operación o mantenimiento de un sistema de protección que puede ser aprovechada por una amenaza.",
+          "Control Absoluto: Las vulnerabilidades son las únicas variables de la ecuación de riesgo sobre las cuales la organización tiene control directo, total y absoluto.",
+          "Diferencia Conceptual: La amenaza es el peligro potencial incontrolable; la vulnerabilidad es la puerta de entrada interna corregible."
         ] 
       },
       { 
-        titulo: "2. Taxonomía de Brechas", 
+        titulo: "2. Taxonomía Detallada de Vulnerabilidades", 
         puntos: [
-          "Vulnerabilidades Físicas: Perímetros deficientes, puntos ciegos de CCTV.",
-          "Vulnerabilidades Procedimentales: Protocolos de control laxos y fatiga de operadores."
+          "Vulnerabilidades Físicas y Arquitectónicas: Perímetros frágiles, ausencia de zonas de exclusas, iluminación deficiente y materiales constructivos vulnerables al reventón.",
+          "Vulnerabilidades Tecnológicas: Sistemas de control de acceso obsoletos con tarjetas clonables, cámaras CCTV con puntos ciegos y alarmas sin supervisión de línea.",
+          "Vulnerabilidades Procedimentales: Protocolos de registro de visitantes en papel sin verificación, falta de simulacros de emergencia y fatiga extrema en turnos de operadores."
+        ] 
+      },
+      { 
+        titulo: "3. Metodologías de Detección de Brechas", 
+        puntos: [
+          "Listas de verificación normalizadas basadas en estándares de auditoría de seguridad física de ASIS.",
+          "Pruebas de Penetración Física Controlada (Physical Red Teaming): Simulación ética de ataques para medir la resistencia real de barreras y tiempos de reacción humana.",
+          "Cruces analíticos estrictos entre los activos Tier A (D1-T1) y los vectores de ataque (D1-T2)."
+        ] 
+      },
+      { 
+        titulo: "4. Puntos Críticos de Examen PSP", 
+        puntos: [
+          "Una vulnerabilidad solo adquiere relevancia crítica si protege un activo de alto valor estratégico.",
+          "Priorizar la corrección de brechas en activos Tier A antes de invertir recursos en áreas de bajo impacto."
         ] 
       }
     ]
@@ -305,24 +368,34 @@ const HANDBOOK_TEORIA = {
     mapaConceptual: "Macro: Ecuación del Riesgo ➔ Meso: Valoración de Impacto y Consecuencias ➔ Micro: Análisis Cuantitativo (SLE, ARO, ALE) y BIA.",
     subsub: [
       { 
-        titulo: "1. La Ecuación Fundamental del Riesgo", 
+        titulo: "1. La Ecuación Fundamental del Riesgo en Seguridad", 
         puntos: [
-          "Fórmula: Riesgo = Amenaza (Probabilidad) × Vulnerabilidad (Probabilidad de éxito) × Impacto (Valor del Activo).",
-          "El valor del activo (impacto) es la variable que traduce un incidente físico en consecuencia financiera, legal o reputacional medible."
+          "Fórmula Oficial ASIS: Riesgo = Amenaza (Probabilidad de ocurrencia) × Vulnerabilidad (Probabilidad de éxito del ataque) × Impacto (Valor del Activo afectado).",
+          "Rol del Impacto: El valor monetario, operativo o reputacional del activo es el factor que traduce un incidente físico en una consecuencia corporativa crítica.",
+          "Riesgo Inherente vs Residual: El riesgo inherente es la exposición neta sin salvaguardas; el riesgo residual es el remanente operativo tras aplicar las contramedidas."
         ] 
       },
       { 
-        titulo: "2. Análisis Cuantitativo y Cualitativo de Pérdidas", 
+        titulo: "2. Modelos Cuantitativos y Cualitativos de Pérdida", 
         puntos: [
-          "Modelos cuantitativos: Expectativa de Pérdida Única (SLE), Tasa Anual de Ocurrencia (ARO) y Expectativa de Pérdida Anual (ALE = SLE × ARO).",
-          "Matrices cualitativas de probabilidad e impacto (3x3 o 5x5) con criterios anclados."
+          "Expectativa de Pérdida Única (SLE - Single Loss Expectancy): Costo financiero directo de un único evento disruptivo.",
+          "Tasa Anual de Ocurrencia (ARO - Annualized Rate of Occurrence): Estimación estadística de cuántas veces ocurre el evento en un año.",
+          "Expectativa de Pérdida Anual (ALE = SLE × ARO): Métrica financiera clave para justificar presupuestos ante el directorio.",
+          "Matrices Cualitativas (3x3 o 5x5): Herramientas basadas en escalas ancladas para evaluar escenarios complejos donde no existen datos estadísticos históricos."
         ] 
       },
       { 
-        titulo: "3. Consecuencias Operacionales y Negocio", 
+        titulo: "3. Análisis de Impacto al Negocio (BIA)", 
         puntos: [
-          "Análisis de Impacto al Negocio (BIA): Determinación de métricas temporales críticas (MTPD, RTO, RPO).",
-          "Evaluación de interrupciones en la cadena de suministro y pérdida de confianza del mercado."
+          "Business Impact Analysis: Metodología para evaluar los efectos operativos y financieros de la interrupción de procesos críticos.",
+          "Métricas Temporales Clave: MTPD (Maximum Tolerable Period of Disruption), RTO (Recovery Time Objective) y RPO (Recovery Point Objective)."
+        ] 
+      },
+      { 
+        titulo: "4. Criterios de Aceptación del Riesgo", 
+        puntos: [
+          "Opciones de Tratamiento: Mitigar (controles), Transferir (seguros/contratos), Evitar (suspender actividad) o Aceptar formalmente.",
+          "La aceptación formal del riesgo residual corresponde exclusivamente al Propietario del Activo o Junta Directiva, nunca al gerente de seguridad."
         ] 
       }
     ]
@@ -331,16 +404,32 @@ const HANDBOOK_TEORIA = {
     mapaConceptual: "Macro: Defensa en Profundidad ➔ Meso: Las 4 Funciones (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Ecuación de Retardo vs Respuesta y ROSI.",
     subsub: [
       { 
-        titulo: "1. Principio de Defensa en Profundidad", 
+        titulo: "1. Arquitectura de Defensa en Profundidad", 
         puntos: [
-          "Implementación de múltiples anillos concéntricos de seguridad para incrementar el esfuerzo y tiempo del agresor."
+          "Concepto de Anillos Concéntricos: Implementación de múltiples barreras perimetrales y zonificadas (perímetro exterior, fachada, controles internos y gabinetes blindados).",
+          "Objetivo Táctico: Obligar al agresor a superar sucesivas capas defensivas, incrementando el esfuerzo operativo y el tiempo acumulado de exposición."
         ] 
       },
       { 
-        titulo: "2. Las Cuatro Funciones Esenciales", 
+        titulo: "2. Las Cuatro Funciones Esenciales de la Seguridad Física", 
         puntos: [
-          "Disuasión, Detección, Retardo (barreras físicas) y Respuesta (fuerza de reacción).",
-          "Regla temporal de oro: Tiempo de Retardo > Tiempo de Respuesta."
+          "Disuasión (Deterrence): Elementos psicológicos, cartelería e iluminación para desalentar el ataque antes de su inicio.",
+          "Detección (Detection): Sensores perimetrales y sistemas CCTV para alertar al centro de control sobre la intrusión en tiempo real.",
+          "Retardo (Delay): Barreras físicas, rejas, puertas reforzadas y esclusas diseñadas para frenar físicamente el avance del intruso.",
+          "Respuesta (Response): Acciones coordinadas de la fuerza de reacción para interceptar al agresor antes de que vulnere el activo."
+        ] 
+      },
+      { 
+        titulo: "3. La Regla de Oro Temporal del Diseño PSP", 
+        puntos: [
+          "Ecuación Crítica: Tiempo total de Retardo ($T_{retardo}$) > Tiempo total de Respuesta ($T_{respuesta}$).",
+          "Si el intruso puede romper las defensas antes de la llegada de la fuerza de reacción, el diseño físico habrá fracasado sin importar el costo de la tecnología instalada."
+        ] 
+      },
+      { 
+        titulo: "4. Análisis de Retorno de Inversión (ROSI)", 
+        puntos: [
+          "Return on Security Investment: Metodología para justificar el costo de las contramedidas en función de la reducción calculada en la ALE."
         ] 
       }
     ]
@@ -389,7 +478,7 @@ export default function SecurePathPSP() {
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
-  const [indiceTeoriaPaso, setIndiceTeoriaPaso] = useState(0); // Carrusel interactivo de teoría
+  const [indiceTeoriaPaso, setIndiceTeoriaPaso] = useState(0);
   const [quizActivoSubtema, setQuizActivoSubtema] = useState(null);
   const [respuestasQuizCurso, setRespuestasQuizCurso] = useState({});
   const [resultadoQuizCurso, setResultadoQuizCurso] = useState(null);
@@ -585,7 +674,6 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
-  // CÁLCULO ESTRICTO DE PROMEDIO POR DOMINIO (SIN HEREDAR EL GLOBAL)
   const getPromedioPorDominio = (domNum) => {
     let totalPreg = 0; 
     let totalAcertadas = 0;
@@ -608,7 +696,7 @@ export default function SecurePathPSP() {
         const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
         return { prom, cant: simsDom.length * 10 };
       }
-      return { prom: 0, cant: 0 }; // Retorna 0% exacto si no hay data de este dominio
+      return { prom: 0, cant: 0 };
     }
 
     return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
@@ -1012,6 +1100,7 @@ export default function SecurePathPSP() {
                       const modulosTeoria = HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."] }];
                       const maxPaso = modulosTeoria.length - 1;
                       const moduloActual = modulosTeoria[indiceTeoriaPaso] || modulosTeoria[0];
+                      const esUltimoBloque = indiceTeoriaPaso === maxPaso;
 
                       return (
                         <div style={{ background: C.black, padding: 26, borderRadius: 10, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1022,11 +1111,24 @@ export default function SecurePathPSP() {
                             </span>
                           </div>
 
-                          <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 10, minHeight: 120 }}>
+                          <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 10, minHeight: 140 }}>
                             {moduloActual.puntos.map((punto, pIdx) => (
                               <li key={pIdx} style={{ color: C.white, fontSize: 15, lineHeight: 1.6 }}>{punto}</li>
                             ))}
                           </ul>
+
+                          {/* LLAMADO A LA ACCIÓN EN EL ÚLTIMO BLOQUE */}
+                          {esUltimoBloque && (
+                            <div style={{ background: C.greenD, border: `1px solid ${C.green}`, padding: 16, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+                              <div>
+                                <div style={{ fontWeight: "bold", color: C.green, fontSize: 14, marginBottom: 2 }}>🎉 ¡Has finalizado la lectura de este subtema!</div>
+                                <div style={{ fontSize: 13, color: C.white }}>Continúa con la videoclase o realiza el quiz correspondiente.</div>
+                              </div>
+                              <button onClick={() => setPestanaCursoActiva("video")} style={{ padding: "10px 20px", background: C.green, color: C.black, border: "none", fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                                Ir a Videoclase 🎥 →
+                              </button>
+                            </div>
+                          )}
 
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
                             <button 
