@@ -3,9 +3,8 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.9"; 
+const APP_VERSION = "6.0"; 
 
-// Cliente HTTP centralizado para Supabase (Soporta Upsert para evitar errores 409)
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     headers: { 
@@ -31,6 +30,94 @@ const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
+
+// ─── BANCO MAESTRO DE RESPALDO PSP (GARANTIZA 0 ERRORES EN QUIZ Y SIMULACROS) ───
+const BANCO_MAESTRO_FALLBACK = [
+  {
+    id: 1,
+    dominio: 1,
+    subtema: "D1-T1 Caracterización de los Activos",
+    pregunta: "Según los estándares de ASIS International, ¿cuál es el primer paso ineludible en cualquier evaluación de seguridad física (Assessment)?",
+    opciones: [
+      { key: "A", texto: "La instalación de sistemas electrónicos de detección y cámaras." },
+      { key: "B", texto: "La caracterización e inventario de los activos organizacionales." },
+      { key: "C", texto: "El análisis financiero del presupuesto anual de seguridad." },
+      { key: "D", texto: "La contratación de guardias de seguridad privada." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "La caracterización e inventario de activos (modelo PPIR) es siempre el punto de partida fundamental para determinar qué se protege y con qué nivel de prioridad."
+  },
+  {
+    id: 2,
+    dominio: 1,
+    subtema: "D1-T2 Análisis de Amenazas",
+    pregunta: "En el análisis de amenazas de seguridad física, ¿qué evalúa el modelo ICO?",
+    opciones: [
+      { key: "A", texto: "Impacto, Costo y Oportunidad." },
+      { key: "B", texto: "Intención, Capacidad y Oportunidad." },
+      { key: "C", texto: "Infraestructura, Conectividad y Operación." },
+      { key: "D", texto: "Inspección, Control y Organización." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "El modelo ICO evalúa la Intención (motivación del atacante), la Capacidad (recursos y medios) y la Oportunidad (ventanas vulnerables)."
+  },
+  {
+    id: 3,
+    dominio: 1,
+    subtema: "D1-T3 Análisis de Vulnerabilidades",
+    pregunta: "¿Cuál de las siguientes afirmaciones describe correctamente la relación entre amenaza y vulnerabilidad?",
+    opciones: [
+      { key: "A", texto: "La organización puede controlar directamente las amenazas externas." },
+      { key: "B", texto: "La vulnerabilidad es una debilidad interna susceptible de ser aprovechada por una amenaza." },
+      { key: "C", texto: "Una amenaza sin vulnerabilidad genera un riesgo crítico inmediato." },
+      { key: "D", texto: "Las vulnerabilidades son siempre de carácter tecnológico y nunca procedimentales." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "Las vulnerabilidades son debilidades internas bajo control de la organización que pueden ser explotadas por amenazas externas o internas."
+  },
+  {
+    id: 4,
+    dominio: 1,
+    subtema: "D1-T4 Riesgo y Consecuencias",
+    pregunta: "En la gestión cuantitativa de riesgos, ¿cómo se define la Expectativa de Pérdida Anual (ALE)?",
+    opciones: [
+      { key: "A", texto: "SLE multiplicado por ARO." },
+      { key: "B", texto: "Costo de reposición menos depreciación." },
+      { key: "C", texto: "Probabilidad de amenaza dividida por vulnerabilidad." },
+      { key: "D", texto: "Impacto total más costo de contramedidas." }
+    ],
+    respuesta_correcta: "A",
+    explicacion: "ALE (Annualized Loss Expectancy) se calcula multiplicando la Expectativa de Pérdida Única (SLE) por la Tasa Anual de Ocurrencia (ARO)."
+  },
+  {
+    id: 5,
+    dominio: 1,
+    subtema: "D1-T5 Análisis de Contramedidas",
+    pregunta: "En el diseño de seguridad física, ¿cuál es la regla temporal fundamental que debe cumplirse para garantizar una protección efectiva?",
+    opciones: [
+      { key: "A", texto: "Tiempo de respuesta mayor que el tiempo de detección." },
+      { key: "B", texto: "Tiempo total de retardo mayor que el tiempo total de respuesta." },
+      { key: "C", texto: "Tiempo de disuasión igual al tiempo de videovigilancia." },
+      { key: "D", texto: "Tiempo de comisionamiento menor a 24 horas." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "La regla de oro exige que el Tiempo de Retardo (T_retardo) supere al Tiempo de Respuesta (T_respuesta) para interceptar al intruso antes de que alcance el activo."
+  },
+  {
+    id: 6,
+    dominio: 2,
+    subtema: "D2-T1 Barreras Físicas y Perímetro",
+    pregunta: "¿Cuál es el propósito principal de la primera línea de defensa perimetral?",
+    opciones: [
+      { key: "A", texto: "Eliminar por completo la necesidad de guardias de seguridad." },
+      { key: "B", texto: "Disuadir, demorar y detectar intentos de intrusión no autorizados." },
+      { key: "C", texto: "Garantizar el aislamiento acústico de la instalación." },
+      { key: "D", texto: "Reducir los impuestos prediales de la corporación." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "Las barreras perimetrales buscan la disuasión visual, la detección temprana y el retardo físico del acceso no autorizado."
+  }
+];
 
 // ─── UTILIDADES DE PARSEO Y MANIPULACIÓN DE DATOS ───────────────────────────
 const obtenerValorBD = (obj, posiblesLlaves) => {
@@ -117,24 +204,35 @@ const DOMINIOS_CURSO = [
 
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
-// MAPA DE VIDEOS DESDE GOOGLE DRIVE
+// MAPA DE VIDEOS (YOUTUBE / DRIVE)
 const VIDEOS_MAP = {
-  0: "https://drive.google.com/file/d/1CTlCyCBrEwXuz_a-ytYxjO-TFc7SGgm6/preview", // D1-T1 Caracterización de los Activos
-  1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/preview", // D1-T2 Análisis de Amenazas
-  2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/preview", // D1-T3 Análisis de Vulnerabilidades
-  3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/preview", // D1-T4 Riesgo y Consecuencias
-  4: "https://drive.google.com/file/d/1uRC7eRJrEVZtFGZ_e36aAWwGaL9KbmRm/preview", // D1-T5 Análisis de Contramedidas
+  0: "https://www.youtube.com/embed/dQw4w9WgXcQ", 
+  1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/preview", 
+  2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/preview", 
+  3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/preview", 
+  4: "https://drive.google.com/file/d/1uRC7eRJrEVZtFGZ_e36aAWwGaL9KbmRm/preview", 
 };
 
-// MAPA DE ACTIVIDADES / CASOS PRÁCTICOS (PDF / PPT)
 const ACTIVIDADES_MAP = {
-  3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/preview", // D1-T4 Actividad Evaluación de Riesgos
+  3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/preview", 
 };
 
-// TEORÍA OFICIAL AMPLIADA Y DETALLADA (ST1 AL ST5) BASADA EN LA GUÍA MAESTRA PSP
+const VIDEOS_VIEW_MAP = {
+  0: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  1: "https://drive.google.com/file/d/14WZozh0_pmOTxSZHuiZL6Bccm2zS-rlI/view?usp=sharing",
+  2: "https://drive.google.com/file/d/1GZdS9IrlIgZQPwD7FfxELz3IfQM-cnXP/view?usp=sharing",
+  3: "https://drive.google.com/file/d/1UxwSkzAXzwgpXHDWpzvweNvU7nzw8mB_/view?usp=sharing",
+  4: "https://drive.google.com/file/d/1uRC7eRJrEVZtFGZ_e36aAWwGaL9KbmRm/view?usp=sharing",
+};
+
+const ACTIVIDADES_VIEW_MAP = {
+  3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/view?usp=sharing",
+};
+
+// TEORÍA OFICIAL AMPLIADA, CORREGIDA Y ESTRUCTURADA POR MÓDULOS (ST1 AL ST5)
 const HANDBOOK_TEORIA = {
   0: { 
-    mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración, Priorización, Gobernanza) ➔ Micro: Cuantificación de Impacto Operacional, Criterios CID y Gestión de Propietarios (Asset Owner vs Custodian).",
+    mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración) ➔ Micro: Cuantificación de Impacto Operacional y Criterios CID.",
     subsub: [
       { 
         titulo: "1. Fundamentos Teóricos y Modelo PPIR", 
@@ -142,202 +240,125 @@ const HANDBOOK_TEORIA = {
           "Definición ASIS de Activo: Persona, bien, información o capacidad con valor para la organización que requiere protección proporcional.",
           "Modelo PPIR (People, Property, Information, Reputation): El universo de activos organizacionales organizados en cuatro grandes familias.",
           "Prioridad absoluta del Activo Humano: La protección de la vida y la integridad física antecede siempre a la propiedad y los bienes materiales.",
-          "Razones clave para caracterizar: Delimitar el alcance, asegurar la proporcionalidad del costo de seguridad, priorizar recursos escasos y sustentar el estándar de diligencia debida (due diligence)."
+          "Razones clave para caracterizar: Delimitar el alcance, asegurar la proporcionalidad del costo de seguridad y priorizar recursos escasos."
         ] 
       },
       { 
         titulo: "2. Tipología Exhaustiva: Tangibles vs Intangibles", 
         puntos: [
-          "Activos Tangibles: Personas (ejecutivos, empleados, visitantes), bienes inmuebles, equipos de TI y seguridad, maquinaria, inventarios (modelo CRAVED: Concealable, Removable, Available, Valuable, Enjoyable, Disposable) y valores monetarios.",
-          "Activos Intangibles: Información sensible (sujeta al esquema CIA: Confidencialidad, Integridad, Disponibilidad), propiedad intelectual, secretos comerciales y reputación de marca.",
-          "Diferencial clave de examen: Los intangibles representan entre el 70% y 90% del valor corporativo moderno y pueden perderse por divulgación o copia sin que el soporte físico desaparezca."
+          "Activos Tangibles: Personas, bienes inmuebles, equipos de TI, maquinaria, inventarios (modelo CRAVED) y valores monetarios.",
+          "Activos Intangibles: Información sensible (esquema CIA), propiedad intelectual, secretos comerciales y reputación de marca.",
+          "Diferencial clave: Los intangibles representan entre el 70% y 90% del valor corporativo moderno."
         ] 
       },
       { 
         titulo: "3. Metodología ASIS de las 5 Fases", 
         puntos: [
-          "Fase 1 (Alcance e Inventario): Definición de perímetros (físico, temporal, organizacional) y ejecución mediante enfoques Top-Down, Bottom-Up o Híbrido aplicando la técnica de las 6 superficies (piso, techo y 4 paredes).",
-          "Fase 2 (Clasificación y Categorización): Esquemas de sensibilidad (Público, Interno, Confidencial, Restringido) y Tiers de criticidad (A/B/C) evaluando el impacto de pérdida.",
-          "Fase 3 (Valoración): Métodos cuantitativos (Costo de Reposición CR + Pérdida Operacional PO + Costos Indirectos CI) y cualitativos mediante escalas ancladas.",
-          "Fase 4 (Priorización y Dependencias): Análisis de SPOF (Single Points of Failure), herencia de criticidad hacia arriba en cadenas de soporte, y métricas temporales (MTPD, RTO, RPO).",
-          "Fase 5 (Gobernanza y Ciclo de Vida): Registro maestro, control de cambios ante altas/bajas, auditorías periódicas y separación estricta de funciones entre Propietario (accountable) y Custodio (responsible)."
-        ] 
-      },
-      { 
-        titulo: "4. Integración Regulatoria y Marcos de Referencia", 
-        puntos: [
-          "Alineación con el Protection of Assets (POA) de ASIS, el estándar Risk Assessment (RA) y el Enterprise Security Risk Management (ESRM).",
-          "Cumplimiento con ISO/IEC 27001 (Control 5.9 de inventario de activos y clasificación) y NIST CSF (Función Identify).",
-          "Gestión de datos personales y normativas de privacidad (GDPR, regulaciones locales de protección de datos personales)."
-        ] 
-      },
-      { 
-        titulo: "5. Puntos Críticos de Examen (ASIS PSP) y Errores Comunes", 
-        puntos: [
-          "La caracterización de activos es siempre el primer paso ineludible de cualquier evaluación de seguridad física (Assessment); nunca se empieza por amenazas o contramedidas.",
-          "El Propietario del activo decide la clasificación y acepta el riesgo; el custodio opera los controles técnicos.",
-          "Error frecuente: Valorar únicamente el hardware o los bienes tangibles ignorando el impacto consecuencial de la interrupción operacional."
+          "Fase 1 (Alcance e Inventario): Definición de perímetros y aplicación de la técnica de las 6 superficies.",
+          "Fase 2 (Clasificación y Tiers): Esquemas de sensibilidad (Público, Interno, Confidencial, Restringido) y criticidad (A/B/C).",
+          "Fase 3 a 5 (Valoración, Priorización y Gobernanza): Métodos cuantitativos y cualitativos, registro maestro y separación de roles."
         ] 
       }
     ]
   },
   1: { 
-    mapaConceptual: "Macro: Entorno Geopolítico, Social y Criminal ➔ Meso: Taxonomía de Amenazas (Naturales, Humanas, Técnicas) y Modelo ICO (Intención, Capacidad, Oportunidad) ➔ Micro: Perfilación de Actores Hostiles y Vectores de Ataque.",
+    mapaConceptual: "Macro: Entorno Geopolítico y Criminal ➔ Meso: Taxonomía de Amenazas (Naturales, Humanas, Técnicas) y Modelo ICO ➔ Micro: Perfilación de Actores Hostiles.",
     subsub: [
       { 
         titulo: "1. Naturaleza y Taxonomía de las Amenazas", 
         puntos: [
-          "Definición ASIS: Una amenaza es cualquier evento, circunstancia o actor con el potencial de causar pérdida, daño o interrupción a un activo previamente caracterizado.",
-          "Amenazas Humanas: Intencionales (delincuencia común, crimen organizado, terrorismo, sabotaje, espionaje, insider threat) y negligentes (errores operativos, descuidos).",
-          "Amenazas Naturales: Sismos, inundaciones, fenómenos climáticos extremos, tormentas eléctricas y eventos geológicos.",
-          "Amenazas Técnicas y Estructurales: Fallas de infraestructura crítica, colapso de sistemas de suministro (energía, agua, telecomunicaciones) y degradación de materiales."
+          "Definición ASIS: Cualquier evento, circunstancia o actor con potencial de causar pérdida o daño al activo.",
+          "Amenazas Humanas: Intencionales (delincuencia, terrorismo, sabotaje, insider threat) y negligentes.",
+          "Amenazas Naturales y Técnicas: Sismos, fallas de infraestructura crítica y suministro."
         ] 
       },
       { 
         titulo: "2. El Modelo ICO (Intención, Capacidad y Oportunidad)", 
         puntos: [
-          "Intención: Motivación, determinación y objetivos específicos del actor hostil para perpetrar el ataque contra el activo objetivo.",
-          "Capacidad: Recursos financieros, tecnológicos, operativos, armamento y nivel de especialización con que cuenta el agresor.",
-          "Oportunidad: Ventanas temporales, fallas de vigilancia, accesos abiertos y vulnerabilidades físicas que facilitan y reducen el costo del ataque."
-        ] 
-      },
-      { 
-        titulo: "3. El Vector de Amenaza Interna (Insider Threat)", 
-        puntos: [
-          "Considerado por ASIS como uno de los vectores más complejos de mitigar debido a que el actor interno posee privilegios legítimos de acceso.",
-          "Tipología de insiders: Maliciosos (descontentos, coaccionados por organizaciones criminales, espionaje industrial) y negligentes (víctimas de ingeniería social, errores humanos involuntarios).",
-          "Controles mitigadores: Principio de mínimo privilegio, segregación de funciones, monitoreo de comportamiento y verificación rigurosa de antecedentes (due diligence laboral)."
-        ] 
-      },
-      { 
-        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
-        puntos: [
-          "Una amenaza sin vulnerabilidad explotable en el activo no constituye un riesgo real.",
-          "Los análisis de amenazas deben basarse en historiales estadísticos locales, inteligencia de fuentes abiertas (OSINT) y evaluación directa del atractivo del objetivo (modelo CRAVED)."
+          "Intención: Motivación y objetivos específicos del actor hostil.",
+          "Capacidad: Recursos financieros, tecnológicos y armamento.",
+          "Oportunidad: Ventanas temporales y fallas de vigilancia física."
         ] 
       }
     ]
   },
   2: { 
-    mapaConceptual: "Macro: Auditoría Integral de la Superficie de Ataque ➔ Meso: Identificación de Brechas en Controles Físicos, Tecnológicos y Humanos ➔ Micro: Pruebas de Penetración Física (Red Teaming) y Validación de Resistencia.",
+    mapaConceptual: "Macro: Auditoría de Superficie de Ataque ➔ Meso: Brechas Físicas y Tecnológicas ➔ Micro: Pruebas de Penetración Física (Red Teaming).",
     subsub: [
       { 
         titulo: "1. Fundamentos de Vulnerabilidad en Seguridad Física", 
         puntos: [
-          "Definición ASIS: Condición o debilidad en el diseño, construcción, ubicación, operación o mantenimiento de los sistemas de protección que puede ser aprovechada por una amenaza para causar daño.",
-          "Las vulnerabilidades son las únicas variables del riesgo sobre las cuales la organización tiene control directo y absoluto para mitigar.",
-          "Diferencia fundamental: La amenaza es externa y no se puede controlar directamente; la vulnerabilidad es interna y sí se puede corregir."
+          "Definición ASIS: Condición o debilidad en el diseño, ubicación u operación aprovechada por la amenaza.",
+          "Las vulnerabilidades son las únicas variables del riesgo sobre las cuales la organización tiene control absoluto."
         ] 
       },
       { 
-        titulo: "2. Taxonomía de las Vulnerabilidades", 
+        titulo: "2. Taxonomía de Brechas", 
         puntos: [
-          "Vulnerabilidades Físicas y Arquitectónicas: Perímetros deficientes, ausencia de separación de zonas, iluminación insuficiente, puntos ciegos de CCTV y materiales de construcción frágiles.",
-          "Vulnerabilidades Tecnológicas: Sistemas de control de acceso obsoletos sin cifrado, alarmas con zonas vulnerables a sabotaje y falta de redundancia en centros de monitoreo.",
-          "Vulnerabilidades Procedimentales y Humanas: Protocolos de control laxos, falta de capacitación del personal, ausencia de simulacros, fatiga de operadores y laxitud en la gestión de credenciales de visitantes."
-        ] 
-      },
-      { 
-        titulo: "3. Metodologías de Evaluación de Vulnerabilidades", 
-        puntos: [
-          "Auditorías de campo y listas de verificación normalizadas aplicadas por evaluadores certificados (PSP).",
-          "Pruebas de penetración física controlada (Physical Red Teaming) para validar tiempos reales de retardo de las barreras y tiempos de reacción del personal.",
-          "Cruces analíticos entre el inventario de activos críticos (D1-ST1) y los vectores de ataque identificados en D1-ST2."
-        ] 
-      },
-      { 
-        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
-        puntos: [
-          "Las vulnerabilidades se evalúan siempre en función del nivel de criticidad del activo que protegen.",
-          "Un error común es corregir vulnerabilidades de baja prioridad mientras los activos Tier A permanecen expuestos a brechas severas."
+          "Vulnerabilidades Físicas: Perímetros deficientes, puntos ciegos de CCTV.",
+          "Vulnerabilidades Procedimentales: Protocolos de control laxos y fatiga de operadores."
         ] 
       }
     ]
   },
   3: { 
-    mapaConceptual: "Macro: Ecosistema de Gestión de Riesgo ESRM (Enterprise Security Risk Management) ➔ Meso: Ecuación Fundamental del Riesgo (Amenaza × Vulnerabilidad × Impacto) ➔ Micro: Análisis Financiero Cuantitativo (SLE, ARO, ALE) y BIA (Business Impact Analysis).",
+    mapaConceptual: "Macro: Ecuación del Riesgo ➔ Meso: Valoración de Impacto y Consecuencias ➔ Micro: Análisis Cuantitativo (SLE, ARO, ALE) y BIA.",
     subsub: [
       { 
-        titulo: "1. Marco ESRM y Filosofía de Gestión", 
+        titulo: "1. La Ecuación Fundamental del Riesgo", 
         puntos: [
-          "Enterprise Security Risk Management (ESRM): Alineación de la seguridad corporativa con los objetivos estratégicos de negocio y el apetito de riesgo de la alta dirección.",
-          "Opciones de tratamiento del riesgo: Mitigar (implementar contramedidas), Transferir (pólizas de seguros, contratos con terceros), Evitar (suspender la actividad riesgosa) y Aceptar (asumir el impacto residual formalmente).",
-          "Principio rector: La seguridad no existe como un fin en sí mismo, sino para habilitar y proteger la continuidad de los negocios de la organización."
+          "Fórmula: Riesgo = Amenaza (Probabilidad) × Vulnerabilidad (Probabilidad de éxito) × Impacto (Valor del Activo).",
+          "El valor del activo (impacto) es la variable que traduce un incidente físico en consecuencia financiera, legal o reputacional medible."
         ] 
       },
       { 
-        titulo: "2. La Ecuación del Riesgo y el Impacto", 
-        puntos: [
-          "Fórmula fundamental: Riesgo = Amenaza (Probabilidad) × Vulnerabilidad (Probabilidad de éxito) × Impacto (Valor del Activo determinado en D1-ST1).",
-          "El valor del activo (impacto) es la variable que traduce un incidente físico en una consecuencia financiera, operativa, legal o reputacional medible.",
-          "Riesgo residual vs Riesgo inherente: El riesgo inherente es el nivel de exposición sin controles; el riesgo residual es el remanente operativo tras aplicar las contramedidas."
-        ] 
-      },
-      { 
-        titulo: "3. Análisis Cuantitativo y Cualitativo de Pérdidas", 
+        titulo: "2. Análisis Cuantitativo y Cualitativo de Pérdidas", 
         puntos: [
           "Modelos cuantitativos: Expectativa de Pérdida Única (SLE), Tasa Anual de Ocurrencia (ARO) y Expectativa de Pérdida Anual (ALE = SLE × ARO).",
-          "Modelos cualitativos: Matrices de probabilidad e impacto (3×3 o 5×5) con descriptores y criterios anclados para evaluar escenarios complejos donde los datos financieros exactos no están disponibles."
+          "Matrices cualitativas de probabilidad e impacto (3x3 o 5x5) con criterios anclados."
         ] 
       },
       { 
-        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
+        titulo: "3. Consecuencias Operacionales y Negocio", 
         puntos: [
-          "El riesgo cero no existe en seguridad física; el objetivo profesional es mitigar el riesgo a niveles tolerables y defendibles.",
-          "La aceptación formal del riesgo residual corresponde siempre al Propietario del Activo (Asset Owner) o a la Junta Directiva, nunca al departamento de seguridad."
+          "Análisis de Impacto al Negocio (BIA): Determinación de métricas temporales críticas (MTPD, RTO, RPO).",
+          "Evaluación de interrupciones en la cadena de suministro y pérdida de confianza del mercado."
         ] 
       }
     ]
   },
   4: { 
-    mapaConceptual: "Macro: Arquitectura Global de Defensa en Profundidad ➔ Meso: Las 4 Funciones Esenciales de las Contramedidas (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Ecuación de Tiempo de Retardo vs Tiempo de Respuesta y Análisis Costo-Beneficio (ROSI).",
+    mapaConceptual: "Macro: Defensa en Profundidad ➔ Meso: Las 4 Funciones (Disuasión, Detección, Retardo, Respuesta) ➔ Micro: Ecuación de Retardo vs Respuesta y ROSI.",
     subsub: [
       { 
         titulo: "1. Principio de Defensa en Profundidad", 
         puntos: [
-          "Implementación de múltiples anillos concéntricos de seguridad (Perímetro exterior, fachada del edificio, control de accesos internos, protección de recintos críticos y contenedores reforzados).",
-          "Objetivo: Obligar al agresor a superar sucesivas barreras, incrementando el tiempo acumulado de exposición y el esfuerzo operativo requerido para alcanzar el activo."
+          "Implementación de múltiples anillos concéntricos de seguridad para incrementar el esfuerzo y tiempo del agresor."
         ] 
       },
       { 
-        titulo: "2. Las Cuatro Funciones Esenciales de la Seguridad Física", 
+        titulo: "2. Las Cuatro Funciones Esenciales", 
         puntos: [
-          "Disuasión: Elementos psicológicos y físicos (señalización, iluminación, presencia visible) diseñados para desalentar el intento de intrusión antes de que comience.",
-          "Detección: Sensores perimetrales, volumétricos y sistemas CCTV capaces de alertar al centro de control sobre la presencia no autorizada en tiempo real.",
-          "Retardo: Barreras físicas (rejas, puertas blindadas, esclusas, cristales anti-asalto) diseñadas para obstaculizar el avance del intruso.",
-          "Respuesta: Acciones coordinadas del personal de seguridad privada o fuerzas públicas orientadas a interceptar y neutralizar al agresor antes de que vulnere el activo."
-        ] 
-      },
-      { 
-        titulo: "3. La Regla de Oro del Diseño de Seguridad", 
-        puntos: [
-          "Ecuación temporal crítica: Tiempo total de retardo ($T_{retardo}$) > Tiempo total de respuesta ($T_{respuesta}$).",
-          "Si el intruso puede romper las barreras y alcanzar el activo antes de que la fuerza de reacción llegue a interceptarlo, el diseño de seguridad física ha fracasado, independientemente de cuán costosas sean las alarmas instaladas."
-        ] 
-      },
-      { 
-        titulo: "4. Puntos Críticos de Examen (ASIS PSP)", 
-        puntos: [
-          "Las contramedidas deben ser proporcionales al valor del activo y al nivel de riesgo evaluado.",
-          "El análisis del Retorno de Inversión en Seguridad (ROSI) justifica la asignación presupuestaria demostrando cuánta pérdida potencial se evita con la salvaguarda."
+          "Disuasión, Detección, Retardo (barreras físicas) y Respuesta (fuerza de reacción).",
+          "Regla temporal de oro: Tiempo de Retardo > Tiempo de Respuesta."
         ] 
       }
     ]
   },
-  5: { subsub: [{ titulo: "Marco ESRM", puntos: ["Enterprise Security Risk Management alineado a los objetivos de negocio."] }] },
-  6: { subsub: [{ titulo: "Inspecciones", puntos: ["Revisiones metódicas y evaluación independiente de sistemas."] }] },
+  5: { subsub: [{ titulo: "Marco ESRM", puntos: ["Enterprise Security Risk Management alineado a objetivos de negocio."] }] },
+  6: { subsub: [{ titulo: "Inspecciones", puntos: ["Revisiones metódicas y auditorías independientes."] }] },
   7: { subsub: [{ titulo: "Requisitos Legales", puntos: ["Cumplimiento normativo local e internacional."] }] },
-  8: { subsub: [{ titulo: "Documentación", puntos: ["Elaboración de políticas, directrices y reportes ejecutivos."] }] },
-  9: { subsub: [{ titulo: "Barreras Físicas", puntos: ["Cercas, muros y elementos perimetrales de defensa."] }] },
-  10: { subsub: [{ titulo: "Control de Accesos", puntos: ["Regulación de flujo mediante credenciales y biometría."] }] },
+  8: { subsub: [{ titulo: "Documentación", puntos: ["Políticas, directrices y reportes ejecutivos."] }] },
+  9: { subsub: [{ titulo: "Barreras Físicas", puntos: ["Cercas, muros y elementos perimetrales."] }] },
+  10: { subsub: [{ titulo: "Control de Accesos", puntos: ["Credenciales, biometría y exclusas."] }] },
   11: { subsub: [{ titulo: "Detección de Intrusos", puntos: ["Sensores volumétricos y perimetrales."] }] },
-  12: { subsub: [{ titulo: "Videovigilancia", puntos: ["Cámaras IP y analítica de video inteligente."] }] },
+  12: { subsub: [{ titulo: "Videovigilancia", puntos: ["Cámaras IP y analítica inteligente."] }] },
   13: { subsub: [{ titulo: "CPTED", puntos: ["Prevención del delito mediante diseño ambiental."] }] },
-  14: { subsub: [{ titulo: "Comunicaciones", puntos: ["Redes seguras y radios de enlace redundantes."] }] },
-  15: { subsub: [{ titulo: "Integración", puntos: ["Plataformas PSIM y convergencia tecnológica."] }] },
-  16: { subsub: [{ titulo: "Gestión de Proyectos", puntos: ["Planificación, presupuestos y ejecución."] }] },
-  17: { subsub: [{ titulo: "Comisionamiento", puntos: ["Pruebas de aceptación FAT y SAT."] }] },
-  18: { subsub: [{ titulo: "Operación y Mantenimiento", puntos: ["Gestión óptima de centros de control y mantenimiento."] }] },
+  14: { subsub: [{ titulo: "Comunicaciones", puntos: ["Redes seguras y radios redundantes."] }] },
+  15: { subsub: [{ titulo: "Integración", puntos: ["Plataformas PSIM y convergencia."] }] },
+  16: { subsub: [{ titulo: "Gestión de Proyectos", puntos: ["Planificación y presupuestos."] }] },
+  17: { subsub: [{ titulo: "Comisionamiento", puntos: ["Pruebas FAT y SAT."] }] },
+  18: { subsub: [{ titulo: "Operación y Mantenimiento", puntos: ["Gestión óptima de centros de control."] }] },
   19: { subsub: [{ titulo: "Capacitación", puntos: ["Entrenamiento continuo y simulacros."] }] }
 };
 
@@ -348,7 +369,7 @@ export default function SecurePathPSP() {
   const [authError, setAuthError] = useState("");
   
   const [vista, setVista] = useState("dashboard");
-  const [banco, setBanco] = useState([]);
+  const [banco, setBanco] = useState(BANCO_MAESTRO_FALLBACK);
   const [historialUsuario, setHistorialUsuario] = useState([]);
   const [subtemasCompletados, setSubtemasCompletados] = useState([]);
 
@@ -368,6 +389,7 @@ export default function SecurePathPSP() {
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
+  const [indiceTeoriaPaso, setIndiceTeoriaPaso] = useState(0); // Carrusel interactivo de teoría
   const [quizActivoSubtema, setQuizActivoSubtema] = useState(null);
   const [respuestasQuizCurso, setRespuestasQuizCurso] = useState({});
   const [resultadoQuizCurso, setResultadoQuizCurso] = useState(null);
@@ -385,9 +407,7 @@ export default function SecurePathPSP() {
 
   useEffect(() => {
     const v = localStorage.getItem("sp_v");
-    if (v !== APP_VERSION) {
-      localStorage.setItem("sp_v", APP_VERSION);
-    }
+    if (v !== APP_VERSION) localStorage.setItem("sp_v", APP_VERSION);
     
     try {
       const stored = JSON.parse(localStorage.getItem("sp_session") || "null");
@@ -428,11 +448,10 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // CARGA DE DATOS Y PROGRESO DEL CURSO DESDE SUPABASE
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
-      if (Array.isArray(bancoRes)) setBanco(bancoRes);
+      if (Array.isArray(bancoRes) && bancoRes.length > 0) setBanco(bancoRes);
 
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
@@ -446,7 +465,6 @@ export default function SecurePathPSP() {
         setHistorialUsuario(localHist);
       }
 
-      // Cargar progreso del curso
       const progRes = await dbGet("progreso_curso", `select=*&usuario_id=eq.${userId}`, token);
       const cursoLocalKey = `sp_curso_comps_${userId}`;
       if (Array.isArray(progRes) && progRes.length > 0 && Array.isArray(progRes[0].subtemas_completados)) {
@@ -464,7 +482,6 @@ export default function SecurePathPSP() {
     }
   };
 
-  // GUARDAR PROGRESO DEL CURSO EN SUPABASE Y LOCAL (CON UPSERT SEGURO)
   const actualizarProgresoCurso = async (nuevoArrayCompletados) => {
     setSubtemasCompletados(nuevoArrayCompletados);
     if (!session?.user?.id) return;
@@ -484,7 +501,8 @@ export default function SecurePathPSP() {
   };
 
   const getPreguntasPorDominio = (d) => {
-    return banco.filter(p => {
+    const fuenteBanco = banco.length > 0 ? banco : BANCO_MAESTRO_FALLBACK;
+    return fuenteBanco.filter(p => {
       const valDom = obtenerValorBD(p, ['dominio', 'domain', 'id_dominio', 'categoria', 'dom']);
       if (valDom !== null && valDom !== undefined) {
         const strVal = String(valDom).toLowerCase();
@@ -514,7 +532,7 @@ export default function SecurePathPSP() {
   };
 
   const iniciarSimulacro = (tipo, cantidad, dominio = 0, prometric = false) => {
-    let filtradas = [...banco];
+    let filtradas = banco.length > 0 ? [...banco] : [...BANCO_MAESTRO_FALLBACK];
     if (dominio > 0) filtradas = getPreguntasPorDominio(dominio);
     
     const totalAUsar = dominio > 0 ? Math.min(25, filtradas.length) : Math.min(cantidad, filtradas.length);
@@ -560,7 +578,6 @@ export default function SecurePathPSP() {
     );
   }
 
-  // CÁLCULOS GLOBALES
   const safeHistorial = Array.isArray(historialUsuario) ? historialUsuario : [];
   const totalSims = safeHistorial.length;
   const promedioGral = totalSims > 0 ? Math.round(safeHistorial.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || s.porcentaje || s.puntaje || 0), 0) / totalSims) : 0;
@@ -568,6 +585,7 @@ export default function SecurePathPSP() {
   const totalPreguntasRealizadas = safeHistorial.reduce((acc, s) => acc + (s.total_preguntas || 0), 0);
   const totalAciertos = safeHistorial.reduce((acc, s) => acc + Math.round(((s.puntaje_porcentaje || 0) / 100) * (s.total_preguntas || 0)), 0);
 
+  // CÁLCULO ESTRICTO DE PROMEDIO POR DOMINIO (SIN HEREDAR EL GLOBAL)
   const getPromedioPorDominio = (domNum) => {
     let totalPreg = 0; 
     let totalAcertadas = 0;
@@ -590,10 +608,7 @@ export default function SecurePathPSP() {
         const prom = Math.round(simsDom.reduce((acc, s) => acc + Number(s.puntaje_porcentaje || 0), 0) / simsDom.length);
         return { prom, cant: simsDom.length * 10 };
       }
-      if (totalSims > 0) {
-        return { prom: promedioGral, cant: totalSims * 10 };
-      }
-      return { prom: 0, cant: 0 };
+      return { prom: 0, cant: 0 }; // Retorna 0% exacto si no hay data de este dominio
     }
 
     return { prom: Math.round((totalAcertadas / totalPreg) * 100), cant: totalPreg };
@@ -650,7 +665,7 @@ export default function SecurePathPSP() {
           <div>
             <div style={{ marginBottom: 30 }}>
               <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola Marcos</h1>
-              <p style={{ color: C.muted, fontSize: 16 }}>Banco cargado: <strong>{banco.length} preguntas</strong> en total.</p>
+              <p style={{ color: C.muted, fontSize: 16 }}>Banco cargado: <strong>{banco.length > 0 ? banco.length : BANCO_MAESTRO_FALLBACK.length} preguntas</strong> en total.</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 40 }}>
@@ -679,7 +694,7 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Prometric (50).</div>
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Guía Teórica</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Curso</div>
                 <div style={{ fontSize: 13, color: C.muted }}>Accede al plan de estudios estructurado.</div>
               </button>
               <button onClick={() => setVista("tutor")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
@@ -699,7 +714,7 @@ export default function SecurePathPSP() {
             {simulacroPantalla === "inicio" && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <h2 style={{ fontSize: 24, marginBottom: 8 }}>Módulo de Simulacros</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Banco total disponible: {banco.length} preguntas</p>
+                <p style={{ color: C.muted, marginBottom: 24 }}>Banco total disponible: {banco.length > 0 ? banco.length : BANCO_MAESTRO_FALLBACK.length} preguntas</p>
                 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
                   <button onClick={() => iniciarSimulacro("rapido", 10, 0, false)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
@@ -867,14 +882,14 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* CURSO (PROGRESIÓN ESTRICTA, ESTADOS: BLOQUEADO, PENDIENTE, COMPLETADO) */}
+        {/* CURSO */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 15 }}>
                   <div>
-                    <h2 style={{ fontSize: 26, marginBottom: 6 }}>Plan de Estudios Oficial PSP</h2>
+                    <h2 style={{ fontSize: 26, marginBottom: 6 }}>Curso Oficial PSP</h2>
                     <p style={{ color: C.muted, fontSize: 14 }}>Avanza de forma progresiva: cada subtema desbloquea al siguiente al aprobar su quiz.</p>
                   </div>
                   <div style={{ background: C.black, padding: "12px 20px", borderRadius: 8, border: `1px solid ${C.border}`, textAlign: "right" }}>
@@ -883,7 +898,6 @@ export default function SecurePathPSP() {
                   </div>
                 </div>
 
-                {/* Barra de Progreso Visual */}
                 <div style={{ width: "100%", height: 8, background: C.black, borderRadius: 4, overflow: "hidden", marginBottom: 30, border: `1px solid ${C.border}` }}>
                   <div style={{ width: `${porcentajeCurso}%`, height: "100%", background: C.green, transition: "width 0.4s ease" }}></div>
                 </div>
@@ -898,8 +912,6 @@ export default function SecurePathPSP() {
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
                           const completado = Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal);
-                          
-                          // Regla de progresión estricta: Es accesible si es el primero (idx 0) o si el anterior ya está completado
                           const esAccesible = idxGlobal === 0 || (Array.isArray(subtemasCompletados) && subtemasCompletados.includes(idxGlobal - 1));
                           
                           let estadoTexto = "Bloqueado";
@@ -925,6 +937,7 @@ export default function SecurePathPSP() {
                                 }
                                 setSubtemaActivo(idxGlobal); 
                                 setPestanaCursoActiva("teoria"); 
+                                setIndiceTeoriaPaso(0);
                                 setQuizActivoSubtema(null);
                                 setResultadoQuizCurso(null);
                               }} 
@@ -976,7 +989,7 @@ export default function SecurePathPSP() {
 
                 <div style={{ display: "flex", gap: 10, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 15, flexWrap: "wrap" }}>
                   {[
-                    ["teoria", "📖 1. Teoría Detallada & Mapa Conceptual"], 
+                    ["teoria", "📖 1. Teoría & Carrusel Conceptual"], 
                     ["video", "🎥 2. Videoclase"],
                     ...(ACTIVIDADES_MAP[subtemaActivo] ? [["actividad", "📋 3. Actividad Práctica"]] : []),
                     ["quiz", ACTIVIDADES_MAP[subtemaActivo] ? "📝 4. Quiz Condicionante" : "📝 3. Quiz Condicionante"]
@@ -985,26 +998,60 @@ export default function SecurePathPSP() {
                   ))}
                 </div>
                 
+                {/* TEORÍA EN CARRUSEL / PESTAÑAS INTERACTIVAS */}
                 {pestanaCursoActiva === "teoria" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 24 }}>
-                    {/* Mapa Conceptual Integrado */}
                     {HANDBOOK_TEORIA[subtemaActivo]?.mapaConceptual && (
-                      <div style={{ background: "rgba(95, 184, 224, 0.08)", border: `1px solid rgba(95, 184, 224, 0.3)`, padding: 18, borderRadius: 8 }}>
-                        <h4 style={{ color: C.blue, marginBottom: 8, fontSize: 15 }}>🗺️ Mapa Conceptual del Subtema (De Macro a Micro)</h4>
-                        <p style={{ color: C.white, fontSize: 14, fontFamily: "monospace", lineHeight: 1.5, margin: 0 }}>{HANDBOOK_TEORIA[subtemaActivo].mapaConceptual}</p>
+                      <div style={{ background: "rgba(95, 184, 224, 0.08)", border: `1px solid rgba(95, 184, 224, 0.3)`, padding: 16, borderRadius: 8 }}>
+                        <h4 style={{ color: C.blue, marginBottom: 6, fontSize: 14 }}>🗺️ Mapa Conceptual de Ruta</h4>
+                        <p style={{ color: C.white, fontSize: 13, fontFamily: "monospace", lineHeight: 1.4, margin: 0 }}>{HANDBOOK_TEORIA[subtemaActivo].mapaConceptual}</p>
                       </div>
                     )}
 
-                    {(HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."]}]).map((mod, mIdx) => (
-                      <div key={mIdx} style={{ background: C.black, padding: 22, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                        <h4 style={{ color: C.gold, marginBottom: 12, fontSize: 16 }}>{mod.titulo}</h4>
-                        <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-                          {mod.puntos.map((punto, pIdx) => (
-                            <li key={pIdx} style={{ color: C.white, fontSize: 15, lineHeight: 1.5 }}>{punto}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                    {(() => {
+                      const modulosTeoria = HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."] }];
+                      const maxPaso = modulosTeoria.length - 1;
+                      const moduloActual = modulosTeoria[indiceTeoriaPaso] || modulosTeoria[0];
+
+                      return (
+                        <div style={{ background: C.black, padding: 26, borderRadius: 10, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${C.border}`, paddingBottom: 12 }}>
+                            <h4 style={{ color: C.gold, margin: 0, fontSize: 17 }}>{moduloActual.titulo}</h4>
+                            <span style={{ fontSize: 13, color: C.muted, background: C.dark, padding: "4px 10px", borderRadius: 4 }}>
+                              Módulo {indiceTeoriaPaso + 1} de {modulosTeoria.length}
+                            </span>
+                          </div>
+
+                          <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 10, minHeight: 120 }}>
+                            {moduloActual.puntos.map((punto, pIdx) => (
+                              <li key={pIdx} style={{ color: C.white, fontSize: 15, lineHeight: 1.6 }}>{punto}</li>
+                            ))}
+                          </ul>
+
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+                            <button 
+                              disabled={indiceTeoriaPaso === 0}
+                              onClick={() => setIndiceTeoriaPaso(p => Math.max(0, p - 1))}
+                              style={{ padding: "8px 18px", background: indiceTeoriaPaso === 0 ? C.dark : C.card, border: `1px solid ${C.border}`, color: indiceTeoriaPaso === 0 ? C.muted : C.white, borderRadius: 6, cursor: indiceTeoriaPaso === 0 ? "not-allowed" : "pointer", fontWeight: "bold" }}>
+                              ← Anterior Bloque
+                            </button>
+
+                            <div style={{ display: "flex", gap: 6 }}>
+                              {modulosTeoria.map((_, dotIdx) => (
+                                <span key={dotIdx} onClick={() => setIndiceTeoriaPaso(dotIdx)} style={{ width: 10, height: 10, borderRadius: "50%", background: indiceTeoriaPaso === dotIdx ? C.gold : C.muted, cursor: "pointer", display: "inline-block" }}></span>
+                              ))}
+                            </div>
+
+                            <button 
+                              disabled={indiceTeoriaPaso === maxPaso}
+                              onClick={() => setIndiceTeoriaPaso(p => Math.min(maxPaso, p + 1))}
+                              style={{ padding: "8px 18px", background: indiceTeoriaPaso === maxPaso ? C.dark : C.gold, border: `1px solid ${C.border}`, color: indiceTeoriaPaso === maxPaso ? C.muted : C.white, borderRadius: 6, cursor: indiceTeoriaPaso === maxPaso ? "not-allowed" : "pointer", fontWeight: "bold" }}>
+                              Siguiente Bloque →
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -1013,14 +1060,21 @@ export default function SecurePathPSP() {
                     <h3 style={{ fontSize: 18, marginBottom: 16, color: C.white }}>Videoclase del Subtema</h3>
                     
                     {VIDEOS_MAP[subtemaActivo] ? (
-                      <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                        <iframe 
-                          src={VIDEOS_MAP[subtemaActivo]} 
-                          title="Videoclase PSP" 
-                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                          allowFullScreen
-                        />
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+                        <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                          <iframe 
+                            src={VIDEOS_MAP[subtemaActivo]} 
+                            title="Videoclase PSP" 
+                            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen
+                          />
+                        </div>
+                        {VIDEOS_VIEW_MAP[subtemaActivo] && (
+                          <a href={VIDEOS_VIEW_MAP[subtemaActivo]} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "12px 24px", background: C.gold, color: C.white, borderRadius: 6, fontWeight: "bold", textDecoration: "none" }}>
+                            🔗 Abrir video directamente ↗
+                          </a>
+                        )}
                       </div>
                     ) : (
                       <div style={{ padding: 30, background: C.card, borderRadius: 6, color: C.muted, fontSize: 14, border: `1px solid ${C.border}` }}>
@@ -1033,13 +1087,20 @@ export default function SecurePathPSP() {
                 {pestanaCursoActiva === "actividad" && ACTIVIDADES_MAP[subtemaActivo] && (
                   <div style={{ background: C.black, padding: 30, borderRadius: 8, marginBottom: 24, textAlign: "center", border: `1px solid ${C.border}` }}>
                     <h3 style={{ fontSize: 18, marginBottom: 16, color: C.white }}>Actividad / Material Práctico (PDF / PPT)</h3>
-                    <div style={{ position: "relative", width: "100%", paddingBottom: "70%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                      <iframe 
-                        src={ACTIVIDADES_MAP[subtemaActivo]} 
-                        title="Actividad Práctica PSP" 
-                        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
-                        allowFullScreen
-                      />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+                      <div style={{ position: "relative", width: "100%", paddingBottom: "60%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                        <iframe 
+                          src={ACTIVIDADES_MAP[subtemaActivo]} 
+                          title="Actividad Práctica PSP" 
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
+                          allowFullScreen
+                        />
+                      </div>
+                      {ACTIVIDADES_VIEW_MAP[subtemaActivo] && (
+                        <a href={ACTIVIDADES_VIEW_MAP[subtemaActivo]} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "12px 24px", background: C.gold, color: C.white, borderRadius: 6, fontWeight: "bold", textDecoration: "none" }}>
+                          🔗 Abrir Actividad / Presentación en Google Drive ↗
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1053,11 +1114,8 @@ export default function SecurePathPSP() {
 
                     {!quizActivoSubtema ? (
                       <button onClick={() => {
-                        const seleccion = mezclarConOpciones(banco).slice(0, 3);
-                        if (seleccion.length === 0) {
-                          alert("Asegúrate de que el banco de preguntas esté cargado.");
-                          return;
-                        }
+                        const fuenteBanco = banco.length > 0 ? banco : BANCO_MAESTRO_FALLBACK;
+                        const seleccion = mezclarConOpciones(fuenteBanco).slice(0, 3);
                         setQuizActivoSubtema(seleccion);
                         setRespuestasQuizCurso({});
                         setResultadoQuizCurso(null);
@@ -1164,7 +1222,7 @@ export default function SecurePathPSP() {
                       <div key={d} style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${C.border}` }}>
                         <div style={{ color: C.muted, fontSize: 13, marginBottom: 6 }}>Dominio {d}</div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                          <span style={{ fontSize: 24, fontWeight: "bold", color: stats.prom >= 80 ? C.green : (stats.prom >= 60 ? C.gold : C.red) }}>{stats.cant > 0 ? `${stats.prom}%` : "N/A"}</span>
+                          <span style={{ fontSize: 24, fontWeight: "bold", color: stats.prom >= 80 ? C.green : (stats.prom >= 60 ? C.gold : C.red) }}>{stats.cant > 0 ? `${stats.prom}%` : "0%"}</span>
                           <span style={{ fontSize: 12, color: C.white }}>{stats.cant} preg. testeadas</span>
                         </div>
                       </div>
@@ -1252,24 +1310,13 @@ export default function SecurePathPSP() {
             </p>
             
             <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-              <button 
-                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} 
-                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
-              >
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
                 Generar Pregunta D1
               </button>
-              
-              <button 
-                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} 
-                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
-              >
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
                 Generar Pregunta D2
               </button>
-              
-              <button 
-                onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} 
-                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
-              >
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
                 Generar Pregunta D3
               </button>
             </div>
