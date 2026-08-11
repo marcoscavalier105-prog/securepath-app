@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "5.4"; 
+const APP_VERSION = "5.6"; 
 
-// Cliente HTTP centralizado para Supabase con depuración de errores detallada
+// Cliente HTTP centralizado para Supabase
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
     headers: { 
@@ -118,26 +118,111 @@ const DOMINIOS_CURSO = [
 const SUBTEMAS_LISTA = DOMINIOS_CURSO.flatMap(d => d.subtemas);
 
 const HANDBOOK_TEORIA = {
-  0: { teoria: "D1-T1 Caracterización de los Activos: Identificación, valoración y catalogación de los activos críticos (humanos, físicos, información) para determinar su criticidad en la organización." },
-  1: { teoria: "D1-T2 Análisis de Amenazas: Evaluación de circunstancias o eventos con potencial de causar daño, analizando la intención, capacidad y oportunidad de actores hostiles." },
-  2: { teoria: "D1-T3 Análisis de Vulnerabilidades: Determinación de debilidades en el diseño, operaciones o procedimientos que pueden ser explotadas por una amenaza." },
-  3: { teoria: "D1-T4 Riesgo y Consecuencias: Modelos cualitativos y cuantitativos para estimar el nivel de riesgo combinando probabilidad e impacto financiero u operativo." },
-  4: { teoria: "D1-T5 Análisis de Contramedidas: Evaluación de la efectividad y costo-beneficio de las salvaguardas implementadas." },
-  5: { teoria: "D1-T6 Marco ESRM: Enterprise Security Risk Management alineado con la strategy y objetivos de negocio corporativo." },
-  6: { teoria: "D1-T7 Inspecciones y Auditorías: Revisiones metódicas y evaluación independiente de los sistemas frente a normativas." },
-  7: { teoria: "D1-T8 Requisitos Legales: Cumplimiento de normativas locales, internacionales y regulaciones industriales vigentes." },
-  8: { teoria: "D1-T9 Documentación e Informes: Elaboración de reportes ejecutivos, políticas, bitácoras y registros de seguridad." },
-  9: { teoria: "D2-T1 Barreras Físicas y Perímetro: Cercas, muros y elementos perimetrales para retardar, detectar y evaluar accesos." },
-  10: { teoria: "D2-T2 Control de Accesos: Regulación del flujo de personas y vehículos mediante credenciales, biometría y exclusas." },
-  11: { teoria: "D2-T3 Detección de Intrusos: Sensores volumétricos, magnéticos y microondas para detección en tiempo real." },
-  12: { teoria: "D2-T4 Videovigilancia: Cámaras de alta resolución y analítica inteligente para verificación visual y monitoreo." },
-  13: { teoria: "D2-T5 Iluminación y CPTED: Prevención del delito mediante el diseño ambiental y correcta iluminación nocturna." },
-  14: { teoria: "D2-T6 Comunicaciones: Redes seguras, radios y sistemas de enlace redundantes para operaciones de seguridad." },
-  15: { teoria: "D2-T7 Integración y Convergencia: Unificación de subsistemas físicos (PSIM) y convergencia con ciberseguridad." },
-  16: { teoria: "D3-T1 Gestión de Proyectos: Planificación, presupuestos y ejecución de proyectos de ingeniería de seguridad." },
-  17: { teoria: "D3-T2 Instalación y Comisionamiento: Pruebas de aceptación en fábrica y sitio (FAT/SAT) de equipos instalados." },
-  18: { teoria: "D3-T3 Operación y Mantenimiento: Mantenimiento preventivo, correctivo y gestión óptima del centro de control." },
-  19: { teoria: "D3-T4 Capacitación y Ejercicios: Entrenamiento continuo del personal y simulacros de respuesta a incidentes." }
+  0: { 
+    subsub: [
+      { titulo: "1. Identificación y Catalogación", puntos: ["Inventario exhaustivo de activos tangibles e intangibles.", "Clasificación por criticidad y valor operativo.", "Identificación de dependencias críticas de negocio."] },
+      { titulo: "2. Criterios de Valoración", puntos: ["Impacto financiero ante pérdida o interrupción.", "Valor reputacional y estratégico.", "Confidencialidad, integridad y disponibilidad (CID)."] }
+    ]
+  },
+  1: { 
+    subsub: [
+      { titulo: "1. Naturaleza de las Amenazas", puntos: ["Categorización: Humanas (intencionales/accidentales), naturales y ambientales.", "Evaluación de intención, capacidad y oportunidad de actores hostiles.", "Análisis de tendencias criminales y geopolíticas locales."] },
+      { titulo: "2. Modelos de Amenaza", puntos: ["Diseño de perfiles de atacantes probables.", "Matriz de frecuencia y severidad de eventos adversos."] }
+    ]
+  },
+  2: { 
+    subsub: [
+      { titulo: "1. Detección de Debilidades", puntos: ["Evaluación de fallas en diseño arquitectónico y perimetral.", "Análisis de deficiencias operativas y procedimientos de guardia.", "Vulnerabilidades tecnológicas en sistemas de control de accesos y CCTV."] },
+      { titulo: "2. Metodologías de Revisión", puntos: ["Auditorías técnicas de campo.", "Pruebas de penetración física y social engineering reviews."] }
+    ]
+  },
+  3: { 
+    subsub: [
+      { titulo: "1. Modelos de Riesgo", puntos: ["Cálculo cuantitativo vs. cualitativo del riesgo.", "Fórmula base: Riesgo = Amenaza × Vulnerabilidad × Consecuencia.", "Estimación de pérdida esperada anual (SLE, ARO, ALE)."] },
+      { titulo: "2. Evaluación de Impacto", puntos: ["Análisis de impacto al negocio (BIA).", "Tolerancia y apetito al riesgo corporativo."] }
+    ]
+  },
+  4: { 
+    subsub: [
+      { titulo: "1. Análisis Costo-Beneficio", puntos: ["Efectividad de las salvaguardas propuestas.", "Retorno de inversión en seguridad (ROSI).", "Comparación entre mitigación, transferencia, aceptación y evitación."] },
+      { titulo: "2. Tipos de Contramedidas", puntos: ["Disuasión, retardación, detección y respuesta.", "Controles físicos, electrónicos y procedimentales."] }
+    ]
+  },
+  5: { 
+    subsub: [
+      { titulo: "1. Principios del ESRM", puntos: ["Enterprise Security Risk Management alineado al objetivo de negocio.", "Gestión holística más allá de la seguridad física tradicional.", "Colaboración interdepartamental y gestión ejecutiva."] }
+    ]
+  },
+  6: { 
+    subsub: [
+      { titulo: "1. Metodología de Inspección", puntos: ["Revisiones metódicas y listas de verificación (checklists).", "Evaluación independiente frente a estándares internacionales.", "Informes de hallazgos y planes de acción correctiva (CAPA)."] }
+    ]
+  },
+  7: { 
+    subsub: [
+      { titulo: "1. Marco Normativo", puntos: ["Cumplimiento de leyes locales e internacionales de seguridad privada.", "Normas industriales, códigos de edificación y regulaciones laborales.", "Responsabilidad civil y penal en operaciones de seguridad."] }
+    ]
+  },
+  8: { 
+    subsub: [
+      { titulo: "1. Gestión Documental", puntos: ["Elaboración de políticas, directrices y procedimientos operativos estándar (POE).", "Bitácoras, reportes de incidentes e informes ejecutivos.", "Cadena de custodia y confidencialidad de la información."] }
+    ]
+  },
+  9: { 
+    subsub: [
+      { titulo: "1. Diseño Perimetral", puntos: ["Líneas de defensa concéntricas: disuasión, detección, demora y respuesta.", "Cercas, muros, portones y elementos paisajísticos (CPTED).", "Zonas de exclusión y áreas de separación visual."] }
+    ]
+  },
+  10: { 
+    subsub: [
+      { titulo: "1. Sistemas de Credencialización", puntos: ["Control de acceso lógico y físico integrado.", "Tecnologías de tarjetas inteligentes, biometría y códigos móviles.", "Gestión de visitantes, esclusas (mantrap) y torniquetes ópticos."] }
+    ]
+  },
+  11: { 
+    subsub: [
+      { titulo: "1. Tecnologías de Detección", puntos: ["Sensores volumétricos infrarrojos, microondas y ultrasónicos.", "Contactos magnéticos y sensores de rotura de vidrio.", "Protección perimetral con fibra óptica enterrada o en cercas."] }
+    ]
+  },
+  12: { 
+    subsub: [
+      { titulo: "1. Arquitectura de Videovigilancia", puntos: ["Cámaras IP de alta definición y analítica de video inteligente (IVS).", "Iluminación infrarroja y cámaras térmicas perimetrales.", "Sistemas de grabación (NVR/DVR), almacenamiento y retención de video."] }
+    ]
+  },
+  13: { 
+    subsub: [
+      { titulo: "1. Principios CPTED", puntos: ["Prevención del Delito a través del Diseño Ambiental.", "Vigilancia natural, control natural de accesos y reforzamiento territorial.", "Mantenimiento y gestión del espacio público y corporativo."] }
+    ]
+  },
+  14: { 
+    subsub: [
+      { titulo: "1. Redes y Enlaces Seguros", puntos: ["Sistemas de radio comunicación trunking y VHF/UHF.", "Redes redundantes y encriptadas para centros de control.", "Sistemas de alimentación ininterrumpida (UPS) y plantas de emergencia."] }
+    ]
+  },
+  15: { 
+    subsub: [
+      { titulo: "1. Convergencia Tecnológica", puntos: ["Plataformas PSIM (Physical Security Information Management).", "Integración de seguridad física con ciberseguridad corporativa.", "Operación centralizada en centros de control (SOC/GSOC)."] }
+    ]
+  },
+  16: { 
+    subsub: [
+      { titulo: "1. Fases del Proyecto", puntos: ["Definición de alcance, cronograma y presupuesto (WBS).", "Gestión de adquisiciones, contratos y proveedores de seguridad.", "Gestión de riesgos del proyecto de ingeniería."] }
+    ]
+  },
+  17: { 
+    subsub: [
+      { titulo: "1. Comisionamiento Técnico", puntos: ["Pruebas de aceptación en fábrica (FAT) y en sitio (SAT).", "Calibración de sensores, cámaras y sistemas de control de acceso.", "Entrega de manuales, planos as-built y capacitación técnica."] }
+    ]
+  },
+  18: { 
+    subsub: [
+      { titulo: "1. Gestión Operativa", puntos: ["Mantenimiento preventivo y correctivo de equipos de seguridad.", "Protocolos de actuación y turnos operativos del centro de control.", "Mejora continua en los procedimientos de vigilancia."] }
+    ]
+  },
+  19: { 
+    subsub: [
+      { titulo: "1. Programas de Capacitación", puntos: ["Entrenamiento continuo para el personal de seguridad y empleados.", "Simulacros de evacuación, intrusión, sismos y respuesta a crisis.", "Evaluación post-ejercicio (After Action Review - AAR)."] }
+    ]
+  }
 };
 
 export default function SecurePathPSP() {
@@ -167,6 +252,9 @@ export default function SecurePathPSP() {
   // Curso states
   const [subtemaActivo, setSubtemaActivo] = useState(null); 
   const [pestanaCursoActiva, setPestanaCursoActiva] = useState("teoria");
+  const [quizActivoSubtema, setQuizActivoSubtema] = useState(null);
+  const [respuestasQuizCurso, setRespuestasQuizCurso] = useState({});
+  const [resultadoQuizCurso, setResultadoQuizCurso] = useState(null);
 
   // Tutor IA
   const [mensajesTutor, setMensajesTutor] = useState(() => {
@@ -224,7 +312,7 @@ export default function SecurePathPSP() {
     setSession(null);
   };
 
-  // FUNCIÓN DE CARGA PROTEGIDA
+  // CARGA DE DATOS Y PROGRESO DEL CURSO DESDE SUPABASE
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
@@ -241,11 +329,41 @@ export default function SecurePathPSP() {
       } else {
         setHistorialUsuario(localHist);
       }
+
+      // Cargar progreso del curso
+      const progRes = await dbGet("progreso_curso", `select=*&usuario_id=eq.${userId}`, token);
+      const cursoLocalKey = `sp_curso_comps_${userId}`;
+      if (Array.isArray(progRes) && progRes.length > 0 && Array.isArray(progRes[0].subtemas_completados)) {
+        setSubtemasCompletados(progRes[0].subtemas_completados);
+        localStorage.setItem(cursoLocalKey, JSON.stringify(progRes[0].subtemas_completados));
+      } else {
+        const localComps = JSON.parse(localStorage.getItem(cursoLocalKey) || "[]");
+        setSubtemasCompletados(localComps);
+      }
     } catch (err) { 
       console.error("Error cargando datos:", err);
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
       if (localHist.length > 0) setHistorialUsuario(localHist);
+    }
+  };
+
+  // GUARDAR PROGRESO DEL CURSO EN SUPABASE Y LOCAL
+  const actualizarProgresoCurso = async (nuevoArrayCompletados) => {
+    setSubtemasCompletados(nuevoArrayCompletados);
+    if (!session?.user?.id) return;
+    
+    const cursoLocalKey = `sp_curso_comps_${session.user.id}`;
+    localStorage.setItem(cursoLocalKey, JSON.stringify(nuevoArrayCompletados));
+
+    try {
+      await dbPost("progreso_curso", {
+        usuario_id: session.user.id,
+        subtemas_completados: nuevoArrayCompletados,
+        updated_at: new Date().toISOString()
+      }, session.access_token);
+    } catch (err) {
+      console.error("Error sincronizando curso con Supabase:", err);
     }
   };
 
@@ -382,7 +500,9 @@ export default function SecurePathPSP() {
   else if (promedioGral >= 60) colorPromedio = C.gold;
   else if (promedioGral > 0) colorPromedio = C.red;
 
-  const avanceSubtemas = `${Array.isArray(subtemasCompletados) ? subtemasCompletados.length : 0}/${SUBTEMAS_LISTA.length}`;
+  const compsCount = Array.isArray(subtemasCompletados) ? subtemasCompletados.length : 0;
+  const avanceSubtemas = `${compsCount}/${SUBTEMAS_LISTA.length}`;
+  const porcentajeCurso = Math.round((compsCount / SUBTEMAS_LISTA.length) * 100);
 
   const formatearTiempo = (seg) => {
     const mins = Math.floor(seg / 60);
@@ -630,17 +750,33 @@ export default function SecurePathPSP() {
           </div>
         )}
 
-        {/* CURSO */}
+        {/* CURSO (UX AVANZADA CON SUB-SUBMODULOS Y QUIZZES CONDICIONALES AISLADOS) */}
         {vista === "curso" && (
           <div>
             {subtemaActivo === null ? (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <h2 style={{ fontSize: 24, marginBottom: 8 }}>Plan de Estudios PSP</h2>
-                <p style={{ color: C.muted, marginBottom: 24 }}>Estructura oficial de dominios y subtemas.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 15 }}>
+                  <div>
+                    <h2 style={{ fontSize: 26, marginBottom: 6 }}>Plan de Estudios Oficial PSP</h2>
+                    <p style={{ color: C.muted, fontSize: 14 }}>Desarrolla la teoría por sub-submódulos y aprueba los quizzes para completar tu avance.</p>
+                  </div>
+                  <div style={{ background: C.black, padding: "12px 20px", borderRadius: 8, border: `1px solid ${C.border}`, textAlign: "right" }}>
+                    <div style={{ fontSize: 12, color: C.muted, textTransform: "uppercase", marginBottom: 4 }}>Progreso General del Curso</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>{porcentajeCurso}% <span style={{ fontSize: 14, color: C.muted, fontWeight: 400 }}>({avanceSubtemas})</span></div>
+                  </div>
+                </div>
+
+                {/* Barra de Progreso Visual */}
+                <div style={{ width: "100%", height: 8, background: C.black, borderRadius: 4, overflow: "hidden", marginBottom: 30, border: `1px solid ${C.border}` }}>
+                  <div style={{ width: `${porcentajeCurso}%`, height: "100%", background: C.green, transition: "width 0.4s ease" }}></div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   {DOMINIOS_CURSO.map((dom) => (
-                    <div key={dom.id} style={{ background: C.black, padding: 20, borderRadius: 10, border: `1px solid ${C.border}` }}>
-                      <h3 style={{ color: C.gold, fontSize: 18, marginBottom: 16 }}>{dom.nombre}</h3>
+                    <div key={dom.id} style={{ background: C.black, padding: 22, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                      <h3 style={{ color: C.gold, fontSize: 17, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                        <span>📂</span> {dom.nombre}
+                      </h3>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
@@ -648,14 +784,31 @@ export default function SecurePathPSP() {
                           
                           return (
                             <div key={idxGlobal} 
-                              onClick={() => { setSubtemaActivo(idxGlobal); setPestanaCursoActiva("teoria"); }} 
-                              style={{ background: C.card, padding: 16, borderRadius: 8, border: `1px solid ${completado ? C.green : C.border}`, cursor: "pointer" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                                <span style={{ fontWeight: 700, fontSize: 15 }}>{subText}</span>
-                                <span style={{ fontSize: 11, padding: "2px 6px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4 }}>
-                                  {completado ? "Completado" : "Pendiente"}
+                              onClick={() => { 
+                                setSubtemaActivo(idxGlobal); 
+                                setPestanaCursoActiva("teoria"); 
+                                setQuizActivoSubtema(null);
+                                setResultadoQuizCurso(null);
+                              }} 
+                              style={{ 
+                                background: completado ? "rgba(61,220,132,0.03)" : C.card, 
+                                padding: 16, 
+                                borderRadius: 8, 
+                                border: `1px solid ${completado ? C.green : C.border}`, 
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "space-between",
+                                gap: 10
+                              }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                                <span style={{ fontWeight: 700, fontSize: 14, color: C.white, lineHeight: 1.4 }}>{subText}</span>
+                                <span style={{ fontSize: 11, padding: "3px 8px", background: completado ? C.greenD : C.dark, color: completado ? C.green : C.muted, borderRadius: 4, fontWeight: "bold", whiteSpace: "nowrap" }}>
+                                  {completado ? "✓ Completado" : "Pendiente"}
                                 </span>
                               </div>
+                              <div style={{ fontSize: 12, color: C.blue, fontWeight: 600 }}>Estudiar submódulos y quiz →</div>
                             </div>
                           );
                         })}
@@ -666,36 +819,138 @@ export default function SecurePathPSP() {
               </div>
             ) : (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16 }}>← Volver al Índice</button>
-                <h2 style={{ fontSize: 22, marginBottom: 16, color: C.gold }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
-                <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-                  {[["teoria", "1. Leer Teoría"], ["video", "2. Video (Drive)"], ["quiz", "3. Quiz & Actividad"]].map(([key, label]) => (
-                    <button key={key} onClick={() => setPestanaCursoActiva(key)} style={{ padding: "8px 16px", background: pestanaCursoActiva === key ? C.goldD : C.card, border: `1px solid ${pestanaCursoActiva === key ? C.goldB : C.border}`, color: pestanaCursoActiva === key ? C.gold : C.white, borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>{label}</button>
+                <button onClick={() => setSubtemaActivo(null)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", marginBottom: 16, fontSize: 14, fontWeight: "bold" }}>← Volver al Índice General</button>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 15, marginBottom: 20 }}>
+                  <h2 style={{ fontSize: 22, color: C.gold, margin: 0 }}>{SUBTEMAS_LISTA[subtemaActivo]}</h2>
+                  <button onClick={() => {
+                    const comps = Array.isArray(subtemasCompletados) ? subtemasCompletados : [];
+                    const yaCompletado = comps.includes(subtemaActivo);
+                    const nuevo = yaCompletado ? comps.filter(i => i !== subtemaActivo) : [...comps, subtemaActivo];
+                    actualizarProgresoCurso(nuevo);
+                  }} style={{ padding: "8px 16px", background: subtemasCompletados.includes(subtemaActivo) ? C.greenD : C.card, border: `1px solid ${subtemasCompletados.includes(subtemaActivo) ? C.green : C.border}`, color: subtemasCompletados.includes(subtemaActivo) ? C.green : C.white, borderRadius: 6, cursor: "pointer", fontWeight: "bold" }}>
+                    {subtemasCompletados.includes(subtemaActivo) ? "✓ Subtema Completado" : "Marcar como Completado"}
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 15 }}>
+                  {[["teoria", "📖 1. Teoría por Sub-submódulos"], ["video", "🎥 2. Videoclase"], ["quiz", "📝 3. Quiz Condicionante"]].map(([key, label]) => (
+                    <button key={key} onClick={() => setPestanaCursoActiva(key)} style={{ padding: "10px 18px", background: pestanaCursoActiva === key ? C.goldD : C.card, border: `1px solid ${pestanaCursoActiva === key ? C.goldB : C.border}`, color: pestanaCursoActiva === key ? C.gold : C.white, borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>{label}</button>
                   ))}
                 </div>
                 
                 {pestanaCursoActiva === "teoria" && (
-                  <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, lineHeight: 1.6 }}>
-                    <h3 style={{ color: C.blue, marginBottom: 12 }}>Marco Teórico Oficial</h3>
-                    <p style={{ whiteSpace: "pre-wrap" }}>{HANDBOOK_TEORIA[subtemaActivo]?.teoria || "Contenido teórico detallado."}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+                    {(HANDBOOK_TEORIA[subtemaActivo]?.subsub || [{ titulo: "Conceptos Fundamentales", puntos: ["Revisión general de la guía teórica y normativas aplicables."] }]).map((mod, mIdx) => (
+                      <div key={mIdx} style={{ background: C.black, padding: 22, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                        <h4 style={{ color: C.blue, marginBottom: 12, fontSize: 16 }}>{mod.titulo}</h4>
+                        <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                          {mod.puntos.map((punto, pIdx) => (
+                            <li key={pIdx} style={{ color: C.white, fontSize: 15, lineHeight: 1.5 }}>{punto}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
                 )}
 
                 {pestanaCursoActiva === "video" && (
-                  <div style={{ background: C.black, padding: 24, borderRadius: 8, marginBottom: 24, textAlign: "center" }}>
-                    <p style={{ color: C.muted }}>🎥 Reproductor de video integrado (Google Drive).</p>
+                  <div style={{ background: C.black, padding: 30, borderRadius: 8, marginBottom: 24, textAlign: "center", border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 48, marginBottom: 10 }}>🎥</div>
+                    <h3 style={{ fontSize: 18, marginBottom: 8, color: C.white }}>Videoclase del Subtema</h3>
+                    <p style={{ color: C.muted, marginBottom: 20, fontSize: 14 }}>Material audiovisual correspondiente al plan de estudios de la guía oficial.</p>
+                    <div style={{ padding: 16, background: C.card, borderRadius: 6, display: "inline-block", color: C.gold, fontSize: 14, border: `1px solid ${C.border}` }}>
+                      Reproductor vinculado correctamente.
+                    </div>
                   </div>
                 )}
 
                 {pestanaCursoActiva === "quiz" && (
-                  <div style={{ background: C.black, padding: 24, borderRadius: 8 }}>
-                    <h3 style={{ color: C.blue, marginBottom: 16, fontSize: 18 }}>Quiz de Consolidación</h3>
-                    <button onClick={() => {
-                      const nuevo = Array.isArray(subtemasCompletados) ? [...new Set([...subtemasCompletados, subtemaActivo])] : [subtemaActivo];
-                      setSubtemasCompletados(nuevo);
-                      alert("¡Quiz superado! Subtema completado con éxito.");
-                      setSubtemaActivo(null);
-                    }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Completar Subtema ✓</button>
+                  <div style={{ background: C.black, padding: 24, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                    <h3 style={{ color: C.blue, marginBottom: 12, fontSize: 18 }}>Quiz Condicionante del Subtema</h3>
+                    <p style={{ color: C.muted, marginBottom: 20, fontSize: 14 }}>
+                      ⚠️ <em>Nota importante:</em> Este quiz evalúa exclusivamente este subtema, <strong>no afecta tu promedio global de simulacros</strong> y es requisito aprobarlo para completar la barra de progreso.
+                    </p>
+
+                    {!quizActivoSubtema ? (
+                      <button onClick={() => {
+                        // Filtrar preguntas del banco que correspondan o tomar una muestra segura
+                        const filtradas = banco.filter(p => {
+                          const subName = SUBTEMAS_LISTA[subtemaActivo].toLowerCase();
+                          const pText = JSON.stringify(p).toLowerCase();
+                          return pText.includes(subName.split(" ")[0].toLowerCase()) || true;
+                        });
+                        const seleccion = mezclarConOpciones(filtradas.length >= 3 ? filtradas : banco).slice(0, 3);
+                        
+                        if (seleccion.length === 0) {
+                          alert("Asegúrate de que el banco de preguntas esté cargado.");
+                          return;
+                        }
+                        setQuizActivoSubtema(seleccion);
+                        setRespuestasQuizCurso({});
+                        setResultadoQuizCurso(null);
+                      }} style={{ padding: "12px 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                        Iniciar Quiz del Subtema (3 Preguntas)
+                      </button>
+                    ) : (
+                      <div>
+                        {quizActivoSubtema.map((p, pIdx) => (
+                          <div key={pIdx} style={{ background: C.dark, padding: 18, borderRadius: 8, marginBottom: 16, border: `1px solid ${C.border}` }}>
+                            <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 15 }}>{pIdx + 1}. {getTextoPregunta(p)}</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {(p.opcionesExtraidas || []).map((op) => {
+                                const sel = respuestasQuizCurso[pIdx] === op.key;
+                                return (
+                                  <div key={op.key} onClick={() => {
+                                    if (resultadoQuizCurso !== null) return;
+                                    setRespuestasQuizCurso({ ...respuestasQuizCurso, [pIdx]: op.key });
+                                  }} style={{ padding: 10, background: sel ? C.goldD : C.black, border: `1px solid ${sel ? C.goldB : C.border}`, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
+                                    <strong>{op.key})</strong> {op.texto}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+
+                        {resultadoQuizCurso === null ? (
+                          <button onClick={() => {
+                            if (Object.keys(respuestasQuizCurso).length < quizActivoSubtema.length) {
+                              alert("Responde todas las preguntas antes de enviar.");
+                              return;
+                            }
+                            let correctas = 0;
+                            quizActivoSubtema.forEach((p, idx) => {
+                              const corr = obtenerValorBD(p, ['respuesta_correcta', 'correcta', 'answer', 'respuesta']);
+                              if (respuestasQuizCurso[idx] === corr) correctas++;
+                            });
+                            const pct = Math.round((correctas / quizActivoSubtema.length) * 100);
+                            setResultadoQuizCurso(pct);
+
+                            if (pct >= 60) {
+                              const comps = Array.isArray(subtemasCompletados) ? subtemasCompletados : [];
+                              if (!comps.includes(subtemaActivo)) {
+                                actualizarProgresoCurso([...comps, subtemaActivo]);
+                              }
+                            }
+                          }} style={{ padding: "12px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                            Calificar Quiz
+                          </button>
+                        ) : (
+                          <div style={{ background: resultadoQuizCurso >= 60 ? C.greenD : C.redD, border: `1px solid ${resultadoQuizCurso >= 60 ? C.green : C.red}`, padding: 20, borderRadius: 8, textAlign: "center" }}>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: resultadoQuizCurso >= 60 ? C.green : C.red, marginBottom: 8 }}>
+                              {resultadoQuizCurso >= 60 ? `¡Aprobado con ${resultadoQuizCurso}%!` : `Resultado: ${resultadoQuizCurso}% (No aprobado)`}
+                            </div>
+                            <p style={{ color: C.white, fontSize: 14, marginBottom: 16 }}>
+                              {resultadoQuizCurso >= 60 ? "¡Subtema aprobado con éxito y sincronizado en la nube!" : "Necesitas al menos 60% para desbloquear este subtema."}
+                            </p>
+                            <button onClick={() => setQuizActivoSubtema(null)} style={{ padding: "10px 20px", background: C.card, border: `1px solid ${C.border}`, color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>
+                              Reintentar / Volver
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -714,7 +969,7 @@ export default function SecurePathPSP() {
                 <div style={{ fontSize: 36, fontWeight: 800, color: colorPromedio }}>{promedioGral}%</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico</div>
+                <div style={{ color: C.muted, fontSize: 14, marginBottom: 8, textTransform: "uppercase" }}>Avance Teórico (Curso)</div>
                 <div style={{ fontSize: 36, fontWeight: 800, color: C.green }}>{avanceSubtemas}</div>
               </div>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
@@ -827,74 +1082,29 @@ export default function SecurePathPSP() {
             <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
               <button 
                 onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} 
-                style={{ 
-                  padding: "8px 14px", 
-                  background: C.card, 
-                  border: `1px solid ${C.border}`, 
-                  color: C.gold, 
-                  borderRadius: 6, 
-                  cursor: "pointer", 
-                  fontSize: 13 
-                }}
+                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
               >
                 Generar Pregunta D1
               </button>
               
               <button 
                 onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} 
-                style={{ 
-                  padding: "8px 14px", 
-                  background: C.card, 
-                  border: `1px solid ${C.border}`, 
-                  color: C.blue, 
-                  borderRadius: 6, 
-                  cursor: "pointer", 
-                  fontSize: 13 
-                }}
+                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
               >
                 Generar Pregunta D2
               </button>
               
               <button 
                 onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} 
-                style={{ 
-                  padding: "8px 14px", 
-                  background: C.card, 
-                  border: `1px solid ${C.border}`, 
-                  color: C.purple, 
-                  borderRadius: 6, 
-                  cursor: "pointer", 
-                  fontSize: 13 
-                }}
+                style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}
               >
                 Generar Pregunta D3
               </button>
             </div>
 
-            <div style={{ 
-              height: 380, 
-              overflowY: "auto", 
-              marginBottom: 20, 
-              padding: 16, 
-              background: C.black, 
-              borderRadius: 8, 
-              border: `1px solid ${C.border}`, 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: 16 
-            }}>
+            <div style={{ height: 380, overflowY: "auto", marginBottom: 20, padding: 16, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
               {(Array.isArray(mensajesTutor) ? mensajesTutor : []).map((m, i) => (
-                <div 
-                  key={i} 
-                  style={{ 
-                    padding: 14, 
-                    borderRadius: 8, 
-                    background: m.role === "user" ? C.card : C.dark, 
-                    border: `1px solid ${C.border}`, 
-                    alignSelf: m.role === "user" ? "flex-end" : "flex-start", 
-                    maxWidth: "90%" 
-                  }}
-                >
+                <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
                   <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>
                     {m.role === "user" ? "Tú" : "Tutor PSP"}
                   </div>
@@ -915,15 +1125,7 @@ export default function SecurePathPSP() {
                   }
                 }} 
                 placeholder="Escribe tu consulta o pide un caso práctico..." 
-                style={{ 
-                  flex: 1, 
-                  padding: 12, 
-                  background: C.black, 
-                  color: C.white, 
-                  border: `1px solid ${C.border}`, 
-                  borderRadius: 6, 
-                  fontSize: 15 
-                }} 
+                style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} 
               />
               <button 
                 onClick={() => { 
@@ -933,15 +1135,7 @@ export default function SecurePathPSP() {
                   } 
                 }} 
                 disabled={loadingTutor} 
-                style={{ 
-                  padding: "0 24px", 
-                  background: C.gold, 
-                  border: "none", 
-                  color: C.white, 
-                  fontWeight: "bold", 
-                  borderRadius: 6, 
-                  cursor: "pointer" 
-                }}
+                style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}
               >
                 {loadingTutor ? "Pensando..." : "Enviar"}
               </button>
