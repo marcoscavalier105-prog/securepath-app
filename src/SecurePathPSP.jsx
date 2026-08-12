@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // ─── CONFIGURACIÓN DE SUPABASE Y VERSIONES ──────────────────────────────────
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
-const APP_VERSION = "6.2"; 
+const APP_VERSION = "6.3"; 
 
 const sb = async (path, opts = {}) => {
   const res = await fetch(`${SUPABASE_URL}${path}`, {
@@ -31,7 +31,7 @@ const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
 
-// ─── BANCO MAESTRO DE RESPALDO PSP ──────────────────────────────────────────
+// ─── BANCO MAESTRO DE RESPALDO PSP AMPLIADO (ROBUSTO) ───────────────────────
 const BANCO_MAESTRO_FALLBACK = [
   {
     id: 1,
@@ -116,6 +116,132 @@ const BANCO_MAESTRO_FALLBACK = [
     ],
     respuesta_correcta: "B",
     explicacion: "Las barreras perimetrales buscan la disuasión visual, la detección temprana y el retardo físico del acceso no autorizado."
+  },
+  {
+    id: 7,
+    dominio: 2,
+    subtema: "D2-T2 Control de Accesos",
+    pregunta: "En un sistema de control de accesos, ¿qué característica define a una autenticación de doble factor (2FA) verdaderamente robusta?",
+    opciones: [
+      { key: "A", texto: "Utilizar dos tarjetas de proximidad idénticas en lectores distintos." },
+      { key: "B", texto: "Combinar dos factores de categorías diferentes (ej. algo que sabes y algo que eres)." },
+      { key: "C", texto: "Exigir dos claves numéricas consecutivas ingresadas en el mismo teclado." },
+      { key: "D", texto: "Registrar el ingreso mediante dos vigilantes diferentes de forma simultánea." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "La autenticación robusta de múltiples factores exige combinar elementos de distinta naturaleza: conocimiento (PIN), posesión (tarjeta) e inherencia (biometría)."
+  },
+  {
+    id: 8,
+    dominio: 2,
+    subtema: "D2-T3 Detección de Intrusos",
+    pregunta: "¿Cuál es la principal limitación operativa de los sensores volumétricos infrarrojos pasivos (PIR) en exteriores?",
+    opciones: [
+      { key: "A", texto: "Consumen demasiada energía eléctrica en comparación con la fibra óptica." },
+      { key: "B", texto: "Son altamente susceptibles a falsas alarmas provocadas por cambios térmicos y corrientes de aire." },
+      { key: "C", texto: "No pueden operar en total oscuridad nocturna." },
+      { key: "D", texto: "Requieren contacto físico directo con el intruso para activarse." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "Los sensores PIR detectan cambios de temperatura corporal en movimiento, por lo que las corrientes de aire caliente o radiación solar directa en exteriores generan falsas alarmas."
+  },
+  {
+    id: 9,
+    dominio: 2,
+    subtema: "D2-T4 Videovigilancia",
+    pregunta: "En el diseño de sistemas de cámaras (CCTV), ¿qué parámetro normativo define la cantidad de pixeles por metro necesarios para lograr la identificación positiva de un rostro?",
+    opciones: [
+      { key: "A", texto: "Detección (mínimo 20 px/m)." },
+      { key: "B", texto: "Observación (mínimo 60 px/m)." },
+      { key: "C", texto: "Identificación (mínimo 250 px/m o superior según estándar)." },
+      { key: "D", texto: "Monitoreo general (mínimo 5 px/m)." }
+    ],
+    respuesta_correcta: "C",
+    explicacion: "Los estándares internacionales de videovigilancia establecen densidades de pixeles específicas para cada tarea: monitoreo, detección, reconocimiento e identificación."
+  },
+  {
+    id: 10,
+    dominio: 2,
+    subtema: "D2-T5 Iluminación y CPTED",
+    pregunta: "¿En qué consiste fundamentalmente el principio de 'Vigilancia Natural' dentro de las directrices CPTED?",
+    opciones: [
+      { key: "A", texto: "Instalar sistemas de cámaras PTZ con inteligencia artificial en todo el perímetro." },
+      { key: "B", texto: "Diseñar espacios físicos y visuales para maximizar la visibilidad de los usuarios y reducir oportunidades ocultas para el delito." },
+      { key: "C", texto: "Contratar patrullas caninas las 24 horas del día." },
+      { key: "D", texto: "Colocar muros perimetrales de concreto armado de 4 metros de altura." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "CPTED (Crime Prevention Through Environmental Design) utiliza la vigilancia natural mediante diseño arquitectónico para que los ocupantes supervisen su propio entorno."
+  },
+  {
+    id: 11,
+    dominio: 3,
+    subtema: "D3-T1 Gestión de Proyectos",
+    pregunta: "Durante la fase de implementación de un proyecto de seguridad física, ¿qué documento técnico detalla las pruebas en fábrica antes de realizar el envío a sitio?",
+    opciones: [
+      { key: "A", texto: "SAT (Site Acceptance Test)." },
+      { key: "B", texto: "FAT (Factory Acceptance Test)." },
+      { key: "C", texto: "BIA (Business Impact Analysis)." },
+      { key: "D", texto: "SLA (Service Level Agreement)." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "El FAT (Factory Acceptance Test) se ejecuta en las instalaciones del fabricante para validar el cumplimiento de especificaciones antes de la instalación en campo."
+  },
+  {
+    id: 12,
+    dominio: 3,
+    subtema: "D3-T2 Instalación y Comisionamiento",
+    pregunta: "¿Qué valida una prueba SAT (Site Acceptance Test) en un proyecto de seguridad electrónica?",
+    opciones: [
+      { key: "A", texto: "El funcionamiento integrado y correcto de los equipos ya instalados y cableados en el entorno operativo real." },
+      { key: "B", texto: "Los costos contables y facturas del proveedor internacional." },
+      { key: "C", texto: "La resistencia balística de los materiales en laboratorio." },
+      { key: "D", texto: "La cotización inicial de los equipos comprados." }
+    ],
+    respuesta_correcta: "A",
+    explicacion: "El SAT valida in situ que todo el sistema opere con total estabilidad y cumpla los requerimientos técnicos dentro de la infraestructura del cliente."
+  },
+  {
+    id: 13,
+    dominio: 3,
+    subtema: "D3-T3 Operación y Mantenimiento",
+    pregunta: "En la gestión de centros de control (SOC/GSOC), ¿cuál es el objetivo principal del mantenimiento preventivo frente al reactivo?",
+    opciones: [
+      { key: "A", texto: "Eliminar la necesidad de operadores humanos." },
+      { key: "B", texto: "Minimizar tiempos de inactividad imprevistos y asegurar la confiabilidad continua de los sistemas críticos." },
+      { key: "C", texto: "Reducir los anchos de banda de red al mínimo absoluto." },
+      { key: "D", texto: "Evitar la realización de auditorías anuales." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "El mantenimiento preventivo anticipa fallas mediante revisiones programadas, reduciendo costosas interrupciones operativas imprevistas."
+  },
+  {
+    id: 14,
+    dominio: 3,
+    subtema: "D3-T4 Capacitación y Ejercicios",
+    pregunta: "¿Cuál es el propósito fundamental de realizar simulacros y ejercicios periódicos con el personal de seguridad?",
+    opciones: [
+      { key: "A", texto: "Cumplir un requisito burocrático sin impacto operativo." },
+      { key: "B", texto: "Evaluar la efectividad de los planes de emergencia, validar tiempos de respuesta y corregir desviaciones." },
+      { key: "C", texto: "Reemplazar los manuales de procedimientos escritos." },
+      { key: "D", texto: "Sustituir la necesidad de equipos de protección electrónica." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "Los simulacros prácticos permiten comprobar la asimilación de protocolos, medir tiempos de reacción reales y afinar la coordinación ante incidentes."
+  },
+  {
+    id: 15,
+    dominio: 1,
+    subtema: "D1-T6 Marco ESRM",
+    pregunta: "En el estándar Enterprise Security Risk Management (ESRM) de ASIS, ¿cómo se vincula la gestión de seguridad con la organización?",
+    opciones: [
+      { key: "A", texto: "La seguridad opera de forma totalmente aislada del negocio principal." },
+      { key: "B", texto: "La seguridad gestiona los riesgos alineándose directamente con los objetivos estratégicos y de negocio de la empresa." },
+      { key: "C", texto: "El departamento de seguridad toma el control financiero de toda la corporación." },
+      { key: "D", texto: "La seguridad se limita exclusivamente al cumplimiento legal de extintores." }
+    ],
+    respuesta_correcta: "B",
+    explicacion: "El ESRM alinea la gestión integral de riesgos de seguridad con los objetivos estratégicos del negocio para proteger la continuidad y el valor corporativo."
   }
 ];
 
@@ -255,7 +381,7 @@ const HANDBOOK_TEORIA = {
         ] 
       },
       { 
-        titulo: "3. Metodología ASIS de las 5 Fases (Inventario y Alcance)", 
+        titulo: "3. Metodología ASIS des las 5 Fases (Inventario y Alcance)", 
         puntos: [
           "Fase 1 (Alcance e Inventario): Definición rigurosa de perímetros físicos, lógicos y temporales. Aplicación de la técnica de las 6 superficies (piso, techo y 4 paredes de un recinto).",
           "Enfoques Metodológicos: Top-Down (desde la dirección estratégica hacia las operaciones) y Bottom-Up (desde las instalaciones hacia el corporativo).",
@@ -501,7 +627,9 @@ export default function SecurePathPSP() {
   const cargarDatos = async (userId, token) => {
     try {
       const bancoRes = await dbGet("preguntas", "select=*", token);
-      if (Array.isArray(bancoRes) && bancoRes.length > 0) setBanco(bancoRes);
+      if (Array.isArray(bancoRes) && bancoRes.length > 0) {
+        setBanco(bancoRes);
+      }
 
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
@@ -525,7 +653,8 @@ export default function SecurePathPSP() {
         setSubtemasCompletados(localComps);
       }
     } catch (err) { 
-      console.error("Error cargando datos:", err);
+      console.error("Error cargando datos de Supabase, usando respaldo local/maestro:", err);
+      // Mantiene BANCO_MAESTRO_FALLBACK si falla la tabla preguntas
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
       if (localHist.length > 0) setHistorialUsuario(localHist);
