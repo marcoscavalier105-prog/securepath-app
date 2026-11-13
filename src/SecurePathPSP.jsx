@@ -564,7 +564,7 @@ export default function SecurePathPSP() {
       const saved = localStorage.getItem("sp_tutor_history");
       if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) return parsed; }
     } catch (e) {}
-    return [{ role: "assistant", content: "Hola, soy tu tutor experto en la preparación para el examen PSP. Selecciona un dominio abajo o escribe tu consulta libre." }];
+    return [{ role: "assistant", content: "Hola 👋 Soy tu tutor de IA para la preparación PSP. Puedo generarte preguntas de práctica, explicarte conceptos o armarte casos de estudio. Elige un dominio arriba o escríbeme tu consulta." }];
   });
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
@@ -741,6 +741,74 @@ export default function SecurePathPSP() {
     }
     setLoadingTutor(false);
   };
+
+  // Renderiza markdown ligero (negritas, titulos, listas, codigo) a JSX.
+  // Evita que el tutor muestre # y ** en crudo.
+  const renderMarkdown = (texto) => {
+    if (!texto) return null;
+    const lineas = String(texto).split("\n");
+    const bloques = [];
+    let lista = [];
+    const flushLista = (key) => {
+      if (lista.length) {
+        bloques.push(<ul key={"ul" + key} style={{ margin: "6px 0", paddingLeft: 20 }}>{lista}</ul>);
+        lista = [];
+      }
+    };
+    const inline = (s) => {
+      // **negrita**, *cursiva*, `codigo`
+      const partes = [];
+      let resto = s, k = 0;
+      const re = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/;
+      let m;
+      while ((m = resto.match(re))) {
+        if (m.index > 0) partes.push(resto.slice(0, m.index));
+        if (m[2] != null) partes.push(<strong key={k++} style={{ color: C.white }}>{m[2]}</strong>);
+        else if (m[3] != null) partes.push(<em key={k++}>{m[3]}</em>);
+        else if (m[4] != null) partes.push(<code key={k++} style={{ background: C.black, padding: "1px 5px", borderRadius: 4, fontSize: "0.92em", color: C.gold }}>{m[4]}</code>);
+        resto = resto.slice(m.index + m[0].length);
+      }
+      if (resto) partes.push(resto);
+      return partes;
+    };
+    lineas.forEach((ln, i) => {
+      const t = ln.trim();
+      if (t === "" || /^[-*_]{3,}$/.test(t)) { flushLista(i); return; }
+      const h = t.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { flushLista(i); const lvl = h[1].length; bloques.push(<div key={i} style={{ fontWeight: 700, fontSize: lvl <= 2 ? "1.05em" : "1em", color: C.gold, margin: "10px 0 4px" }}>{inline(h[2])}</div>); return; }
+      const li = t.match(/^[-*]\s+(.*)$/) || t.match(/^\d+\.\s+(.*)$/);
+      if (li) { lista.push(<li key={i} style={{ margin: "3px 0" }}>{inline(li[1])}</li>); return; }
+      flushLista(i);
+      bloques.push(<p key={i} style={{ margin: "6px 0" }}>{inline(t)}</p>);
+    });
+    flushLista("end");
+    return bloques;
+  };
+
+  // Avatar androide del tutor IA (SVG inline, con "pulso" de actividad).
+  const AndroideAvatar = ({ size = 40, pensando = false }) => (
+    <div style={{ width: size, height: size, flex: "none", position: "relative" }}>
+      <div style={{ position: "absolute", inset: -3, borderRadius: "50%", background: `radial-gradient(circle, ${C.purple}55, transparent 70%)`, animation: pensando ? "spPulse 1s ease-in-out infinite" : "none" }} />
+      <svg viewBox="0 0 48 48" width={size} height={size} style={{ position: "relative" }}>
+        <defs>
+          <linearGradient id="andro" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={C.blue} /><stop offset="1" stopColor={C.purple} />
+          </linearGradient>
+        </defs>
+        <rect x="10" y="12" width="28" height="24" rx="8" fill="url(#andro)" />
+        <rect x="13" y="15" width="22" height="18" rx="6" fill={C.black} opacity="0.85" />
+        <circle cx="19" cy="24" r="3" fill={C.green}>
+          {pensando && <animate attributeName="opacity" values="1;0.3;1" dur="0.8s" repeatCount="indefinite" />}
+        </circle>
+        <circle cx="29" cy="24" r="3" fill={C.green}>
+          {pensando && <animate attributeName="opacity" values="0.3;1;0.3" dur="0.8s" repeatCount="indefinite" />}
+        </circle>
+        <rect x="21" y="29" width="6" height="2" rx="1" fill={C.blue} opacity="0.6" />
+        <line x1="24" y1="7" x2="24" y2="12" stroke="url(#andro)" strokeWidth="2" />
+        <circle cx="24" cy="6" r="2" fill={C.green} />
+      </svg>
+    </div>
+  );
 
   if (!session) {
     return (
@@ -1525,60 +1593,77 @@ export default function SecurePathPSP() {
 
         {/* TUTOR IA */}
         {vista === "tutor" && (
-          <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
-            <h2 style={{ fontSize: 24, marginBottom: 6 }}>Tutor IA — Práctica Activa</h2>
-            <p style={{ color: C.muted, marginBottom: 16, fontSize: 14 }}>
-              Haz clic en un dominio para que el tutor te genere un caso o pregunta de práctica inmediata:
-            </p>
-            
-            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.gold, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                Generar Pregunta D1
+          <div style={{ background: `linear-gradient(180deg, ${C.dark}, ${C.black})`, padding: 24, borderRadius: 14, border: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
+            <style>{`
+              @keyframes spPulse { 0%,100% { transform: scale(1); opacity: .6 } 50% { transform: scale(1.25); opacity: 1 } }
+              @keyframes spGlow { 0%,100% { opacity: .25 } 50% { opacity: .5 } }
+              @keyframes spBlink { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+            `}</style>
+            {/* Resplandor de fondo */}
+            <div style={{ position: "absolute", top: -80, right: -60, width: 280, height: 280, borderRadius: "50%", background: `radial-gradient(circle, ${C.purple}, transparent 70%)`, filter: "blur(60px)", opacity: 0.3, animation: "spGlow 4s ease-in-out infinite", pointerEvents: "none" }} />
+
+            {/* Cabecera con androide */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6, position: "relative" }}>
+              <AndroideAvatar size={52} pensando={loadingTutor} />
+              <div>
+                <h2 style={{ fontSize: 22, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                  Tutor IA
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.green, border: `1px solid ${C.green}`, borderRadius: 20, padding: "2px 8px" }}>En línea</span>
+                </h2>
+                <p style={{ color: C.muted, margin: "2px 0 0", fontSize: 13 }}>
+                  {loadingTutor ? "Analizando y preparando tu respuesta…" : "Tu asistente experto en preparación PSP, disponible 24/7"}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, margin: "16px 0", flexWrap: "wrap", position: "relative" }}>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                ⚡ Pregunta D1
               </button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.blue, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                Generar Pregunta D2
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: "rgba(95,184,224,0.12)", border: `1px solid ${C.blue}66`, color: C.blue, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                ⚡ Pregunta D2
               </button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.card, border: `1px solid ${C.border}`, color: C.purple, borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                Generar Pregunta D3
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: "rgba(157,122,255,0.12)", border: `1px solid ${C.purple}66`, color: C.purple, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                ⚡ Pregunta D3
               </button>
             </div>
 
-            <div style={{ height: 380, overflowY: "auto", marginBottom: 20, padding: 16, background: C.black, borderRadius: 8, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ height: 400, overflowY: "auto", marginBottom: 16, padding: 16, background: C.black, borderRadius: 10, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 14, position: "relative" }}>
               {(Array.isArray(mensajesTutor) ? mensajesTutor : []).map((m, i) => (
-                <div key={i} style={{ padding: 14, borderRadius: 8, background: m.role === "user" ? C.card : C.dark, border: `1px solid ${C.border}`, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
-                  <div style={{ fontSize: 12, color: C.gold, marginBottom: 6, fontWeight: "bold" }}>
-                    {m.role === "user" ? "Tú" : "Tutor PSP"}
-                  </div>
-                  <div style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-                    {m.content}
+                <div key={i} style={{ display: "flex", gap: 10, alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "92%", flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
+                  {m.role !== "user" && <AndroideAvatar size={34} />}
+                  <div style={{ padding: "12px 15px", borderRadius: 12, background: m.role === "user" ? C.goldD : C.dark, border: `1px solid ${m.role === "user" ? C.goldB : C.border}`, fontSize: 15, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 11, color: m.role === "user" ? C.gold : C.blue, marginBottom: 4, fontWeight: 700, letterSpacing: ".03em" }}>
+                      {m.role === "user" ? "Tú" : "Tutor PSP"}
+                    </div>
+                    <div>{m.role === "user" ? <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span> : renderMarkdown(m.content)}</div>
                   </div>
                 </div>
               ))}
+              {loadingTutor && (
+                <div style={{ display: "flex", gap: 10, alignSelf: "flex-start", alignItems: "center" }}>
+                  <AndroideAvatar size={34} pensando={true} />
+                  <div style={{ padding: "12px 16px", borderRadius: 12, background: C.dark, border: `1px solid ${C.border}`, display: "flex", gap: 5 }}>
+                    {[0, 1, 2].map(d => <span key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: C.blue, animation: "spBlink 1s ease-in-out infinite", animationDelay: `${d * 0.2}s` }} />)}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <input 
-                value={inputTutor || ""} 
-                onChange={(e) => setInputTutor(e.target.value)} 
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    enviarTutorConPrompt(inputTutor);
-                  }
-                }} 
-                placeholder="Escribe tu consulta o pide un caso práctico..." 
-                style={{ flex: 1, padding: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 15 }} 
+            <div style={{ display: "flex", gap: 10, position: "relative" }}>
+              <input
+                value={inputTutor || ""}
+                onChange={(e) => setInputTutor(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && inputTutor.trim()) { enviarTutorConPrompt(inputTutor); setInputTutor(""); } }}
+                placeholder="Escribe tu consulta o pide un caso práctico…"
+                style={{ flex: 1, padding: 13, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 15 }}
               />
-              <button 
-                onClick={() => { 
-                  if (inputTutor.trim()) { 
-                    enviarTutorConPrompt(inputTutor); 
-                    setInputTutor(""); 
-                  } 
-                }} 
-                disabled={loadingTutor} 
-                style={{ padding: "0 24px", background: C.gold, border: "none", color: C.white, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}
+              <button
+                onClick={() => { if (inputTutor.trim()) { enviarTutorConPrompt(inputTutor); setInputTutor(""); } }}
+                disabled={loadingTutor}
+                style={{ padding: "0 26px", background: `linear-gradient(135deg, ${C.gold}, #d64a1e)`, border: "none", color: C.white, fontWeight: 700, borderRadius: 8, cursor: loadingTutor ? "default" : "pointer", opacity: loadingTutor ? 0.6 : 1 }}
               >
-                {loadingTutor ? "Pensando..." : "Enviar"}
+                {loadingTutor ? "Pensando…" : "Enviar →"}
               </button>
             </div>
           </div>
