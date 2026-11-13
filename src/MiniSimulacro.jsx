@@ -20,7 +20,7 @@ const C = {
   ink: "#eef4fa", ink2: "#9fb4c9", ink3: "#6b84a0",
   brand: "#f05a28", brand2: "#d64a1e", ok: "#34c77b", d1: "#4aa3e0", d2: "#9b7cf6", d3: "#34c77b",
 };
-const WHATSAPP_NUM = "51999999999"; // ← reemplazar por el número real de SecurePath
+const WHATSAPP_NUM = "51944116759"; // WhatsApp de atención SecurePath (Marcos)
 const URL_PRIVACIDAD = "https://seghum.com/privacidad/";
 const URL_SECUREPATH = "https://seghum.com/securepath/";
 
