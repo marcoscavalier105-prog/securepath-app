@@ -199,11 +199,15 @@ export default function MiniSimulacro() {
             </div>
           )}
           <div style={{ textAlign: "center", margin: "20px 0 8px" }}>
-            <div style={{ color: C.brand, fontWeight: 700, fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>Así enseñamos adentro</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 700, margin: "4px 0" }}>Mira un ejemplo de clase</div>
-            <div style={{ aspectRatio: "16/9", borderRadius: 14, border: `1px solid ${C.line}`, background: "linear-gradient(135deg,#143050,#0c1a2a)", display: "flex", alignItems: "center", justifyContent: "center", margin: "12px 0" }}>
-              <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,.95)", display: "flex", alignItems: "center", justifyContent: "center", color: C.bg, fontSize: "1.4rem" }}>▶</div>
-            </div>
+            <div style={{ color: C.brand, fontWeight: 700, fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>Así sigue el camino</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 700, margin: "4px 0 12px" }}>Mira cómo funciona en 1 minuto</div>
+            <video
+              src="/securepath-mini.mp4"
+              controls
+              playsInline
+              preload="metadata"
+              style={{ width: "100%", maxWidth: 420, aspectRatio: "1/1", borderRadius: 14, border: `1px solid ${C.line}`, background: "#0c1a2a", margin: "0 auto", display: "block" }}
+            />
           </div>
           <div style={{ textAlign: "center", color: C.ink3, fontSize: ".85rem", borderTop: `1px dashed ${C.line}`, paddingTop: 14, marginTop: 10 }}>Para ver <b style={{ color: C.ink2 }}>en qué fallaste</b> y recibir un plan, deja tu contacto 👇</div>
           <button style={{ ...S.btn, marginTop: 16 }} onClick={() => { setError(""); setPantalla("lead"); }}>Ver mis errores y mi plan →</button>
