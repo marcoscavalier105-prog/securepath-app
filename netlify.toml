@@ -5,3 +5,9 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# SPA: toda ruta (incluida /mini) sirve index.html; React decide qué renderizar.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
