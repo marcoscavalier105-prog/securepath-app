@@ -17,7 +17,7 @@ const rpc = async (fn, args = {}) => {
 // Paleta SecurePath
 const C = {
   bg: "#0a1a2b", bg2: "#0e2135", card: "#122942", card2: "#16314d", line: "#24405f",
-  ink: "#eef4fa", ink2: "#9fb4c9", ink3: "#6b84a0",
+  ink: "#eef4fa", ink2: "#c2d2e2", ink3: "#8fa6bd",
   brand: "#f05a28", brand2: "#d64a1e", ok: "#34c77b", d1: "#4aa3e0", d2: "#9b7cf6", d3: "#34c77b",
 };
 const WHATSAPP_NUM = "51944116759"; // WhatsApp de atención SecurePath (Marcos)
@@ -33,6 +33,7 @@ export default function MiniSimulacro() {
   const [form, setForm] = useState({ nombre: "", whatsapp: "", correo: "", consent: false });
   const [token, setToken] = useState(null);
   const [explicaciones, setExplicaciones] = useState([]);
+  const [primeraExplicacion, setPrimeraExplicacion] = useState(null);
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -56,7 +57,9 @@ export default function MiniSimulacro() {
     try {
       const payload = preguntas.map((p) => ({ pregunta_id: p.pregunta_id, opcion: respuestas[p.pregunta_id] || "" }));
       const res = await rpc("calificar_mini", { respuestas: payload });
-      setResultado(res); setPantalla("resultado");
+      setResultado(res);
+      try { const g = await rpc("explicacion_gratis_mini"); if (g && g[0]) setPrimeraExplicacion(g[0]); } catch { /* opcional */ }
+      setPantalla("resultado");
     } catch { setError("No se pudo calificar. Intenta de nuevo."); setPantalla("quiz"); }
   };
 
@@ -83,8 +86,12 @@ export default function MiniSimulacro() {
     : a >= 5 ? "Tienes buen punto de partida. Hay áreas claras por reforzar."
     : "Estás empezando el camino. Un plan estructurado te va a servir muchísimo.";
 
+  const nivel = (a) => a >= 8 ? { label: "Nivel avanzado", bg: "rgba(52,199,123,.15)", color: C.ok }
+    : a >= 5 ? { label: "Nivel intermedio", bg: "rgba(240,166,60,.15)", color: C.warn }
+    : { label: "Nivel inicial", bg: "rgba(74,163,224,.15)", color: C.d1 };
+
   const waLink = resultado
-    ? `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(`Hola, hice el mini simulacro y saqué ${resultado.aciertos}/10. Quiero información del grupo del 1 de diciembre.`)}`
+    ? `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(`Hola, hice el mini simulacro y saqué ${resultado.aciertos}/10. Quiero información del grupo del 15 de diciembre.`)}`
     : "#";
 
   // ─── estilos inline ───
@@ -119,7 +126,7 @@ export default function MiniSimulacro() {
   return (
     <div style={S.wrap}><div style={S.inner}>
       <div style={S.bar}>
-        <span style={S.logo}>Camino <span style={{ color: C.brand }}>seguro</span></span>
+        <span style={S.logo}>Secure<span style={{ color: C.brand }}>Path</span></span>
         <span style={S.pill}>100% gratis</span>
       </div>
 
@@ -130,11 +137,19 @@ export default function MiniSimulacro() {
           <p style={{ color: C.ink2, maxWidth: 440, margin: "0 auto 22px" }}>10 preguntas reales. Descubre tu punto de partida por área en menos de 10 minutos — sin crear cuenta.</p>
           {error && <div style={S.err}>{error}</div>}
           <button style={S.btn} onClick={empezar}>Empezar el simulacro →</button>
-          <div style={{ color: C.ink3, fontSize: ".8rem", marginTop: 14 }}>🔒 No pedimos datos para empezar</div>
+          <div style={{ color: C.ink2, fontSize: ".82rem", marginTop: 12 }}>10 preguntas · menos de 10 min · resultado por área</div>
+          <div style={{ color: C.brand, fontSize: ".82rem", fontWeight: 700, marginTop: 8 }}>Grupo del 15 dic. · 10 cupos</div>
+          <div style={{ color: C.ink3, fontSize: ".78rem", marginTop: 12 }}>🔒 No pedimos datos para empezar</div>
         </div>
       )}
 
-      {pantalla === "cargando" && <div style={{ ...S.card, textAlign: "center", marginTop: 40 }}>Cargando…</div>}
+      {pantalla === "cargando" && (
+        <div style={{ ...S.card, textAlign: "center", marginTop: 40 }}>
+          <div style={{ width: 38, height: 38, margin: "0 auto 14px", border: `3px solid ${C.line}`, borderTopColor: C.brand, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ color: C.ink2 }}>Preparando tus preguntas…</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
 
       {pantalla === "quiz" && preguntas[idx] && (() => {
         const p = preguntas[idx]; const doms = { 1: ["Evaluación", C.d1], 2: ["Diseño", C.d2], 3: ["Implementación", C.d3] };
@@ -171,11 +186,18 @@ export default function MiniSimulacro() {
         <div style={S.card}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: "3rem", fontWeight: 800, color: C.brand }}>{resultado.aciertos}<span style={{ fontSize: "1.2rem", color: C.ink3 }}>/{resultado.total}</span></div>
+            <div style={{ display: "inline-block", margin: "6px 0 4px", padding: "4px 14px", borderRadius: 20, background: nivel(resultado.aciertos).bg, color: nivel(resultado.aciertos).color, fontWeight: 700, fontSize: ".82rem" }}>{nivel(resultado.aciertos).label}</div>
             <div style={{ color: C.ink2, margin: "8px 0 22px" }}>{lectura(resultado.aciertos)}</div>
           </div>
-          <DomBar nombre="Evaluación" v={resultado.d1.aciertos} t={resultado.d1.total} color={C.d1} />
-          <DomBar nombre="Diseño" v={resultado.d2.aciertos} t={resultado.d2.total} color={C.d2} />
-          <DomBar nombre="Implementación" v={resultado.d3.aciertos} t={resultado.d3.total} color={C.d3} />
+          {resultado.d1.total > 0 && <DomBar nombre="Evaluación" v={resultado.d1.aciertos} t={resultado.d1.total} color={C.d1} />}
+          {resultado.d2.total > 0 && <DomBar nombre="Diseño" v={resultado.d2.aciertos} t={resultado.d2.total} color={C.d2} />}
+          {resultado.d3.total > 0 && <DomBar nombre="Implementación" v={resultado.d3.aciertos} t={resultado.d3.total} color={C.d3} />}
+          {primeraExplicacion && (
+            <div style={{ background: "rgba(52,199,123,.08)", border: `1px solid ${C.ok}`, borderRadius: 12, padding: "14px 16px", marginTop: 16 }}>
+              <div style={{ color: C.ok, fontWeight: 700, fontSize: ".78rem", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Una explicación de regalo</div>
+              <div style={{ fontSize: ".9rem", color: C.ink2 }}><b style={{ color: C.ink }}>{primeraExplicacion.pregunta}</b> — Respuesta correcta: {primeraExplicacion.correcta}. {primeraExplicacion.explicacion}</div>
+            </div>
+          )}
           <div style={{ textAlign: "center", margin: "20px 0 8px" }}>
             <div style={{ color: C.brand, fontWeight: 700, fontSize: ".8rem", letterSpacing: ".1em", textTransform: "uppercase" }}>Así enseñamos adentro</div>
             <div style={{ fontSize: "1.1rem", fontWeight: 700, margin: "4px 0" }}>Mira un ejemplo de clase</div>
