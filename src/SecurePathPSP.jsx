@@ -981,6 +981,7 @@ export default function SecurePathPSP() {
                         let correctas = 0;
                         let erroresDetalle = [];
                         let desgloseSubtemas = {};
+                        let respuestasDetalle = [];
 
                         preguntasSimulacro.forEach((p, idx) => {
                           const respUsr = respuestasUsuario[idx];
@@ -995,8 +996,9 @@ export default function SecurePathPSP() {
                           const opcionesArray = p.opcionesExtraidas || [];
                           const textoUsr = opcionesArray.find(o => o.key === respUsr)?.texto || "Sin responder";
                           const textoCorr = opcionesArray.find(o => o.key === respCorr)?.texto || "No especificada";
+                          const esCorrecta = respUsr === respCorr;
 
-                          if (respUsr === respCorr) {
+                          if (esCorrecta) {
                             correctas++;
                             desgloseSubtemas[subName].correctas++;
                           } else {
@@ -1007,40 +1009,68 @@ export default function SecurePathPSP() {
                               explicacion: expFinal
                             });
                           }
+
+                          // Detalle por pregunta para la tabla respuestas_sesion (diagnóstico por dominio).
+                          // Solo se incluye cuando hay un pregunta_id UUID real y una opción válida A-D.
+                          const preguntaIdBD = obtenerValorBD(p, ['id', 'pregunta_id']);
+                          const esUuid = typeof preguntaIdBD === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(preguntaIdBD);
+                          if (esUuid && ['A','B','C','D'].includes(respUsr)) {
+                            respuestasDetalle.push({
+                              pregunta_id: preguntaIdBD,
+                              opcion_elegida: respUsr,
+                              es_correcta: esCorrecta,
+                              orden_en_sesion: idx + 1
+                            });
+                          }
                         });
-                        
+
                         const pct = Math.round((correctas / preguntasSimulacro.length) * 100);
-                        
+
                         const nuevoIntento = {
                           usuario_id: session.user.id,
                           puntaje_porcentaje: pct,
+                          pct_total: pct,
+                          correctas: correctas,
+                          completada: true,
                           total_preguntas: preguntasSimulacro.length,
                           dominio: modoConfig.dominio || 0,
                           modo: modoConfig.tipo || "general",
                           detalle_errores: erroresDetalle,
                           desglose_subtemas: desgloseSubtemas
                         };
-                        
+
                         const actualizado = [{ ...nuevoIntento, created_at: new Date().toISOString() }, ...historialUsuario];
                         setHistorialUsuario(actualizado);
-                        
+
                         const localKey = `sp_historial_detallado_${session.user.id}`;
                         localStorage.setItem(localKey, JSON.stringify(actualizado));
 
                         try {
-                          await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
-                        } catch (err) { 
+                          const sesionCreada = await dbPost("sesiones_simulacro", nuevoIntento, session.access_token);
+                          // Guardar el detalle por pregunta, ligado al id de la sesión recién creada.
+                          const sesionId = Array.isArray(sesionCreada) ? sesionCreada[0]?.id : sesionCreada?.id;
+                          if (sesionId && respuestasDetalle.length > 0) {
+                            try {
+                              await dbPost("respuestas_sesion",
+                                respuestasDetalle.map(r => ({ ...r, sesion_id: sesionId })),
+                                session.access_token);
+                            } catch (eDet) { console.error("No se pudo guardar el detalle de respuestas:", eDet); }
+                          }
+                        } catch (err) {
                           try {
                             await dbPost("sesiones_simulacro", {
                               usuario_id: nuevoIntento.usuario_id,
                               puntaje_porcentaje: nuevoIntento.puntaje_porcentaje,
+                              pct_total: nuevoIntento.pct_total,
+                              correctas: nuevoIntento.correctas,
+                              completada: true,
                               total_preguntas: nuevoIntento.total_preguntas,
                               dominio: nuevoIntento.dominio,
                               modo: modoConfig.tipo || "general"
                             }, session.access_token);
                           } catch (e2) {}
                         }
-                        
+
                         setResultadoFinal({ correctas, total: preguntasSimulacro.length, pct, erroresDetalle });
                       }} style={{ padding: "10px 24px", background: C.green, border: "none", color: C.black, fontWeight: "bold", borderRadius: 6, cursor: "pointer" }}>Finalizar Simulacro</button>
                     )
