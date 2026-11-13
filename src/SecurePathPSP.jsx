@@ -31,13 +31,13 @@ const authSignOut = (token) => sb("/auth/v1/logout", { method: "POST", token });
 const dbGet = (table, query, token) => sb(`/rest/v1/${table}?${query}`, { token, headers: { "Range": "0-4999" } });
 const dbPost = (table, body, token) => sb(`/rest/v1/${table}`, { method: "POST", body, token, prefer: "resolution=merge-duplicates,return=representation" });
 
-// ─── BANCO MAESTRO DE RESPALDO PSP AMPLIADO (ROBUSTO) ───────────────────────
+// ─── BANCO MAESTRO DE RESPALDO AMPLIADO (ROBUSTO) ───────────────────────
 const BANCO_MAESTRO_FALLBACK = [
   {
     id: 1,
     dominio: 1,
     subtema: "D1-T1 Caracterización de los Activos",
-    pregunta: "Según los estándares de ASIS International, ¿cuál es el primer paso ineludible en cualquier evaluación de seguridad física (Assessment)?",
+    pregunta: "Según los estándares de referencia, ¿cuál es el primer paso ineludible en cualquier evaluación de seguridad física (Evaluación)?",
     opciones: [
       { key: "A", texto: "La instalación de sistemas electrónicos de detección y cámaras." },
       { key: "B", texto: "La caracterización e inventario de los activos organizacionales." },
@@ -233,7 +233,7 @@ const BANCO_MAESTRO_FALLBACK = [
     id: 15,
     dominio: 1,
     subtema: "D1-T6 Marco ESRM",
-    pregunta: "En el estándar Enterprise Security Risk Management (ESRM) de ASIS, ¿cómo se vincula la gestión de seguridad con la organización?",
+    pregunta: "En el estándar Enterprise Security Risk Management (ESRM), ¿cómo se vincula la gestión de seguridad con la organización?",
     opciones: [
       { key: "A", texto: "La seguridad opera de forma totalmente aislada del negocio principal." },
       { key: "B", texto: "La seguridad gestiona los riesgos alineándose directamente con los objetivos estratégicos y de negocio de la empresa." },
@@ -286,7 +286,7 @@ const mezclarConOpciones = (ps) => mezclar(ps).map((p) => {
   return { ...p, opcionesExtraidas: mezclar(Array.isArray(ops) ? ops : []) };
 });
 
-// ─── PLAN DE ESTUDIOS Y TEORÍA OFICIAL PSP ──────────────────────────────────
+// ─── PLAN DE ESTUDIOS Y TEORÍA ──────────────────────────────────
 const DOMINIOS_CURSO = [
   { 
     id: 1, 
@@ -355,7 +355,7 @@ const ACTIVIDADES_VIEW_MAP = {
   3: "https://drive.google.com/file/d/1_IRmyGYY1NUAgdoSSLceLe48HFdqvIHn/view?usp=sharing",
 };
 
-// ─── TEORÍA OFICIAL ASIS PSP AMPLIADA ───────────────────────────────────────
+// ─── TEORÍA AMPLIADA ───────────────────────────────────────
 const HANDBOOK_TEORIA = {
   0: { 
     mapaConceptual: "Macro: Universo Organizacional (Modelo PPIR) ➔ Meso: Ciclo Metodológico de 5 Fases (Inventario, Clasificación, Valoración, Priorización, Gobernanza) ➔ Micro: Cuantificación de Impacto Operacional y Criterios CID.",
@@ -363,8 +363,8 @@ const HANDBOOK_TEORIA = {
       { 
         titulo: "1. Fundamentos Teóricos y Filosofía de Protección", 
         puntos: [
-          "Definición ASIS de Activo: Cualquier persona, bien tangible, información o capacidad intangible con valor para la organización que requiere un nivel de protección proporcional a su criticidad.",
-          "Modelo PPIR (People, Property, Information, Reputation): Marco fundamental de ASIS para clasificar todo el universo de activos corporativos.",
+          "Definición de referencia de Activo: Cualquier persona, bien tangible, información o capacidad intangible con valor para la organización que requiere un nivel de protección proporcional a su criticidad.",
+          "Modelo PPIR (People, Property, Information, Reputation): Marco fundamental de referencia para clasificar todo el universo de activos corporativos.",
           "Prioridad Absoluta del Activo Humano: La protección de la vida, la salud y la integridad física de empleados, contratistas y visitantes antecede siempre a cualquier bien material o propiedad intelectual.",
           "Estándar de Diligencia Debida (Due Diligence): Obligación legal y ética corporativa de implementar salvaguardas razonables y probadas para mitigar exposiciones previsibles.",
           "Proporcionalidad de la Seguridad: Los costos y restricciones de las contramedidas nunca deben superar el valor potencial de pérdida del activo protegido."
@@ -381,7 +381,7 @@ const HANDBOOK_TEORIA = {
         ] 
       },
       { 
-        titulo: "3. Metodología ASIS des las 5 Fases (Inventario y Alcance)", 
+        titulo: "3. Metodología de referencia des las 5 Fases (Inventario y Alcance)", 
         puntos: [
           "Fase 1 (Alcance e Inventario): Definición rigurosa de perímetros físicos, lógicos y temporales. Aplicación de la técnica de las 6 superficies (piso, techo y 4 paredes de un recinto).",
           "Enfoques Metodológicos: Top-Down (desde la dirección estratégica hacia las operaciones) y Bottom-Up (desde las instalaciones hacia el corporativo).",
@@ -398,7 +398,7 @@ const HANDBOOK_TEORIA = {
       { 
         titulo: "1. Naturaleza y Taxonomía de las Amenazas", 
         puntos: [
-          "Definición ASIS: Una amenaza es cualquier evento, circunstancia, condición o actor hostil con el potencial de causar pérdida, daño, lesión o interrupción a un activo.",
+          "Definición de referencia: Una amenaza es cualquier evento, circunstancia, condición o actor hostil con el potencial de causar pérdida, daño, lesión o interrupción a un activo.",
           "Amenazas Humanas Intencionales: Delincuencia común, crimen organizado, terrorismo, sabotaje industrial, espionaje corporativo y activismo radical.",
           "Amenazas Humanas Negligentes: Errores operativos involuntarios, fallas de juicio y descuidos del personal interno.",
           "Amenazas Naturales y Ambientales: Sismos, inundaciones, eventos climáticos extremos, tormentas eléctricas y deslizamientos geológicos.",
@@ -417,19 +417,19 @@ const HANDBOOK_TEORIA = {
     ]
   },
   2: { 
-    mapaConceptual: "Macro: Definición y Taxonomía (Física, Electrónica, Administrativa) ➔ Meso: Metodología ASIS de 6 Pasos (Desde Alcance hasta Recomendaciones) ➔ Micro: Cálculo de Severidad y Estrategias de Remediación.",
+    mapaConceptual: "Macro: Definición y Taxonomía (Física, Electrónica, Administrativa) ➔ Meso: Metodología de referencia de 6 Pasos (Desde Alcance hasta Recomendaciones) ➔ Micro: Cálculo de Severidad y Estrategias de Remediación.",
     subsub: [
       { 
         titulo: "1. Definición Oficial y Conceptos Fundamentales", 
         puntos: [
-          "Definición ASIS: Una vulnerabilidad es una debilidad, deficiencia o ausencia de control que permite que una amenaza explote un activo y cause daño.",
+          "Definición de referencia: Una vulnerabilidad es una debilidad, deficiencia o ausencia de control que permite que una amenaza explote un activo y cause daño.",
           "Fórmula Clave: Vulnerabilidad = Deficiencia en Control (Físico, Electrónico o Administrativo). Sin vulnerabilidad, la amenaza no puede ejecutarse.",
           "Diferencia Crítica: La Amenaza es el ACTOR (quien quiere atacar), mientras que la Vulnerabilidad es el DEFECTO (la puerta que permite el ataque).",
           "Taxonomía de Deficiencias: Una 'Deficiencia' (ej. falta de política) genera una 'Debilidad' (patrón general), que a su vez crea 'Vulnerabilidades' específicas (ej. sistema sin autenticación)."
         ] 
       },
       { 
-        titulo: "2. Las 3 Familias de Vulnerabilidades (Tipología ASIS)", 
+        titulo: "2. Las 3 Familias de Vulnerabilidades (Tipología de referencia)", 
         puntos: [
           "Vulnerabilidades Físicas: Deficiencias arquitectónicas o perimetrales. Ejemplos: cerraduras débiles, iluminación pobre, zonas muertas sin cobertura CCTV.",
           "Vulnerabilidades Electrónicas: Fallas en sistemas y ciberseguridad. Ejemplos: sensores obsoletos, falta de autenticación 2FA, redes sin segmentar, backups sin pruebas.",
@@ -455,7 +455,7 @@ const HANDBOOK_TEORIA = {
         ] 
       },
       { 
-        titulo: "5. Puntos Clave y Trampas para el Examen PSP", 
+        titulo: "5. Puntos Clave y Trampas para el Examen", 
         puntos: [
           "Estadística Crítica: El 80% de las brechas corporativas explotan vulnerabilidades CONOCIDAS, y la detección promedio de una brecha tarda más de 200 días.",
           "Trampa de Examen 1: Pensar que Mitigación es igual a Eliminación. La mitigación solo reduce la severidad, no elimina la vulnerabilidad de raíz.",
@@ -471,7 +471,7 @@ const HANDBOOK_TEORIA = {
       { 
         titulo: "1. La Ecuación Fundamental del Riesgo en Seguridad", 
         puntos: [
-          "Fórmula Oficial ASIS: Riesgo = Amenaza (Probabilidad de ocurrencia) × Vulnerabilidad (Probabilidad de éxito del ataque) × Impacto (Valor del Activo afectado).",
+          "Fórmula de referencia: Riesgo = Amenaza (Probabilidad de ocurrencia) × Vulnerabilidad (Probabilidad de éxito del ataque) × Impacto (Valor del Activo afectado).",
           "Rol del Impacto: El valor monetario, operativo o reputacional del activo es el factor que traduce un incidente físico en una consecuencia corporativa crítica.",
           "Riesgo Inherente vs Residual: El riesgo inherente es la exposición neta sin salvaguardas; el riesgo residual es el remanente operativo tras aplicar las contramedidas."
         ] 
@@ -564,7 +564,7 @@ export default function SecurePathPSP() {
       const saved = localStorage.getItem("sp_tutor_history");
       if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length > 0) return parsed; }
     } catch (e) {}
-    return [{ role: "assistant", content: "Hola 👋 Soy tu tutor de IA para la preparación PSP. Puedo generarte preguntas de práctica, explicarte conceptos o armarte casos de estudio. Elige un dominio arriba o escríbeme tu consulta." }];
+    return [{ role: "assistant", content: "Hola 👋 Soy tu tutor de IA para la preparación de tu certificación. Puedo generarte preguntas de práctica, explicarte conceptos o armarte casos de estudio. Elige un dominio arriba o escríbeme tu consulta." }];
   });
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
@@ -814,7 +814,7 @@ export default function SecurePathPSP() {
     return (
       <div style={{ minHeight: "100vh", background: C.black, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
         <div style={{ width: "100%", maxWidth: 420, background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
-          <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath PSP</h2>
+          <h2 style={{ color: C.gold, marginBottom: 8, fontSize: 28, fontWeight: 800 }}>SecurePath</h2>
           <p style={{ color: C.muted, marginBottom: 24, fontSize: 14 }}>Plataforma de preparación para la certificación</p>
           <input type="email" placeholder="Correo" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 12, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6 }} />
           <input type="password" placeholder="Contraseña" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ width: "100%", padding: 12, marginBottom: 16, background: C.black, color: C.white, border: `1px solid ${C.border}`, borderRadius: 6 }} />
@@ -937,7 +937,7 @@ export default function SecurePathPSP() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
               <button onClick={() => { setVista("simulacro"); setSimulacroPantalla("inicio"); }} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.gold, marginBottom: 6 }}>Ir a Simulacros</div>
-                <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Prometric (50).</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Rápido (10), Estándar (25), Largo (50) o Examen (50).</div>
               </button>
               <button onClick={() => setVista("curso")} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.blue, marginBottom: 6 }}>Curso</div>
@@ -972,7 +972,7 @@ export default function SecurePathPSP() {
                     <div style={{ fontSize: 13, color: C.muted }}>25 preguntas mezcladas.</div>
                   </button>
                   <button onClick={() => iniciarSimulacro("prometric", 50, 0, true)} style={{ background: C.card, border: `1px solid ${C.border}`, padding: 20, borderRadius: 10, textAlign: "left", cursor: "pointer", color: C.white }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Modo Prometric</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: C.green, marginBottom: 6 }}>Modo Examen</div>
                     <div style={{ fontSize: 13, color: C.muted }}>50 preguntas, sin retroalimentación hasta el final.</div>
                   </button>
                 </div>
@@ -980,7 +980,7 @@ export default function SecurePathPSP() {
                 <div style={{ background: C.black, padding: 20, borderRadius: 8, border: `1px solid ${C.border}` }}>
                   <h4 style={{ marginBottom: 12, fontSize: 16 }}>Filtrar por Dominio Específico (Genera muestra de 25):</h4>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {[ [1, "Assessment"], [2, "Design"], [3, "Implementation"] ].map(([d, label]) => {
+                    {[ [1, "Evaluación"], [2, "Diseño"], [3, "Implementación"] ].map(([d, label]) => {
                       const cantDominio = getPreguntasPorDominio(d).length;
                       return (
                         <button key={d} onClick={() => iniciarSimulacro("dominio", 25, d, false)} style={{ padding: "10px 16px", background: C.card, border: `1px solid ${C.border}`, color: C.white, borderRadius: 6, cursor: "pointer", fontSize: 14 }}>
@@ -996,7 +996,7 @@ export default function SecurePathPSP() {
             {simulacroPantalla === "activo" && preguntasSimulacro.length > 0 && !resultadoFinal && (
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, color: C.muted, fontSize: 14 }}>
-                  <span>Pregunta {indiceActual + 1} de {preguntasSimulacro.length} {modoConfig.prometric ? "· [Modo Prometric]" : ""}</span>
+                  <span>Pregunta {indiceActual + 1} de {preguntasSimulacro.length} {modoConfig.prometric ? "· [Modo Examen]" : ""}</span>
                   <span style={{ background: C.black, padding: "4px 10px", borderRadius: 4, fontFamily: "monospace", color: C.gold }}>⏱ {formatearTiempo(segundosTranscurridos)}</span>
                 </div>
 
@@ -1165,7 +1165,7 @@ export default function SecurePathPSP() {
               <div style={{ background: C.dark, padding: 30, borderRadius: 12, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 15 }}>
                   <div>
-                    <h2 style={{ fontSize: 26, marginBottom: 6 }}>Curso Oficial PSP</h2>
+                    <h2 style={{ fontSize: 26, marginBottom: 6 }}>Curso de preparación</h2>
                     <p style={{ color: C.muted, fontSize: 14 }}>Avanza de forma progresiva: cada subtema desbloquea al siguiente al aprobar su quiz.</p>
                   </div>
                   <div style={{ background: C.black, padding: "12px 20px", borderRadius: 8, border: `1px solid ${C.border}`, textAlign: "right" }}>
@@ -1354,7 +1354,7 @@ export default function SecurePathPSP() {
                         <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
                           <iframe 
                             src={VIDEOS_MAP[subtemaActivo]} 
-                            title="Videoclase PSP" 
+                            title="Videoclase" 
                             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
@@ -1381,7 +1381,7 @@ export default function SecurePathPSP() {
                       <div style={{ position: "relative", width: "100%", paddingBottom: "60%", height: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
                         <iframe 
                           src={ACTIVIDADES_MAP[subtemaActivo]} 
-                          title="Actividad Práctica PSP" 
+                          title="Actividad Práctica" 
                           style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 }}
                           allowFullScreen
                         />
@@ -1611,19 +1611,19 @@ export default function SecurePathPSP() {
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.green, border: `1px solid ${C.green}`, borderRadius: 20, padding: "2px 8px" }}>En línea</span>
                 </h2>
                 <p style={{ color: C.muted, margin: "2px 0 0", fontSize: 13 }}>
-                  {loadingTutor ? "Analizando y preparando tu respuesta…" : "Tu asistente experto en preparación PSP, disponible 24/7"}
+                  {loadingTutor ? "Analizando y preparando tu respuesta…" : "Tu asistente experto en preparación para tu certificación, disponible 24/7"}
                 </p>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 10, margin: "16px 0", flexWrap: "wrap", position: "relative" }}>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Assessment) estilo examen PSP.")} style={{ padding: "8px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Evaluación) estilo examen.")} style={{ padding: "8px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                 ⚡ Pregunta D1
               </button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Design) estilo examen PSP.")} style={{ padding: "8px 14px", background: "rgba(95,184,224,0.12)", border: `1px solid ${C.blue}66`, color: C.blue, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 2 (Diseño) estilo examen.")} style={{ padding: "8px 14px", background: "rgba(95,184,224,0.12)", border: `1px solid ${C.blue}66`, color: C.blue, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                 ⚡ Pregunta D2
               </button>
-              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementation) estilo examen PSP.")} style={{ padding: "8px 14px", background: "rgba(157,122,255,0.12)", border: `1px solid ${C.purple}66`, color: C.purple, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 3 (Implementación) estilo examen.")} style={{ padding: "8px 14px", background: "rgba(157,122,255,0.12)", border: `1px solid ${C.purple}66`, color: C.purple, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                 ⚡ Pregunta D3
               </button>
             </div>
@@ -1634,7 +1634,7 @@ export default function SecurePathPSP() {
                   {m.role !== "user" && <AndroideAvatar size={34} />}
                   <div style={{ padding: "12px 15px", borderRadius: 12, background: m.role === "user" ? C.goldD : C.dark, border: `1px solid ${m.role === "user" ? C.goldB : C.border}`, fontSize: 15, lineHeight: 1.6 }}>
                     <div style={{ fontSize: 11, color: m.role === "user" ? C.gold : C.blue, marginBottom: 4, fontWeight: 700, letterSpacing: ".03em" }}>
-                      {m.role === "user" ? "Tú" : "Tutor PSP"}
+                      {m.role === "user" ? "Tú" : "Tutor IA"}
                     </div>
                     <div>{m.role === "user" ? <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span> : renderMarkdown(m.content)}</div>
                   </div>

@@ -6,11 +6,13 @@ exports.handler = async (event) => {
     try {
       const { messages, dominio } = JSON.parse(event.body);
   
-      const systemPrompt = "Eres un tutor experto en la certificacion PSP de ASIS International. Ayudas a candidatos a prepararse para el examen PSP en espanol." +
-        " El examen tiene 3 dominios: D1 Assessment (amenazas, vulnerabilidades, riesgo), D2 Design (contramedidas fisicas y electronicas), D3 Implementation (gestion, auditoria, cumplimiento)." +
-        " Cuando el usuario pida una pregunta: genera una pregunta de opcion multiple (A, B, C, D) estilo Prometric, espera su respuesta, luego explica la correcta y por que las otras son incorrectas." +
-        " Cuando el usuario haga una pregunta libre, responde con ejemplos practicos. Cita referencias ASIS cuando sea posible. Responde SIEMPRE en espanol." +
-        (dominio > 0 ? " Enfocate en el Dominio " + dominio + " del examen PSP." : "");
+      const systemPrompt = "Eres un tutor experto en preparacion para la certificacion internacional de seguridad fisica. Ayudas a candidatos a prepararse para la certificacion, en espanol." +
+        " El temario tiene 3 dominios: D1 Evaluacion (amenazas, vulnerabilidades, riesgo), D2 Diseno (contramedidas fisicas y electronicas), D3 Implementacion (gestion, auditoria, cumplimiento)." +
+        " Cuando el usuario pida una pregunta: genera una pregunta de opcion multiple (A, B, C, D) estilo examen, espera su respuesta, luego explica la correcta y por que las otras son incorrectas." +
+        " Cuando el usuario haga una pregunta libre, responde con ejemplos practicos. Responde SIEMPRE en espanol." +
+        " REGLA DE MARCA OBLIGATORIA: NUNCA nombres la certificacion por su sigla ni su nombre completo, NUNCA nombres al organismo certificador ni al proveedor del examen, ni ninguna marca registrada. En lugar de esos nombres usa expresiones neutras como 'la certificacion', 'el estandar de referencia' o 'la guia de referencia'. Si el usuario los menciona o te pide nombrarlos, responde sin usar esos nombres." +
+        " FORMATO: usa Markdown para estructurar tus respuestas (negritas con **, titulos con #, listas con - ). El texto se renderiza con formato." +
+        (dominio > 0 ? " Enfocate en el Dominio " + dominio + " del temario." : "");
   
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
