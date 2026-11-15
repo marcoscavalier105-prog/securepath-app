@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 const SUPABASE_URL = "https://fhcbaafzccjkbkskreje.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2JhYWZ6Y2Nqa2Jrc2tyZWplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA0MDIsImV4cCI6MjA5NjU3NjQwMn0.R7G1zaDI7yoPuq8ECIt8tWvnVxJZ4JNQWKe7ilJxpk4";
 
+// Evento GA4 (seguro si gtag aún no cargó)
+const track = (evento, params = {}) => {
+  try { if (typeof window !== "undefined" && window.gtag) window.gtag("event", evento, params); } catch { /* no-op */ }
+};
+
 const rpc = async (fn, args = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: "POST",
@@ -37,11 +42,18 @@ export default function MiniSimulacro() {
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const origen = new URLSearchParams(window.location.search).get("o") ||
-                 new URLSearchParams(window.location.search).get("utm_source") || "web";
+  const params = new URLSearchParams(window.location.search);
+  const origen = params.get("o") || params.get("utm_source") || "web";
+  const utm = {
+    medium: params.get("utm_medium") || null,
+    campaign: params.get("utm_campaign") || null,
+    term: params.get("utm_term") || null,
+    content: params.get("utm_content") || null,
+  };
 
   const empezar = async () => {
     setPantalla("cargando"); setError("");
+    track("mini_empezar", { origen });
     try {
       const data = await rpc("leer_mini_preguntas");
       setPreguntas(data); setIdx(0); setRespuestas({}); setPantalla("quiz");
@@ -57,6 +69,7 @@ export default function MiniSimulacro() {
     try {
       const payload = preguntas.map((p) => ({ pregunta_id: p.pregunta_id, opcion: respuestas[p.pregunta_id] || "" }));
       const res = await rpc("calificar_mini", { respuestas: payload });
+      track("mini_completar", { puntaje: res.aciertos, origen });
       setResultado(res);
       try { const g = await rpc("explicacion_gratis_mini"); if (g && g[0]) setPrimeraExplicacion(g[0]); } catch { /* opcional */ }
       setPantalla("resultado");
@@ -74,8 +87,10 @@ export default function MiniSimulacro() {
         p_nombre: form.nombre, p_whatsapp: form.whatsapp, p_correo: form.correo || null,
         p_consentimiento: true, p_puntaje_total: resultado.aciertos,
         p_d1: resultado.d1.aciertos, p_d2: resultado.d2.aciertos, p_d3: resultado.d3.aciertos, p_origen: origen,
+        p_utm_medium: utm.medium, p_utm_campaign: utm.campaign, p_utm_term: utm.term, p_utm_content: utm.content,
       });
       setToken(r.token);
+      track("generate_lead", { origen, puntaje: resultado.aciertos, campaign: utm.campaign || "(none)" });
       const exp = await rpc("explicaciones_mini", { p_token: r.token });
       setExplicaciones(exp); setPantalla("done");
     } catch (e) { setError(e.message || "No se pudo guardar. Intenta de nuevo."); }
