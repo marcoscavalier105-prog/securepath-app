@@ -569,6 +569,12 @@ export default function SecurePathPSP() {
   const [inputTutor, setInputTutor] = useState("");
   const [loadingTutor, setLoadingTutor] = useState(false);
 
+  // Ruta dosificada y primer ingreso
+  const [datosCargados, setDatosCargados] = useState(false);
+  const [onbPaso, setOnbPaso] = useState(null);
+  const [dominioRutaAbierto, setDominioRutaAbierto] = useState(null);
+  const [temaRutaAbierto, setTemaRutaAbierto] = useState(null);
+
   const extraerNombreUsuario = (user) => {
     if (!user) return;
     let nombre = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nombre;
@@ -592,6 +598,16 @@ export default function SecurePathPSP() {
       }
     } catch {}
   }, []);
+
+  // Bienvenida: solo la primera vez y solo si aún no hay avance
+  useEffect(() => {
+    if (!datosCargados || !session?.user?.id) return;
+    const sinAvance = (Array.isArray(subtemasCompletados) ? subtemasCompletados.length : 0) === 0
+      && (Array.isArray(historialUsuario) ? historialUsuario.length : 0) === 0;
+    let visto = false;
+    try { visto = localStorage.getItem(`sp_onb_${session.user.id}`) === "1"; } catch {}
+    if (sinAvance && !visto) setOnbPaso(0);
+  }, [datosCargados]);
 
   useEffect(() => {
     try { localStorage.setItem("sp_tutor_history", JSON.stringify(Array.isArray(mensajesTutor) ? mensajesTutor : [])); } catch {}
@@ -622,6 +638,8 @@ export default function SecurePathPSP() {
     try { await authSignOut(session.access_token); } catch {}
     localStorage.removeItem("sp_session");
     setSession(null);
+    setDatosCargados(false);
+    setOnbPaso(null);
   };
 
   const cargarDatos = async (userId, token) => {
@@ -658,6 +676,8 @@ export default function SecurePathPSP() {
       const localKey = `sp_historial_detallado_${userId}`;
       const localHist = JSON.parse(localStorage.getItem(localKey) || "[]");
       if (localHist.length > 0) setHistorialUsuario(localHist);
+    } finally {
+      setDatosCargados(true);
     }
   };
 
@@ -881,6 +901,36 @@ export default function SecurePathPSP() {
   const avanceSubtemas = `${compsCount}/${SUBTEMAS_LISTA.length}`;
   const porcentajeCurso = Math.round((compsCount / SUBTEMAS_LISTA.length) * 100);
 
+  // Ruta: el tema "En curso" es el primero sin completar
+  const compsSafe = Array.isArray(subtemasCompletados) ? subtemasCompletados : [];
+  const idxEnCurso = SUBTEMAS_LISTA.findIndex((_, i) => !compsSafe.includes(i));
+  const esNuevo = datosCargados && compsCount === 0 && totalSims === 0;
+  const primerNombre = String(nombreUsuario || "").split(" ")[0];
+  const NOMBRES_DOMINIO = { 1: "Evaluación", 2: "Diseño", 3: "Implementación" };
+  const partirTema = (txt) => { const i = txt.indexOf(" "); return { codigo: txt.slice(0, i), nombre: txt.slice(i + 1) }; };
+  const temaEnCurso = idxEnCurso >= 0 ? partirTema(SUBTEMAS_LISTA[idxEnCurso]) : null;
+
+  const abrirTema = (idx) => {
+    setVista("curso");
+    setSubtemaActivo(idx);
+    setPestanaCursoActiva("teoria");
+    setIndiceTeoriaPaso(0);
+    setQuizActivoSubtema(null);
+    setResultadoQuizCurso(null);
+    window.scrollTo(0, 0);
+  };
+
+  const cerrarBienvenida = () => {
+    try { if (session?.user?.id) localStorage.setItem(`sp_onb_${session.user.id}`, "1"); } catch {}
+    setOnbPaso(null);
+  };
+
+  const PASOS_BIENVENIDA = [
+    { icono: "🧭", titulo: "Un tema a la vez", texto: "No tienes que verlo todo hoy. La plataforma te muestra solo el tema que te toca y guarda el resto para después." },
+    { icono: "📘", titulo: "Lee, practica y desbloquea", texto: "Cada tema tiene teoría corta y un quiz. Al aprobarlo se abre el siguiente. Así avanzas sin perderte." },
+    { icono: "🤖", titulo: "Tu tutor te acompaña", texto: "Si algo no queda claro, el Tutor IA te lo explica o te arma preguntas de práctica cuando quieras." }
+  ];
+
   const formatearTiempo = (seg) => {
     const mins = Math.floor(seg / 60);
     const secs = seg % 60;
@@ -905,14 +955,80 @@ export default function SecurePathPSP() {
         </div>
       </nav>
 
+      {onbPaso !== null && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(5,14,22,0.82)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div role="dialog" aria-modal="true" aria-label="Bienvenida" style={{ background: C.dark, border: `1px solid ${C.goldB}`, borderRadius: 16, padding: "32px 28px 24px", maxWidth: 440, width: "100%", textAlign: "center" }}>
+            <div style={{ fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 18 }}>
+              {onbPaso === 0 ? `Bienvenido${primerNombre ? ", " + primerNombre : ""}` : `Paso ${onbPaso + 1} de ${PASOS_BIENVENIDA.length}`}
+            </div>
+            <div style={{ fontSize: 44, marginBottom: 10 }}>{PASOS_BIENVENIDA[onbPaso].icono}</div>
+            <h2 style={{ fontSize: 22, margin: "0 0 10px", color: C.white }}>{PASOS_BIENVENIDA[onbPaso].titulo}</h2>
+            <p style={{ color: C.muted, fontSize: 15, lineHeight: 1.6, margin: "0 0 22px" }}>{PASOS_BIENVENIDA[onbPaso].texto}</p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 22 }}>
+              {PASOS_BIENVENIDA.map((_, i) => (
+                <span key={i} style={{ width: i === onbPaso ? 22 : 8, height: 8, borderRadius: 8, background: i === onbPaso ? C.gold : C.border, transition: "all .2s" }} />
+              ))}
+            </div>
+            {onbPaso < PASOS_BIENVENIDA.length - 1 ? (
+              <button onClick={() => setOnbPaso(onbPaso + 1)} style={{ width: "100%", padding: "13px 18px", background: C.gold, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 10, cursor: "pointer" }}>Siguiente</button>
+            ) : (
+              <button onClick={() => { cerrarBienvenida(); abrirTema(0); }} style={{ width: "100%", padding: "13px 18px", background: C.gold, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 10, cursor: "pointer" }}>Empezar mi primer tema →</button>
+            )}
+            <button onClick={cerrarBienvenida} style={{ marginTop: 12, background: "none", border: "none", color: C.muted, fontSize: 13, cursor: "pointer" }}>
+              {onbPaso < PASOS_BIENVENIDA.length - 1 ? "Saltar" : "Prefiero explorar primero"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxWidth: 1200, margin: "30px auto", padding: "0 20px" }}>
         
-        {vista === "dashboard" && (
-          <div>
-            <div style={{ marginBottom: 30 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola {nombreUsuario}</h1>
-              <p style={{ color: C.muted, fontSize: 16 }}>Banco cargado: <strong>{banco.length > 0 ? banco.length : BANCO_MAESTRO_FALLBACK.length} preguntas</strong> en total.</p>
+        {vista === "dashboard" && esNuevo && (
+          <div style={{ maxWidth: 620, margin: "20px auto 0" }}>
+            <div style={{ background: `linear-gradient(180deg, ${C.card}, ${C.dark})`, border: `1px solid ${C.goldB}`, borderRadius: 16, padding: "34px 28px", textAlign: "center" }}>
+              <div style={{ fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 10 }}>Tu primer paso</div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 10px" }}>Hola {primerNombre || nombreUsuario}, empecemos por aquí</h1>
+              <p style={{ color: C.muted, fontSize: 16, lineHeight: 1.6, margin: "0 auto 24px", maxWidth: 440 }}>
+                Hoy solo necesitas una cosa: abrir tu primer tema. Lo demás se irá abriendo a medida que avances.
+              </p>
+              <button onClick={() => abrirTema(0)} style={{ width: "100%", maxWidth: 420, padding: "16px 20px", background: C.gold, border: "none", color: "#fff", fontWeight: 800, fontSize: 17, borderRadius: 12, cursor: "pointer" }}>
+                Empezar: {partirTema(SUBTEMAS_LISTA[0]).nombre} →
+              </button>
+              <div style={{ marginTop: 16 }}>
+                <button onClick={() => { setVista("simulacro"); iniciarSimulacro("rapido", 3); }} style={{ background: "none", border: "none", color: C.blue, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                  ¿Prefieres calentar? Responde 3 preguntas (2 min)
+                </button>
+              </div>
             </div>
+            <p style={{ color: C.muted, fontSize: 13, textAlign: "center", marginTop: 18, lineHeight: 1.6 }}>
+              Simulacros, Tutor IA y Progreso están en el menú de arriba. No hace falta usarlos hoy.
+            </p>
+          </div>
+        )}
+
+        {vista === "dashboard" && !datosCargados && (
+          <p style={{ color: C.muted, textAlign: "center", marginTop: 60 }}>Cargando tu ruta…</p>
+        )}
+
+        {vista === "dashboard" && datosCargados && !esNuevo && (
+          <div>
+            <div style={{ marginBottom: 22 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Hola {nombreUsuario}</h1>
+              <p style={{ color: C.muted, fontSize: 16 }}>{idxEnCurso >= 0 ? <>Llevas <strong>{compsCount} de {SUBTEMAS_LISTA.length} temas</strong>. Sigue donde lo dejaste.</> : <>Completaste los <strong>{SUBTEMAS_LISTA.length} temas</strong>. Ahora toca practicar con simulacros.</>}</p>
+            </div>
+
+            {temaEnCurso && (
+              <div style={{ background: `linear-gradient(90deg, ${C.goldD}, ${C.dark})`, border: `1px solid ${C.goldB}`, borderRadius: 12, padding: "20px 22px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+                  <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 4 }}>En curso · {temaEnCurso.codigo}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 10 }}>{temaEnCurso.nombre}</div>
+                  <div style={{ height: 6, background: C.black, borderRadius: 6, overflow: "hidden", maxWidth: 360 }}>
+                    <div style={{ width: `${porcentajeCurso}%`, height: "100%", background: C.green }} />
+                  </div>
+                </div>
+                <button onClick={() => abrirTema(idxEnCurso)} style={{ padding: "13px 22px", background: C.gold, border: "none", color: "#fff", fontWeight: 800, fontSize: 15, borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap" }}>Continuar →</button>
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 40 }}>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
@@ -1184,6 +1300,9 @@ export default function SecurePathPSP() {
                       <h3 style={{ color: C.gold, fontSize: 17, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
                         <span>📂</span> {dom.nombre}
                       </h3>
+                      {dom.subtemas.every((t) => { const i = SUBTEMAS_LISTA.indexOf(t); return !compsSafe.includes(i) && !(i === 0 || compsSafe.includes(i - 1)); }) ? (
+                        <div style={{ color: C.muted, fontSize: 14 }}>🔒 {dom.subtemas.length} temas. Se abre al terminar el dominio anterior.</div>
+                      ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
                         {dom.subtemas.map((subText) => {
                           const idxGlobal = SUBTEMAS_LISTA.findIndex(s => s === subText);
@@ -1199,7 +1318,7 @@ export default function SecurePathPSP() {
                             colorEstado = C.green;
                             bgCard = "rgba(61,220,132,0.03)";
                           } else if (esAccesible) {
-                            estadoTexto = "Pendiente";
+                            estadoTexto = idxGlobal === idxEnCurso ? "En curso" : "Disponible";
                             colorEstado = C.gold;
                             bgCard = C.card;
                           }
@@ -1208,7 +1327,7 @@ export default function SecurePathPSP() {
                             <div key={idxGlobal} 
                               onClick={() => { 
                                 if (!esAccesible) {
-                                  alert("Esta subtarea está bloqueada. Debes completar la anterior primero.");
+                                  alert("Este tema aún está bloqueado. Termina primero el que tienes en curso.");
                                   return;
                                 }
                                 setSubtemaActivo(idxGlobal); 
@@ -1243,6 +1362,7 @@ export default function SecurePathPSP() {
                           );
                         })}
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1481,7 +1601,118 @@ export default function SecurePathPSP() {
         {/* PROGRESO */}
         {vista === "progreso" && (
           <div>
-            <h2 style={{ fontSize: 26, marginBottom: 8 }}>Desglose de Rendimiento</h2>
+            <div style={{ marginBottom: 18 }}>
+              <h2 style={{ fontSize: 26, margin: "0 0 6px" }}>Mi ruta de estudio</h2>
+              <p style={{ color: C.muted, fontSize: 15, margin: 0 }}>
+                {esNuevo ? "Tu ruta te espera. Empieza por el primer tema y el resto se irá abriendo." : idxEnCurso >= 0 ? "Un tema a la vez. Termina el que está en curso y se abre el siguiente." : "Completaste toda la ruta. Sigue practicando con simulacros."}
+              </p>
+            </div>
+
+            <div style={{ background: C.dark, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 22, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+              <div style={{ position: "relative", width: 62, height: 62, flex: "none" }}>
+                <svg width="62" height="62" viewBox="0 0 62 62" style={{ transform: "rotate(-90deg)" }}>
+                  <circle cx="31" cy="31" r="27" fill="none" stroke={C.black} strokeWidth="7" />
+                  <circle cx="31" cy="31" r="27" fill="none" stroke={C.green} strokeWidth="7" strokeLinecap="round" strokeDasharray={2 * Math.PI * 27} strokeDashoffset={2 * Math.PI * 27 * (1 - porcentajeCurso / 100)} />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15 }}>{porcentajeCurso}%</div>
+              </div>
+              <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 17 }}>{esNuevo ? "Todo listo para empezar" : `${compsCount} de ${SUBTEMAS_LISTA.length} temas`}</div>
+                <div style={{ color: C.muted, fontSize: 13 }}>{esNuevo ? "Tu primer tema toma pocos minutos." : "Tu avance se guarda automáticamente."}</div>
+              </div>
+              {temaEnCurso && (
+                <button onClick={() => abrirTema(idxEnCurso)} style={{ padding: "11px 18px", background: C.gold, border: "none", color: "#fff", fontWeight: 700, fontSize: 14, borderRadius: 10, cursor: "pointer" }}>
+                  {esNuevo ? "Empezar →" : "Continuar →"}
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 34 }}>
+              {DOMINIOS_CURSO.map((dom) => {
+                const idxs = dom.subtemas.map((t) => SUBTEMAS_LISTA.indexOf(t));
+                const hechos = idxs.filter((i) => compsSafe.includes(i)).length;
+                const contieneEnCurso = idxs.includes(idxEnCurso);
+                const domBloqueado = hechos === 0 && !contieneEnCurso;
+                const abierto = !domBloqueado && (dominioRutaAbierto === null ? contieneEnCurso : dominioRutaAbierto === dom.id);
+                const pctDom = Math.round((hechos / idxs.length) * 100);
+                return (
+                  <div key={dom.id} style={{ background: C.dark, border: `1px solid ${contieneEnCurso ? C.goldB : C.border}`, borderRadius: 12, opacity: domBloqueado ? 0.7 : 1 }}>
+                    <button onClick={() => { if (!domBloqueado) setDominioRutaAbierto(abierto ? 0 : dom.id); }} aria-expanded={abierto}
+                      style={{ width: "100%", background: "none", border: "none", color: C.white, textAlign: "left", padding: "16px 18px", cursor: domBloqueado ? "default" : "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ color: C.gold, fontWeight: 800, fontSize: 13 }}>DOMINIO {dom.id}</span>
+                          <span style={{ fontWeight: 700, fontSize: 17 }}>{NOMBRES_DOMINIO[dom.id]}</span>
+                        </div>
+                        {domBloqueado ? (
+                          <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>🔒 {idxs.length} temas. Se abre al terminar el Dominio {dom.id - 1}.</div>
+                        ) : (
+                          <>
+                            <div style={{ height: 6, background: C.black, borderRadius: 6, overflow: "hidden", margin: "9px 0 5px" }}>
+                              <div style={{ width: `${pctDom}%`, height: "100%", background: C.green, transition: "width .4s ease" }} />
+                            </div>
+                            <div style={{ color: C.muted, fontSize: 12 }}>{hechos} de {idxs.length} temas{hechos === idxs.length ? " · completado" : ""}</div>
+                          </>
+                        )}
+                      </div>
+                      {!domBloqueado && <span style={{ color: C.muted, fontSize: 18, transform: abierto ? "rotate(90deg)" : "none", transition: "transform .2s" }}>›</span>}
+                    </button>
+
+                    {abierto && (
+                      <ol style={{ listStyle: "none", margin: 0, padding: "0 18px 14px" }}>
+                        {idxs.map((idx, pos) => {
+                          const t = partirTema(SUBTEMAS_LISTA[idx]);
+                          const hecho = compsSafe.includes(idx);
+                          const enCurso = idx === idxEnCurso;
+                          const accesible = hecho || enCurso || idx === 0 || compsSafe.includes(idx - 1);
+                          const detalleAbierto = temaRutaAbierto === null ? enCurso : temaRutaAbierto === idx;
+                          const stats = hecho ? getPromedioPorSubtema(SUBTEMAS_LISTA[idx]) : null;
+                          const colorNodo = hecho ? C.green : enCurso ? C.gold : C.muted;
+                          return (
+                            <li key={idx} style={{ position: "relative", paddingLeft: 40, paddingBottom: pos === idxs.length - 1 ? 0 : 10 }}>
+                              {pos < idxs.length - 1 && <span style={{ position: "absolute", left: 11, top: 26, bottom: -14, width: 2, background: hecho ? C.green : C.border }} />}
+                              <span style={{ position: "absolute", left: 0, top: 12, width: 24, height: 24, borderRadius: "50%", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: hecho ? C.green : C.dark, border: `2px solid ${accesible ? colorNodo : C.border}`, color: hecho ? C.black : colorNodo, boxShadow: enCurso ? `0 0 0 5px ${C.goldD}` : "none", zIndex: 1 }}>
+                                {hecho ? "✓" : enCurso ? <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold }} /> : accesible ? "" : "🔒"}
+                              </span>
+                              <button onClick={() => setTemaRutaAbierto(detalleAbierto ? -1 : idx)} aria-expanded={detalleAbierto}
+                                style={{ width: "100%", textAlign: "left", background: enCurso ? C.card : C.black, border: `1px solid ${enCurso ? C.goldB : C.border}`, borderRadius: 10, padding: "11px 14px", color: C.white, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, opacity: accesible ? 1 : 0.65 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: ".04em" }}>{t.codigo}</div>
+                                  <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>{t.nombre}</div>
+                                </div>
+                                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, whiteSpace: "nowrap", background: hecho ? C.greenD : enCurso ? C.goldD : "transparent", color: colorNodo, border: hecho || enCurso ? "none" : `1px solid ${C.border}` }}>
+                                  {hecho ? "Completado" : enCurso ? "En curso" : accesible ? "Disponible" : "Bloqueado"}
+                                </span>
+                              </button>
+                              {detalleAbierto && (
+                                <div style={{ padding: "10px 4px 4px", fontSize: 14, color: C.muted, lineHeight: 1.55 }}>
+                                  {hecho ? (
+                                    <>
+                                      <div style={{ marginBottom: 8 }}>{stats && stats.cant > 0 ? <>Tu acierto en simulacros: <strong style={{ color: C.white }}>{stats.prom}%</strong> ({stats.cant} preguntas).</> : "Tema completado. Puedes repasarlo cuando quieras."}</div>
+                                      <button onClick={() => abrirTema(idx)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.goldB}`, color: C.gold, fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: "pointer" }}>Repasar</button>
+                                    </>
+                                  ) : accesible ? (
+                                    <>
+                                      <div style={{ marginBottom: 8 }}>Lee la teoría y aprueba el quiz. Al terminar se abre el siguiente tema.</div>
+                                      <button onClick={() => abrirTema(idx)} style={{ padding: "9px 16px", background: C.gold, border: "none", color: "#fff", fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: "pointer" }}>{compsCount === 0 && idx === 0 ? "Empezar tema →" : "Continuar tema →"}</button>
+                                    </>
+                                  ) : (
+                                    <em>Se abre al terminar el tema anterior.</em>
+                                  )}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {esNuevo ? null : (<>
+            <h2 style={{ fontSize: 22, marginBottom: 14 }}>Rendimiento en simulacros</h2>
             
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 20 }}>
               <div style={{ background: C.dark, padding: 24, borderRadius: 12, border: `1px solid ${C.border}` }}>
@@ -1588,6 +1819,7 @@ export default function SecurePathPSP() {
                 })}
               </div>
             )}
+            </>)}
           </div>
         )}
 
@@ -1617,6 +1849,11 @@ export default function SecurePathPSP() {
             </div>
 
             <div style={{ display: "flex", gap: 10, margin: "16px 0", flexWrap: "wrap", position: "relative" }}>
+              {temaEnCurso && (
+                <button onClick={() => enviarTutorConPrompt(`Explícame de forma sencilla y breve el tema "${temaEnCurso.nombre}" y luego hazme una pregunta para comprobar que lo entendí.`)} disabled={loadingTutor} style={{ padding: "8px 14px", background: C.greenD, border: `1px solid ${C.green}66`, color: C.green, borderRadius: 20, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                  📘 Explícame mi tema en curso
+                </button>
+              )}
               <button onClick={() => enviarTutorConPrompt("Genérame una pregunta de opción múltiple del Dominio 1 (Evaluación) estilo examen.")} style={{ padding: "8px 14px", background: C.goldD, border: `1px solid ${C.goldB}`, color: C.gold, borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                 ⚡ Pregunta D1
               </button>
@@ -1636,7 +1873,7 @@ export default function SecurePathPSP() {
                     <div style={{ fontSize: 11, color: m.role === "user" ? C.gold : C.blue, marginBottom: 4, fontWeight: 700, letterSpacing: ".03em" }}>
                       {m.role === "user" ? "Tú" : "Tutor IA"}
                     </div>
-                    <div>{m.role === "user" ? <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span> : renderMarkdown(m.content)}</div>
+                    <div>{m.role === "user" ? <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span> : renderMarkdown(i === 0 && primerNombre && String(m.content).startsWith("Hola 👋") ? String(m.content).replace("Hola 👋", `Hola ${primerNombre} 👋`) : m.content)}</div>
                   </div>
                 </div>
               ))}
