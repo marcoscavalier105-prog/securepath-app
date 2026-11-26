@@ -271,7 +271,7 @@ export default function MiniSimulacro() {
             );
           })}
           <a href={waLink} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", background: "#25D366", color: "#06351c", fontWeight: 700, padding: "15px", borderRadius: 13, marginTop: 8 }}>
-            Escribir por WhatsApp sobre el grupo del 1 de diciembre
+            Escribir por WhatsApp sobre el grupo del 15 de diciembre
           </a>
           <div style={{ textAlign: "center", marginTop: 16 }}><a href={URL_SECUREPATH} style={{ color: C.ink3, fontSize: ".85rem" }}>Conoce SecurePath →</a></div>
         </div>
