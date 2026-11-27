@@ -534,6 +534,7 @@ export default function SecurePathPSP() {
   
   const [vista, setVista] = useState("dashboard");
   const [banco, setBanco] = useState(BANCO_MAESTRO_FALLBACK);
+  const [mapaSubtemas, setMapaSubtemas] = useState({});
   const [historialUsuario, setHistorialUsuario] = useState([]);
   const [subtemasCompletados, setSubtemasCompletados] = useState([]);
 
@@ -644,9 +645,15 @@ export default function SecurePathPSP() {
 
   const cargarDatos = async (userId, token) => {
     try {
-      const bancoRes = await dbGet("preguntas", "select=*", token);
+      const bancoRes = await dbGet("preguntas", "select=*&activa=eq.true", token);
       if (Array.isArray(bancoRes) && bancoRes.length > 0) {
         setBanco(bancoRes);
+      }
+
+      // Mapa codigo -> id de subtema, para que el quiz pregunte solo del tema abierto
+      const subRes = await dbGet("subtemas", "select=id,codigo", token);
+      if (Array.isArray(subRes) && subRes.length > 0) {
+        setMapaSubtemas(Object.fromEntries(subRes.map(s => [s.codigo, s.id])));
       }
 
       const localKey = `sp_historial_detallado_${userId}`;
@@ -908,6 +915,21 @@ export default function SecurePathPSP() {
   const primerNombre = String(nombreUsuario || "").split(" ")[0];
   const NOMBRES_DOMINIO = { 1: "Evaluación", 2: "Diseño", 3: "Implementación" };
   const partirTema = (txt) => { const i = txt.indexOf(" "); return { codigo: txt.slice(0, i), nombre: txt.slice(i + 1) }; };
+
+  // Preguntas del subtema abierto. La app numera D1-T3 y la base D1-ST3.
+  // Si el subtema no alcanza 3 preguntas, cae al dominio; si tampoco, al banco completo.
+  const preguntasDelSubtema = (idx) => {
+    const fuente = banco.length > 0 ? banco : BANCO_MAESTRO_FALLBACK;
+    const codigoApp = String(SUBTEMAS_LISTA[idx] || "").split(" ")[0];
+    const codigoDb = codigoApp.replace(/^D(\d+)-T/, "D$1-ST");
+    const dom = Number((codigoApp.match(/^D(\d+)/) || [])[1]) || null;
+    const sid = mapaSubtemas[codigoDb];
+    const delSubtema = sid ? fuente.filter(p => p.subtema_id === sid) : [];
+    if (delSubtema.length >= 3) return delSubtema;
+    const delDominio = dom ? fuente.filter(p => Number(p.dominio_id) === dom) : [];
+    if (delDominio.length >= 3) return delDominio;
+    return fuente;
+  };
   const temaEnCurso = idxEnCurso >= 0 ? partirTema(SUBTEMAS_LISTA[idxEnCurso]) : null;
 
   const abrirTema = (idx) => {
@@ -1524,8 +1546,7 @@ export default function SecurePathPSP() {
 
                     {!quizActivoSubtema ? (
                       <button onClick={() => {
-                        const fuenteBanco = banco.length > 0 ? banco : BANCO_MAESTRO_FALLBACK;
-                        const seleccion = mezclarConOpciones(fuenteBanco).slice(0, 3);
+                        const seleccion = mezclarConOpciones(preguntasDelSubtema(subtemaActivo)).slice(0, 3);
                         setQuizActivoSubtema(seleccion);
                         setRespuestasQuizCurso({});
                         setResultadoQuizCurso(null);
